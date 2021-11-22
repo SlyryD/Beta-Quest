@@ -9,13 +9,15 @@
 .byte 'J'
 
 
+.include "macros.asm"
 ;==============================================================================
 ; Constants
 ;==============================================================================
 
 .definelabel CUTSCENE_ROOM_0_START, 0x2AA4000
 .definelabel CUTSCENE_ROOM_0_END, 0x02AA46E0
-
+.include "constants.asm"
+.include "addresses.asm"
 ;==============================================================================
 ; dmadata
 ;==============================================================================
@@ -30,16 +32,24 @@
 .word CUTSCENE_ROOM_0_START, CUTSCENE_ROOM_0_END
 
 .orga 0xD290
-.word 0x03480000, 0x03480B00, 0x03480000 //payload
+    .word 0x03480000, 0x03480B00, 0x03480000, 0
+
+.orga 0xD1B0
+.word 0x03490000, 0x03490000 + PAYLOAD_END - PAYLOAD_START, 0x03490000 //payload
+
 
 ;==============================================================================
 ; Code file scripts
 ;==============================================================================
 
+.include "boot.asm"
+.include "hacks.asm"
+
 .headersize(0x800110A0 - 0xA87000)
+
+.include "loader.asm"
 .include "code.asm"
 .include "transition.asm"
-.include "loader.asm"
 .org 0x8004BE30
 .incbin("../build/loader.z64")
 .include "save.asm"
@@ -287,7 +297,39 @@ addiu t0, t0, 0x72
 ;==============================================================================
 
 .orga 0x3480000
+RAND_START:
 .incbin("../build/rand.z64")
+RAND_END:
+
+
+
+.headersize (0x80400000 - 0x03490000)
+.org 0x80400000
+.area 0x20000 //payload max memory
+PAYLOAD_START:
+.area 0x20, 0
+RANDO_CONTEXT:
+.endarea
+
+.include "config.asm"
+.include "init.asm"
+.include "every_frame.asm"
+.include "dpad.asm"
+.include "colors.asm"
+
+.align 0x10
+.importobj "../build/bundle.o"
+.align 8
+FONT_TEXTURE:
+.incbin("../resources/font.bin")
+DPAD_TEXTURE:
+.incbin("../resources/dpad.bin")
+TRIFORCE_ICON_TEXTURE:
+.incbin("../resources/triforce_sprite.bin")
+
+.align 0x10
+PAYLOAD_END:
+.endarea //payload max memory
 
 
 ;==============================================================================

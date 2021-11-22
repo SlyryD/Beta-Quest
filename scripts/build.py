@@ -20,6 +20,7 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 run_dir = script_dir + '/..'
 os.chdir(run_dir)
 
+
 # Compile code
 
 os.environ['PATH'] = script_dir + os.pathsep + os.environ['PATH']
@@ -29,7 +30,8 @@ if compile_c:
     call(['make'])
 
 os.chdir(run_dir + '/src')
-call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
+print(os.getcwd())
+call(['armips.exe', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
 os.chdir(run_dir)
 
 # update crc
