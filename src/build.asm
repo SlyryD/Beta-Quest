@@ -6,7 +6,7 @@
 
 //set language
 .orga 0x3E
-.byte 'J'
+.byte 0x45
 
 
 .include "macros.asm"
@@ -34,7 +34,7 @@
 .orga 0xD290
     .word 0x03480000, 0x03480B00, 0x03480000, 0
 
-.orga 0xD1B0
+.orga 0xD2A0
 .word 0x03490000, 0x03490000 + PAYLOAD_END - PAYLOAD_START, 0x03490000 //payload
 
 
