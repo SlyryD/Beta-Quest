@@ -51,7 +51,7 @@ void draw_dpad() {
         sprite_load(db, &dpad_sprite, 0, 1);
         sprite_draw(db, &dpad_sprite, 0, 271, 64, 16, 16);
 
-        if (alpha == 0xFF)
+        if (alpha == 0xFF && !CAN_USE_DPAD)
             gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0x46);
 
         if (z64_file.iron_boots && z64_file.link_age==0) {

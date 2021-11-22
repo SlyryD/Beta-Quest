@@ -31,7 +31,7 @@ if compile_c:
 
 os.chdir(run_dir + '/src')
 print(os.getcwd())
-call(['armips.exe', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
+call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
 os.chdir(run_dir)
 
 # update crc
