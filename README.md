@@ -1,5 +1,6 @@
 # Beta-Quest
 Ocarina of Time, Beta Quest by mzxrules
+Updated with some quality of life improvements mostly taken from OOT Rando.
 
 ## Build Notes
 
