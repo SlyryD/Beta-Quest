@@ -117,7 +117,6 @@ ERROR_MESSAGE = 0x0001
 # messages for shorter item messages
 # ids are in the space freed up by move_shop_item_messages()
 ITEM_MESSAGES = {
-    0x0001: "\x08\x06\x30\x05\x41TEXT ID ERROR!\x05\x40",
     0x00B4: "\x08You got a \x05\x41Gold Skulltula Token\x05\x40!\x01You've collected \x05\x41\x19\x05\x40 tokens in total.",
     0x00B5: "\x08You destroyed a \x05\x41Gold Skulltula\x05\x40.\x01You got a token proving you \x01destroyed it!", #Unused
 }
