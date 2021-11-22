@@ -17,13 +17,17 @@ pj64_sym_path = args.pj64sym
 compile_c = args.compile_c
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-run_dir = script_dir + '/..'
-os.chdir(run_dir)
 
+run_dir = script_dir + '/..'
+
+os.chdir(run_dir)
+compress_dir = run_dir + '/Compress'
 
 # Compile code
 
 os.environ['PATH'] = script_dir + os.pathsep + os.environ['PATH']
+os.environ['PATH'] = compress_dir + os.pathsep + os.environ['PATH']
+print(os.environ['PATH'])
 
 if compile_c:
     os.chdir(run_dir + '/c')
@@ -34,6 +38,7 @@ print(os.getcwd())
 call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
 os.chdir(run_dir)
 
+
 # update crc
 with open('roms/port.z64', 'r+b') as stream:
     buffer = bytearray(stream.read(0x101000))
@@ -41,7 +46,12 @@ with open('roms/port.z64', 'r+b') as stream:
     stream.seek(0x10)
     stream.write(bytearray(crc))
 
+os.chdir(run_dir + '/Compress')
+call(['Compress', run_dir + '/roms/port.z64'])
+
+
 quit()
+
 
 with open('build/asm_symbols.txt', 'rb') as f:
     asm_symbols_content = f.read()
