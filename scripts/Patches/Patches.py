@@ -23,4 +23,4 @@ def patch_rom(rom:Rom):
     repack_messages(rom, messages)
 
     # Set save file flags
-    # default_save_flags(rom)
+    default_save_flags(rom)

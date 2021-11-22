@@ -91,7 +91,7 @@ for (name, sym) in symbols.items():
     if sym['type'] == 'data':
         addr = int(sym['address'], 16)
         if 0x80400000 <= addr < 0x80410000:
-            addr = addr - 0x80400000 + 0x03480000
+            addr = addr - 0x80400000 + 0x03490000
         else:
             continue
         data_symbols[name] = '{0:08X}'.format(addr)
