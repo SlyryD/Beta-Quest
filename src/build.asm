@@ -330,9 +330,22 @@ RANDO_CONTEXT:
 .include "every_frame.asm"
 .include "dpad.asm"
 
+;==================================================================================================
+; Initial save - from rando
+;==================================================================================================
+; .include "initial_save.asm"
+; ; Replaces:
+; ;   sb      t0, 32(s1)
+; ;   sb      a1, 33(s1)
+
+; .orga 0xB06C2C ; In memory: ???
+;     jal     write_initial_save
+;     sb      t0, 32(s1)
+
 .align 0x10
 .importobj "../build/bundle.o"
 .align 8
+
 FONT_TEXTURE:
 .incbin("../resources/font.bin")
 DPAD_TEXTURE:

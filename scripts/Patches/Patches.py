@@ -10,8 +10,7 @@ from Patches.Messages import read_messages, update_message_by_id, read_shop_item
         write_shop_items, remove_unused_messages, \
         add_item_messages, update_item_messages, repack_messages, shuffle_messages, \
         get_message_by_id
-
-#from SaveContext import SaveContext
+from Patches.Saveflags import default_save_flags
 
 
 def patch_rom(rom:Rom):
@@ -22,3 +21,6 @@ def patch_rom(rom:Rom):
     messages = read_messages(rom)
     update_item_messages(messages)
     repack_messages(rom, messages)
+
+    # Set save file flags
+    # default_save_flags(rom)

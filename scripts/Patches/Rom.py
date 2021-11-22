@@ -29,7 +29,9 @@ class Rom(BigStream):
 
         decomp_file = local_path('ZOOTDEC.z64')
 
-
+        with open(data_path('symbols.json'), 'r') as stream:
+            symbols = json.load(stream)
+            self.symbols = { name: int(addr, 16) for name, addr in symbols.items() }
         
 
         if file == '':

@@ -39,26 +39,6 @@ print(os.getcwd())
 call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
 os.chdir(run_dir)
 
-# Apply python patches
-rom = Rom('roms/port.z64')
-patch_rom(rom)
-rom.write_to_file('roms/port.z64')
-
-# update crc
-with open('roms/port.z64', 'r+b') as stream:
-    buffer = bytearray(stream.read(0x101000))
-    crc = calculate_crc(buffer)
-    stream.seek(0x10)
-    stream.write(bytearray(crc))
-
-#recompress
-os.chdir(run_dir + '/Compress')
-call(['Compress', run_dir + '/roms/port.z64'])
-
-
-quit()
-
-
 with open('build/asm_symbols.txt', 'rb') as f:
     asm_symbols_content = f.read()
 asm_symbols_content = asm_symbols_content.replace(b'\r\n', b'\n')
@@ -67,9 +47,7 @@ with open('build/asm_symbols.txt', 'wb') as f:
     f.write(asm_symbols_content)
 
 # Parse symbols
-
 c_sym_types = {}
-
 with open('build/c_symbols.txt', 'r') as f:
     for line in f:
         m = re.match('''
@@ -90,7 +68,6 @@ with open('build/c_symbols.txt', 'r') as f:
             c_sym_types[name] = 'code' if sym_type == 'text' else 'data'
 
 symbols = {}
-
 with open('build/asm_symbols.txt', 'r') as f:
     for line in f:
         parts = line.strip().split(' ')
@@ -108,9 +85,7 @@ with open('build/asm_symbols.txt', 'r') as f:
         }
 
 # Output symbols
-
 os.chdir(run_dir)
-
 data_symbols = {}
 for (name, sym) in symbols.items():
     if sym['type'] == 'data':
@@ -120,7 +95,7 @@ for (name, sym) in symbols.items():
         else:
             continue
         data_symbols[name] = '{0:08X}'.format(addr)
-with open('../data/generated/symbols.json', 'w') as f:
+with open('data/symbols.json', 'w') as f:
     json.dump(data_symbols, f, indent=4, sort_keys=True)
 
 if pj64_sym_path:
@@ -129,6 +104,26 @@ if pj64_sym_path:
         key = lambda pair: pair[1]['address']
         for sym_name, sym in sorted(symbols.items(), key=key):
             f.write('{0},{1},{2}\n'.format(sym['address'], sym['type'], sym_name))
+
+# Apply python patches
+rom = Rom('roms/port.z64')
+patch_rom(rom)
+rom.write_to_file('roms/port.z64')
+
+# update crc
+with open('roms/port.z64', 'r+b') as stream:
+    buffer = bytearray(stream.read(0x101000))
+    crc = calculate_crc(buffer)
+    stream.seek(0x10)
+    stream.write(bytearray(crc))
+
+#recompress
+os.chdir(run_dir + '/Compress')
+call(['Compress', run_dir + '/roms/port.z64'])
+
+
+
+
 
 
 # Diff ROMs
