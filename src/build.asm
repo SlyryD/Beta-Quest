@@ -6,7 +6,7 @@
 
 //set language
 .orga 0x3E
-.byte 'J'
+.byte 0x45
 
 
 .include "macros.asm"

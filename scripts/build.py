@@ -5,7 +5,8 @@ import re
 from subprocess import check_call as call
 from rom_diff import create_diff
 from crc import calculate_crc
-
+from Patches.Rom import *
+from Patches.Patches import patch_rom
 
 
 parser = argparse.ArgumentParser()
@@ -38,6 +39,10 @@ print(os.getcwd())
 call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
 os.chdir(run_dir)
 
+# Apply python patches
+rom = Rom('roms/port.z64')
+patch_rom(rom)
+rom.write_to_file('roms/port.z64')
 
 # update crc
 with open('roms/port.z64', 'r+b') as stream:
@@ -46,6 +51,7 @@ with open('roms/port.z64', 'r+b') as stream:
     stream.seek(0x10)
     stream.write(bytearray(crc))
 
+#recompress
 os.chdir(run_dir + '/Compress')
 call(['Compress', run_dir + '/roms/port.z64'])
 
