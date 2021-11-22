@@ -1,0 +1,52 @@
+    ;rom.write_bytes(0xDD2B86, [0x40, 0x80])             #block speed
+    ;rom.write_bytes(0xDD2D26, [0x00, 0x01])             #block delay
+    ;rom.write_bytes(0xDD9682, [0x40, 0x80])             #milk crate speed
+    ;rom.write_bytes(0xDD981E, [0x00, 0x01])             #milk crate delay
+    ;rom.write_bytes(0xCE1BD0, [0x40, 0x80, 0x00, 0x00]) #amy puzzle speed
+    ;rom.write_bytes(0xCE0F0E, [0x00, 0x01])             #amy puzzle delay
+    ;rom.write_bytes(0xC77CA8, [0x40, 0x80, 0x00, 0x00]) #fire block speed
+    ;rom.write_bytes(0xC770C2, [0x00, 0x01])             #fire block delay
+    ;rom.write_bytes(0xCC5DBC, [0x29, 0xE1, 0x00, 0x01]) #forest basement puzzle delay
+    ;rom.write_bytes(0xDBCF70, [0x2B, 0x01, 0x00, 0x00]) #spirit cobra mirror startup
+    ;rom.write_bytes(0xDBCF70, [0x2B, 0x01, 0x00, 0x01]) #spirit cobra mirror delay
+    ;rom.write_bytes(0xDBA230, [0x28, 0x41, 0x00, 0x19]) #truth spinner speed
+    ;rom.write_bytes(0xDBA3A4, [0x24, 0x18, 0x00, 0x00]) #truth spinner delay
+
+    .orga 0xDD2B86
+    .halfword 0x4080
+
+    .orga 0xDD2D26
+    .halfword 0x0001
+
+    .orga 0xDD9682
+    .halfword 0x4080
+
+    .orga 0xDD981E
+    .halfword 0x0001
+
+    .orga 0xCE1BD0
+    .word 0x40800000
+    
+    .orga 0xCE0F0E
+    .halfword 0x0001
+
+    .orga 0xC77CA8
+    .word 0x40800000
+    
+    .orga 0xC770C2
+    .halfword 0x0001
+
+    .orga 0xCC5DBC
+    .word 0x29E10001
+
+    .orga 0xDBCF70
+    .word 0x2B010000
+
+    .orga 0xDBCF70
+    .word 0x2B010001
+
+    .orga 0xDBA230
+    .word 0x28410019
+
+    .orga 0xDBA3A4
+    .word 0x24180000

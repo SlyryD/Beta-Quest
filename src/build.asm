@@ -57,6 +57,10 @@
 .include "kaleido_scope.asm"
 .include "tower.asm"
 
+;==============================================================================
+; Fast Block Push
+;==============================================================================
+.include "fastblock.asm"
 
 ;==============================================================================
 ; Cutscenes
@@ -315,7 +319,6 @@ RANDO_CONTEXT:
 .include "init.asm"
 .include "every_frame.asm"
 .include "dpad.asm"
-.include "colors.asm"
 
 .align 0x10
 .importobj "../build/bundle.o"
