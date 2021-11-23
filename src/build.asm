@@ -63,11 +63,6 @@
 .include "fastblock.asm"
 
 ;==============================================================================
-; Fast Block Push
-;==============================================================================
-.include "savedata.asm"
-
-;==============================================================================
 ; More Cutscenes
 ;==============================================================================
 .include "cutscenes.asm"
@@ -334,10 +329,12 @@ RANDO_CONTEXT:
 .include "init.asm"
 .include "every_frame.asm"
 .include "dpad.asm"
+.include "initial_save.asm"
 
 .align 0x10
 .importobj "../build/bundle.o"
 .align 8
+
 FONT_TEXTURE:
 .incbin("../resources/font.bin")
 DPAD_TEXTURE:
