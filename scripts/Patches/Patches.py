@@ -16,11 +16,12 @@ from Patches.Saveflags import default_save_flags
 def patch_rom(rom:Rom):
     
     # Load Message and Shop Data
-    
-    
     messages = read_messages(rom)
     update_item_messages(messages)
     repack_messages(rom, messages)
 
     # Set save file flags
     default_save_flags(rom)
+
+    # Set default hold targetting
+    rom.write_byte(0xB71E6D, 0x01)
