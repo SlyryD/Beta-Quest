@@ -31,3 +31,16 @@
 .orga 0xB06C2C ; In memory: ???
     jal     write_initial_save
     sb      t0, 32(s1)
+
+;==================================================================================================
+; Override Chest Speed
+;==================================================================================================
+.headersize 0
+; Replaces:
+;   bltz    t2, @@after_chest_speed_check
+;   nop
+.orga 0xBDA2EC ; 
+    b     @@after_chest_speed_check
+    nop
+.skip 4 * 24
+@@after_chest_speed_check:
