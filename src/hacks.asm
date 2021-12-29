@@ -35,11 +35,10 @@
 ;==================================================================================================
 ; Override Chest Speed
 ;==================================================================================================
-.headersize 0
 ; Replaces:
 ;   bltz    t2, @@after_chest_speed_check
 ;   nop
-.orga 0xBDA2EC ; 
+.orga 0xBDA2EC ; In memory: 0x8039587C (in BQ)
     b     @@after_chest_speed_check
     nop
 .skip 4 * 24
