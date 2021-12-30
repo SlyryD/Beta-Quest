@@ -269,30 +269,6 @@
 .orga 0x2EC4094
 .halfword 0x2B2 //change boss room exit to be a valid exit
 
-;==============================================================================
-; Title Screen
-;==============================================================================
-
-.orga 0x1795000
-.incbin("../resources/version_ia8.bin")
-.orga 0x17AE300
-.incbin("../resources/copyright_ia8.bin")
-.orga 0x17B3C40
-.incbin("../resources/beta_quest_i8.bin")
-
-.headersize(0x80AECDF0 - 0xE6C0D0)
-.org 0x80AEE558
-beql    t6, r0, title_screen_draw_dd
-
-.org 0x80AEE56C
-title_screen_draw_dd:
-
-.org 0x80AEE6D4
-addiu a3, a3, 0x60
-
-.org 0x80AEE6E4
-addiu t0, t0, 0x72
-
 
 ;==============================================================================
 ; Save Game Message textures

@@ -3,6 +3,8 @@ scripts/dump/
 roms/*
 build/*
 data/*
+resources/title.xcf
+resources/title.bin
 !.gitkeep
 Compress/ARCHIVE.bin
 
