@@ -8,6 +8,8 @@ Updated with some quality of life improvements mostly taken from OOT Rando.
 
 * Install the same toolchain used for Testrunner/OoT-Randomizer (described in ASM/readme.md)
 
+* place armips assembler in scripts directory
+
 * Run "python build.py" in the scripts directory to generate port.z64 (uncompressed) and port-comp.z64 (compressed) and rom_patch.txt (patch) within the roms folder
 	use the --compile-c option to rebuild the c code, rand.z64, and loader.z64.
 
