@@ -13,6 +13,8 @@ Updated with some quality of life improvements mostly taken from OOT Rando.
 * Run "python build.py" in the scripts directory to generate port.z64 (uncompressed) and port-comp.z64 (compressed) and rom_patch.txt (patch) within the roms folder
 	use the --compile-c option to rebuild the c code, rand.z64, and loader.z64.
 
+* To update the title screen, need to make a diff of the original title screen and the new one and place it in resources/title_diff.bin. See tools for doing this in scripts/logo_utils
+
 ## What is this?
 
 The Beta Quest mod is an entrance randomizer built from the NTSC 1.0 release.
