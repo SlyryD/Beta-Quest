@@ -1,6 +1,5 @@
-def get_original_logo(rom):
-	writeAddress = 0x01795300
-	originalBytes = rom.original.buffer[writeAddress: writeAddress+ 102400]
+def get_original_logo(rom, address, len):
+	originalBytes = rom.original.buffer[address: address+ len]
 	return originalBytes
 
 def diff(arr1, arr2):
