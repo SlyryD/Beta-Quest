@@ -33,6 +33,8 @@ print(os.environ['PATH'])
 if compile_c:
     os.chdir(run_dir + '/c')
     call(['make'])
+    os.chdir(run_dir + '/src')
+    call(['make'])
 
 os.chdir(run_dir + '/src')
 print(os.getcwd())
@@ -124,7 +126,6 @@ call(['Compress', run_dir + '/roms/port.z64'])
 
 
 
-
-
 # Diff ROMs
-# create_diff('roms/base.z64', 'roms/oot_mm.z64', '../data/generated/rom_patch.txt')
+os.chdir(run_dir)
+create_diff('roms/base.z64', 'roms/port.z64', 'roms/rom_patch.txt')
