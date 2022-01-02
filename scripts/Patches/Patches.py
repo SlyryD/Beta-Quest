@@ -24,7 +24,7 @@ def patch_rom(rom:Rom):
     default_save_flags(rom)
 
     #write title screen
-    patch_title_screen(rom, "resources/title_diff.bin", "resources/copyright_ia8.bin")
+    #patch_title_screen(rom, "resources/title_diff.bin", "resources/copyright_ia8.bin")
 
     # Set default hold targetting
     rom.write_byte(0xB71E6D, 0x01)

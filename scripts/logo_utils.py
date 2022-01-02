@@ -8,7 +8,7 @@ def diff(arr1, arr2):
 
 def create_logo_diff(rom, new_logo_file, output_diff):
 	new_logo_file = open(new_logo_file, 'rb')
-	original_logo_bytes = get_original_logo(rom)
+	original_logo_bytes = get_original_logo(rom, 0x1795300, 102400)
 	new_logo_bytes = new_logo_file.read()
 	logo_bytes_diff = diff(original_logo_bytes, new_logo_bytes )
 	diff_file = open(output_diff, 'wb')
