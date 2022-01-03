@@ -6,14 +6,12 @@ Updated with some quality of life improvements mostly taken from OOT Rando.
 
 * Add a decompressed 1.0 version of Ocarina of Time named base.z64 into the roms folder
 
-* Install the same toolchain used for Testrunner/OoT-Randomizer (described in ASM/readme.md)
+* Install the same toolchain used for Testrunner/OoT-Randomizer (described in ASM/readme.md) (you can use docker image rrealmuto/n64dev with all the tools preinstalled)
 
 * place armips assembler in scripts directory
 
 * Run "python build.py" in the scripts directory to generate port.z64 (uncompressed) and port-comp.z64 (compressed) and rom_patch.txt (patch) within the roms folder
 	use the --compile-c option to rebuild the c code, rand.z64, and loader.z64.
-
-* To update the title screen, need to make a diff of the original title screen and the new one and place it in resources/title_diff.bin. See tools for doing this in scripts/logo_utils
 
 ## What is this?
 
