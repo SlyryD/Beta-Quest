@@ -1,0 +1,1 @@
+convert -size 48x16 -depth 8 canvas:none -font Nimbus-Mono-L -pointsize 12 -fill white -draw @version.txt GRAY:version_ia8.bin
