@@ -95,6 +95,9 @@ for (name, sym) in symbols.items():
         else:
             continue
         data_symbols[name] = '{0:08X}'.format(addr)
+
+if (not os.path.exists('data')):
+    os.mkdir('data')
 with open('data/symbols.json', 'w') as f:
     json.dump(data_symbols, f, indent=4, sort_keys=True)
 
