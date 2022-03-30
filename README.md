@@ -6,11 +6,11 @@ Updated with some quality of life improvements mostly taken from OOT Rando.
 
 * Add a decompressed 1.0 version of Ocarina of Time named base.z64 into the roms folder
 
-* Install the same toolchain used for Testrunner/OoT-Randomizer (described in ASM/readme.md)
+* Install the same toolchain used for TestRunnerSRL/OoT-Randomizer (described in [ASM/README.md](https://github.com/TestRunnerSRL/OoT-Randomizer/blob/Dev/ASM/README.md))
 
 * Run make in the src directory
 
-* Run build.py in the scripts directory to generate port.z64 within the roms folder
+* Run build.py in the scripts directory to generate port-comp.z64 within the roms folder
 
 ## What is this?
 
