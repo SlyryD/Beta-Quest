@@ -25,3 +25,5 @@ def patch_rom(rom:Rom):
 
     # Set default hold targetting
     rom.write_byte(0xB71E6D, 0x01)
+
+    rom.write_int32(rom.sym('CFG_DUNGEON_INFO_ENABLE'), 1)

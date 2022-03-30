@@ -266,7 +266,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
         if (!d->has_tokens)
             continue;
 
-        int8_t tokens = GET_GS_FLAGS(i); // TODO: Get correct dungeon minimap_index
+        int8_t tokens = GET_GS_FLAGS(d->index);
         if (tokens < 0)
             tokens = 0;
         if (tokens > 9)
