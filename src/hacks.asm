@@ -11,6 +11,28 @@
     jal     before_game_state_update_hook
     nop
 
+; Runs after the game state update function
+; Replaces:
+;   jr      ra
+;   nop
+.org 0x8009CB00
+    j       after_game_state_update
+    nop
+
+; TODO: currently broken
+;.org 0x8009CED0
+;    jal     before_skybox_init
+
+.org 0x8009CDA0
+Gameplay_InitSkybox:
+
+; Runs after scene init
+; Replaces:
+;   jr      ra
+;   nop
+.org 0x8009CEE4
+    j       after_scene_init
+    nop
 
 ;==================================================================================================
 ; DPAD Display

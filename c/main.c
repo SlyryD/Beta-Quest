@@ -4,6 +4,9 @@
 #include "util.h"
 #include "dpad.h"
 #include "z64.h"
+#include "weather.h"
+
+void Gameplay_InitSkybox(z64_game_t* globalCtx, int16_t skyboxId);
 
 void c_init() {
     heap_init();
@@ -20,7 +23,8 @@ void after_game_state_update() {
 }
 
 void before_skybox_init(z64_game_t* game, int16_t skyboxId) {
-
+    override_weather_state();
+    Gameplay_InitSkybox(game, skyboxId);
 }
 
 void after_scene_init() {

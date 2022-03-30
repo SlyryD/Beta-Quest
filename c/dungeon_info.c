@@ -45,25 +45,7 @@ dungeon_entry_t dungeons[] = {
 
 int dungeon_count = array_size(dungeons);
 
-typedef struct
-{
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-} medal_color_t;
-
-medal_color_t medal_colors[] = {
-    {0x00, 0xFF, 0x00}, // Forest
-    {0xFF, 0x3C, 0x00}, // Fire
-    {0x00, 0x64, 0xFF}, // Water
-    {0xFF, 0x82, 0x00}, // Spirit
-    {0xC8, 0x32, 0xFF}, // Shadow
-    {0xC8, 0xC8, 0x00}, // Light
-};
-
 extern uint32_t CFG_DUNGEON_INFO_ENABLE;
-
-int8_t CFG_DUNGEON_REWARDS[14] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
 void draw_dungeon_info(z64_disp_buf_t *db)
 {
@@ -88,11 +70,9 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     int padding = 1;
     int rows = 13;
     int bg_width =
-        (5 * icon_size) +
-        (8 * font_sprite.tile_w) +
-        (7 * padding) +
-        (6 * font_sprite.tile_w) +
-        padding;
+        padding +
+        (8 * font_sprite.tile_w) + // dungeon names
+        (7 * (icon_size + padding)); // key, key count, bk / gerudo card, map, compass, skull, skull count
     int bg_height = (rows * icon_size) + ((rows + 1) * padding);
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
@@ -114,45 +94,10 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     gDPPipeSync(db->p++);
     gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
 
-    // Draw medals
-
-    sprite_load(db, &medals_sprite, 0, medals_sprite.tile_count);
-
-    for (int i = 0; i < dungeon_count; i++)
-    {
-        dungeon_entry_t *d = &(dungeons[i]);
-        int reward = CFG_DUNGEON_REWARDS[d->index];
-        if (reward < 3)
-            continue;
-        reward -= 3;
-
-        medal_color_t *c = &(medal_colors[reward]);
-        gDPSetPrimColor(db->p++, 0, 0, c->r, c->g, c->b, 0xFF);
-
-        int top = start_top + ((icon_size + padding) * i);
-        sprite_draw(db, &medals_sprite, reward,
-                    left, top, icon_size, icon_size);
-    }
+    // Set the primary color to white for drawing sprites
 
     gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-
-    // Draw stones
-
-    sprite_load(db, &stones_sprite, 0, stones_sprite.tile_count);
-
-    for (int i = 0; i < dungeon_count; i++)
-    {
-        dungeon_entry_t *d = &(dungeons[i]);
-        int reward = CFG_DUNGEON_REWARDS[d->index];
-        if (reward < 0 || reward >= 3)
-            continue;
-
-        int top = start_top + ((icon_size + padding) * i);
-        sprite_draw(db, &stones_sprite, reward,
-                    left, top, icon_size, icon_size);
-    }
-
-    left += icon_size + padding;
+    left += padding;
 
     // Draw dungeon names
 
@@ -164,6 +109,23 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     }
 
     left += (8 * font_sprite.tile_w) + padding;
+
+    // Draw key sprite
+
+    sprite_load(db, &key_rupee_clock_sprite, 0, key_rupee_clock_sprite.tile_count);
+
+    for (int i = 0; i < dungeon_count; i++)
+    {
+        dungeon_entry_t *d = &(dungeons[i]);
+        if (!d->has_keys)
+            continue;
+
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &key_rupee_clock_sprite, 0,
+                    left, top, icon_size, icon_size);
+    }
+
+    left += icon_size + padding;
 
     // Draw small key counts
 
@@ -254,6 +216,23 @@ void draw_dungeon_info(z64_disp_buf_t *db)
             sprite_draw(db, &quest_items_sprite, 0,
                         left, top, icon_size, icon_size);
         }
+    }
+
+    left += icon_size + padding;
+
+    // Draw skull sprite
+
+    sprite_load(db, &quest_items_sprite, 11, 1);
+
+    for (int i = 0; i < dungeon_count; i++)
+    {
+        dungeon_entry_t *d = &(dungeons[i]);
+        if (!d->has_tokens)
+            continue;
+
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &quest_items_sprite, 0,
+                    left, top, icon_size, icon_size);
     }
 
     left += icon_size + padding;
