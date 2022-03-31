@@ -19,9 +19,9 @@
     j       after_game_state_update
     nop
 
-; TODO: currently broken
-;.org 0x8009CED0
-;    jal     before_skybox_init
+; Runs before skybox init
+.org 0x8009CED0
+    jal     before_skybox_init
 
 .org 0x8009CDA0
 Gameplay_InitSkybox:
