@@ -26,3 +26,4 @@ def patch_rom(rom:Rom):
     rom.write_byte(0xB71E6D, 0x01)
 
     rom.write_int32(rom.sym('CFG_DUNGEON_INFO_ENABLE'), 1)
+    rom.write_int32(rom.sym('CFG_WORLD_MAP_INFO_ENABLE'), 1)

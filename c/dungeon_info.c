@@ -3,13 +3,10 @@
 #include "gfx.h"
 #include "text.h"
 #include "util.h"
+#include "world_map_info.h"
 #include "z64.h"
 
-uint32_t gGsFlagsMasks[] = {0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000};
-uint32_t gGsFlagsShifts[] = {0, 8, 16, 24};
-
-#define GET_GS_FLAGS(index) \
-    ((z64_file.gs_flags[(index) >> 2] & gGsFlagsMasks[(index)&3]) >> gGsFlagsShifts[(index)&3])
+#define PAUSE_WORLD_MAP 0
 
 typedef struct
 {
@@ -51,7 +48,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 {
     int draw = CFG_DUNGEON_INFO_ENABLE &&
                z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == 0 &&
+               z64_game.pause_ctxt.screen_idx == PAUSE_WORLD_MAP &&
                !z64_game.pause_ctxt.changing &&
                z64_ctxt.input[0].raw.pad.a;
     if (!draw)
@@ -71,7 +68,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     int rows = 13;
     int bg_width =
         padding +
-        (8 * font_sprite.tile_w) + // dungeon names
+        (8 * font_sprite.tile_w) +   // dungeon names
         (7 * (icon_size + padding)); // key, key count, bk / gerudo card, map, compass, skull, skull count
     int bg_height = (rows * icon_size) + ((rows + 1) * padding);
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
@@ -247,17 +244,14 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
         int8_t token_flags = GET_GS_FLAGS(d->index);
         int8_t tokens = 0;
-        while (token_flags) {
+        while (token_flags)
+        {
             tokens += token_flags & 1;
             token_flags >>= 1;
         }
-        if (tokens < 0)
-            tokens = 0;
-        if (tokens > 9)
-            tokens = 9;
 
         char count[2] = "0";
-        count[0] += tokens;
+        count[0] += (tokens % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }

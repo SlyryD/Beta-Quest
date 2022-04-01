@@ -5,6 +5,7 @@
 #include "dpad.h"
 #include "z64.h"
 #include "weather.h"
+#include "world_map_info.h"
 
 void Gameplay_InitSkybox(z64_game_t* globalCtx, int16_t skyboxId);
 
@@ -20,6 +21,7 @@ void before_game_state_update() {
 
 void after_game_state_update() {
     draw_dungeon_info(&(z64_ctxt.gfx->overlay));
+    draw_world_map_info(&(z64_ctxt.gfx->overlay));
 }
 
 void before_skybox_init(z64_game_t* game, int16_t skyboxId) {
