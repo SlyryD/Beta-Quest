@@ -12,6 +12,30 @@ extern uint32_t gGsFlagsShifts[4];
 #define GET_GS_FLAGS(index) \
     ((z64_file.gs_flags[(index) >> 2] & gGsFlagsMasks[(index)&3]) >> gGsFlagsShifts[(index)&3])
 
+#define DEKU_TREE 0
+#define DODONGOS_CAVERN 1
+#define JABU_JABU 2
+#define FOREST_TEMPLE 3
+#define FIRE_TEMPLE 4
+#define WATER_TEMPLE 5
+#define SPIRIT_TEMPLE 6
+#define SHADOW_TEMPLE 7
+#define BOTTOM_OF_THE_WELL 8
+#define ICE_CAVERN 9
+
+#define GERUDO_TRAINING_GROUND 11
+#define THIEVES_HIDEOUT 12
+#define INSIDE_GANONS_CASTLE 13
+
+#define GOHMA 17
+#define KING_DODONGO 18
+#define BARINADE 19
+#define PHANTOM_GANON 20
+#define VOLVAGIA 21
+#define MORPHA 22
+#define TWINROVA 23
+#define BONGO_BONGO 24
+
 #define BLOCK_TOKEN (0x00000001 | \
                      0x00000002 | \
                      0x00000080 | \

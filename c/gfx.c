@@ -58,11 +58,6 @@ sprite_t dpad_sprite = {
     G_IM_FMT_IA, G_IM_SIZ_16b, 2
 };  
 
-sprite_t token_sprite = {
-    NULL, 16, 16, 16,
-    G_IM_FMT_IA, G_IM_SIZ_8b, 1
-};  
-
 sprite_t song_note_sprite = {
     NULL, 16, 24, 1,
     G_IM_FMT_IA, G_IM_SIZ_8b, 1
@@ -155,7 +150,6 @@ void gfx_init() {
     items_sprite.buf = icon_item_static.buf;
     quest_items_sprite.buf = icon_item_24_static.buf;
     dpad_sprite.buf = DPAD_TEXTURE;
-    token_sprite.buf = icon_item_static.buf + 0x00088040; // TODO: Fix
     song_note_sprite.buf = icon_item_static.buf + 0x00088040;
     key_rupee_clock_sprite.buf = parameter_static.buf + 0x00001E00;
     item_digit_sprite.buf = parameter_static.buf + 0x000035C0;

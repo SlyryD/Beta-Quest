@@ -23,21 +23,21 @@ typedef struct
 } dungeon_entry_t;
 
 dungeon_entry_t dungeons[] = {
-    {0, 0, 0, 0, 1, 1, "Deku"},
-    {1, 0, 0, 0, 1, 1, "Dodongo"},
-    {2, 0, 0, 0, 1, 1, "Jabu"},
+    {DEKU_TREE, 0, 0, 0, 1, 1, "Deku"},
+    {DODONGOS_CAVERN, 0, 0, 0, 1, 1, "Dodongo"},
+    {JABU_JABU, 0, 0, 0, 1, 1, "Jabu"},
 
-    {3, 1, 1, 0, 1, 1, "Forest"},
-    {4, 1, 1, 0, 1, 1, "Fire"},
-    {5, 1, 1, 0, 1, 1, "Water"},
-    {7, 1, 1, 0, 1, 1, "Shadow"},
-    {6, 1, 1, 0, 1, 1, "Spirit"},
+    {FOREST_TEMPLE, 1, 1, 0, 1, 1, "Forest"},
+    {FIRE_TEMPLE, 1, 1, 0, 1, 1, "Fire"},
+    {WATER_TEMPLE, 1, 1, 0, 1, 1, "Water"},
+    {SHADOW_TEMPLE, 1, 1, 0, 1, 1, "Shadow"},
+    {SPIRIT_TEMPLE, 1, 1, 0, 1, 1, "Spirit"},
 
-    {8, 1, 0, 0, 1, 1, "BotW"},
-    {9, 0, 0, 0, 1, 1, "Ice"},
-    {12, 1, 0, 1, 0, 0, "Hideout"},
-    {11, 1, 0, 0, 0, 0, "GTG"},
-    {13, 1, 1, 0, 0, 0, "Ganon"},
+    {BOTTOM_OF_THE_WELL, 1, 0, 0, 1, 1, "BotW"},
+    {ICE_CAVERN, 0, 0, 0, 1, 1, "Ice"},
+    {THIEVES_HIDEOUT, 1, 0, 1, 0, 0, "Hideout"},
+    {GERUDO_TRAINING_GROUND, 1, 0, 0, 0, 0, "GTG"},
+    {INSIDE_GANONS_CASTLE, 1, 1, 0, 0, 0, "Ganon"},
 };
 
 int dungeon_count = array_size(dungeons);
@@ -59,6 +59,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     db->p = db->buf;
 
     // Call setup display list
+
     gSPDisplayList(db->p++, &setup_db);
 
     // Set up dimensions
@@ -68,9 +69,10 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     int rows = 13;
     int bg_width =
         padding +
-        (8 * font_sprite.tile_w) +   // dungeon names
-        (7 * (icon_size + padding)); // key, key count, bk / gerudo card, map, compass, skull, skull count
-    int bg_height = (rows * icon_size) + ((rows + 1) * padding);
+        (8 * font_sprite.tile_w) + // dungeon names
+        padding +
+        (7 * (icon_size + padding)); // key, key count, bk, map, compass, skull, skull count
+    int bg_height = padding + (rows * (icon_size + padding));
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
 
@@ -88,13 +90,12 @@ void draw_dungeon_info(z64_disp_buf_t *db)
                         0, 0,
                         1 << 10, 1 << 10);
 
+    // Set the primary color to white for drawing sprites
+
     gDPPipeSync(db->p++);
     gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
 
-    // Set the primary color to white for drawing sprites
-
     gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-    left += padding;
 
     // Draw dungeon names
 
@@ -106,6 +107,47 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     }
 
     left += (8 * font_sprite.tile_w) + padding;
+
+    // Draw skull sprite
+
+    sprite_load(db, &quest_items_sprite, 11, 1);
+
+    for (int i = 0; i < dungeon_count; i++)
+    {
+        dungeon_entry_t *d = &(dungeons[i]);
+        if (!d->has_tokens)
+            continue;
+
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &quest_items_sprite, 0,
+                    left, top, icon_size, icon_size);
+    }
+
+    left += icon_size + padding;
+
+    // Draw skull count
+
+    for (int i = 0; i < dungeon_count; i++)
+    {
+        dungeon_entry_t *d = &(dungeons[i]);
+        if (!d->has_tokens)
+            continue;
+
+        int8_t token_flags = GET_GS_FLAGS(d->index);
+        int8_t tokens = 0;
+        while (token_flags)
+        {
+            tokens += token_flags & 1;
+            token_flags >>= 1;
+        }
+
+        char count[2] = "0";
+        count[0] += (tokens % 10);
+        int top = start_top + ((icon_size + padding) * i) + 1;
+        text_print(count, left, top);
+    }
+
+    left += icon_size + padding;
 
     // Draw key sprite
 
@@ -213,47 +255,6 @@ void draw_dungeon_info(z64_disp_buf_t *db)
             sprite_draw(db, &quest_items_sprite, 0,
                         left, top, icon_size, icon_size);
         }
-    }
-
-    left += icon_size + padding;
-
-    // Draw skull sprite
-
-    sprite_load(db, &quest_items_sprite, 11, 1);
-
-    for (int i = 0; i < dungeon_count; i++)
-    {
-        dungeon_entry_t *d = &(dungeons[i]);
-        if (!d->has_tokens)
-            continue;
-
-        int top = start_top + ((icon_size + padding) * i);
-        sprite_draw(db, &quest_items_sprite, 0,
-                    left, top, icon_size, icon_size);
-    }
-
-    left += icon_size + padding;
-
-    // Draw dungeon skull count
-
-    for (int i = 0; i < dungeon_count; i++)
-    {
-        dungeon_entry_t *d = &(dungeons[i]);
-        if (!d->has_tokens)
-            continue;
-
-        int8_t token_flags = GET_GS_FLAGS(d->index);
-        int8_t tokens = 0;
-        while (token_flags)
-        {
-            tokens += token_flags & 1;
-            token_flags >>= 1;
-        }
-
-        char count[2] = "0";
-        count[0] += (tokens % 10);
-        int top = start_top + ((icon_size + padding) * i) + 1;
-        text_print(count, left, top);
     }
 
     left += icon_size + padding;

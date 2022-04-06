@@ -5,34 +5,21 @@
 #include "util.h"
 #include "z64.h"
 
-static uint32_t frames = 0;
-#define FRAMES_PER_CYCLE 2
-#define TOKEN_SPRITE_FRAMES 16
-#define TOKEN_FRAMES_VISIBLE 100 // 20 Frames is about 1 second
-#define TOKEN_FRAMES_FADE_AWAY 80
-#define TOKEN_FRAMES_FADE_INTO 5
-
 #define PAUSE_MAP 1
 
-typedef struct
-{
-    uint8_t index;
-    char name[10];
-} world_map_area_entry_t;
-
-world_map_area_entry_t world_map_areas[] = {
-    {21, ""},
-    {20, ""},
-    {19, ""},
-    {18, ""},
-    {11, ""},
-    {14, ""},
-    {10, ""},
-    {15, ""},
-    {16, ""},
-    {13, ""},
-    {12, ""},
-    {17, ""},
+uint8_t world_map_areas[] = {
+    21,
+    20,
+    19, // GERUDO_VALLEY
+    18,
+    11,
+    14,
+    10,
+    15,
+    16,
+    13,
+    12, // KOKIRI_FOREST
+    17,
 };
 
 int world_map_area_count = array_size(world_map_areas);
@@ -57,32 +44,65 @@ void draw_world_map_info(z64_disp_buf_t *db)
     // Not a dungeon scene
     switch (z64_game.scene_index)
     {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-    case 17:
-    case 18:
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 23:
-    case 24:
+    case DEKU_TREE:
+    case DODONGOS_CAVERN:
+    case JABU_JABU:
+    case FOREST_TEMPLE:
+    case FIRE_TEMPLE:
+    case WATER_TEMPLE:
+    case SPIRIT_TEMPLE:
+    case SHADOW_TEMPLE:
+    case BOTTOM_OF_THE_WELL:
+    case ICE_CAVERN:
+    case GOHMA:
+    case KING_DODONGO:
+    case BARINADE:
+    case PHANTOM_GANON:
+    case VOLVAGIA:
+    case MORPHA:
+    case TWINROVA:
+    case BONGO_BONGO:
         return;
     }
 
-    uint8_t alpha = 255;
-    frames = frames % (TOKEN_SPRITE_FRAMES * FRAMES_PER_CYCLE);
-    frames++;
+    db->p = db->buf;
 
-    int8_t token_flags = GET_GS_FLAGS(world_map_areas[z64_game.pause_ctxt.map_cursor].index);
+    // Call setup display list
+
+    gSPDisplayList(db->p++, &setup_db);
+
+    // Set up dimensions
+
+    int icon_size = 16;
+    int padding = 1;
+    int bg_width =
+        padding +
+        (1 * (icon_size + padding)); // skull count, hp count, planted bean count, silver rupee rooms?
+    int bg_height = padding + (1 * (icon_size + padding));
+    int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
+    int bg_top = Z64_SCREEN_HEIGHT - bg_height;
+
+    int left = bg_left + padding;
+    int top = bg_top;
+
+    // Set the primary color to white for drawing sprites
+
+    gDPPipeSync(db->p++);
+    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+
+    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+
+    // Draw skull sprite
+
+    sprite_load(db, &quest_items_sprite, 11, 1);
+    sprite_draw(db, &quest_items_sprite, 0,
+                left, top, icon_size, icon_size);
+
+    left += icon_size + padding;
+
+    // Draw skull count
+
+    int8_t token_flags = GET_GS_FLAGS(world_map_areas[z64_game.pause_ctxt.map_cursor]);
     int8_t tokens = 0;
     while (token_flags)
     {
@@ -90,33 +110,14 @@ void draw_world_map_info(z64_disp_buf_t *db)
         token_flags >>= 1;
     }
 
-    // Setup draw location
-    int total_w = font_sprite.tile_w + token_sprite.tile_w;
-    int draw_x = Z64_SCREEN_WIDTH / 2 - total_w / 2;
-    int draw_y_text = Z64_SCREEN_HEIGHT - (font_sprite.tile_h * 1.5) + 1;
-    int draw_y_token = Z64_SCREEN_HEIGHT - (token_sprite.tile_h * 1.5) + 3 + 1;
+    char count[2] = "0";
+    count[0] += (tokens % 10);
+    text_print(count, left, top + 1);
 
-    // Create collected string
-    char text[2] = "0";
-    text[0] += (tokens % 10);
-
-    // Call setup display list
-    gSPDisplayList(db->p++, &setup_db);
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, 0xDA, 0xD3, 0x0B, alpha);
-
-    text_print(text, draw_x, draw_y_text);
-    draw_x += font_sprite.tile_w;
-
-    gDPSetPrimColor(db->p++, 0, 0, 0xF4, 0xEC, 0x30, alpha);
-
-    // Draw token
-    int sprite = (frames / FRAMES_PER_CYCLE) % TOKEN_SPRITE_FRAMES;
-    sprite_load(db, &token_sprite, sprite, 1);
-    sprite_draw(db, &token_sprite, 0, draw_x, draw_y_token, token_sprite.tile_w, token_sprite.tile_h);
+    // Finish
 
     text_flush(db);
+
     gDPFullSync(db->p++);
     gSPEndDisplayList(db->p++);
 }
