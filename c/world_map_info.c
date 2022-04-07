@@ -8,18 +8,18 @@
 #define PAUSE_MAP 1
 
 uint8_t world_map_areas[] = {
-    21,
-    20,
+    21, // HAUNTED_WASTELAND
+    20, // GERUDOS_FORTRESS
     19, // GERUDO_VALLEY
-    18,
-    11,
-    14,
-    10,
-    15,
-    16,
-    13,
+    18, // LAKE_HYLIA
+    11, // LON_LON_RANCH
+    14, // MARKET
+    10, // HYRULE_FIELD
+    15, // DEATH_MOUNTAIN
+    16, // KAKARIKO_VILLAGE
+    13, // LOST_WOODS
     12, // KOKIRI_FOREST
-    17,
+    17, // ZORAS_DOMAIN
 };
 
 int world_map_area_count = array_size(world_map_areas);
@@ -120,4 +120,12 @@ void draw_world_map_info(z64_disp_buf_t *db)
 
     gDPFullSync(db->p++);
     gSPEndDisplayList(db->p++);
+}
+
+void set_world_map_points(z64_game_t *game)
+{
+    for (int i = 0; i < ARRAY_COUNT(game->pause_ctxt.world_map_points); i++)
+    {
+        game->pause_ctxt.world_map_points[i] = 1;
+    }
 }

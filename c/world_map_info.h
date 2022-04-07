@@ -6,9 +6,12 @@
 #include "text.h"
 #include "util.h"
 
+#define ARRAY_COUNT(arr) (int32_t)(sizeof(arr) / sizeof(arr[0]))
+
 extern uint32_t gGsFlagsMasks[4];
 extern uint32_t gGsFlagsShifts[4];
 
+// gs_flags at 8011B46C
 #define GET_GS_FLAGS(index) \
     ((z64_file.gs_flags[(index) >> 2] & gGsFlagsMasks[(index)&3]) >> gGsFlagsShifts[(index)&3])
 
@@ -49,5 +52,7 @@ extern uint32_t gGsFlagsShifts[4];
                         ((z64_event_state_1 & 0x20) == 0))
 
 void draw_world_map_info();
+
+void set_world_map_points(z64_game_t *game);
 
 #endif
