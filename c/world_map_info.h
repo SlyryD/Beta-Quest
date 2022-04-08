@@ -6,14 +6,10 @@
 #include "text.h"
 #include "util.h"
 
-#define ARRAY_COUNT(arr) (int32_t)(sizeof(arr) / sizeof(arr[0]))
-
 extern uint32_t gGsFlagsMasks[4];
 extern uint32_t gGsFlagsShifts[4];
 
-// gs_flags at 8011B46C
-#define GET_GS_FLAGS(index) \
-    ((z64_file.gs_flags[(index) >> 2] & gGsFlagsMasks[(index)&3]) >> gGsFlagsShifts[(index)&3])
+int8_t get_tokens(uint8_t index);
 
 #define DEKU_TREE 0
 #define DODONGOS_CAVERN 1
@@ -39,20 +35,6 @@ extern uint32_t gGsFlagsShifts[4];
 #define TWINROVA 23
 #define BONGO_BONGO 24
 
-#define BLOCK_TOKEN (0x00000001 | \
-                     0x00000002 | \
-                     0x00000080 | \
-                     0x00000400 | \
-                     0x10000000 | \
-                     0x20000000)
-
-#define CAN_DRAW_TOKEN (((z64_link.state_flags_1 & BLOCK_TOKEN) == 0) &&                     \
-                        ((uint32_t)z64_ctxt.state_dtor == z64_state_ovl_tab[3].vram_dtor) && \
-                        (z64_file.game_mode == 0) &&                                         \
-                        ((z64_event_state_1 & 0x20) == 0))
-
 void draw_world_map_info();
-
-void set_world_map_points(z64_game_t *game);
 
 #endif

@@ -6,7 +6,7 @@
 #include "world_map_info.h"
 #include "z64.h"
 
-#define PAUSE_WORLD_MAP 0
+#define PAUSE_ITEM 0
 
 typedef struct
 {
@@ -48,7 +48,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 {
     int draw = CFG_DUNGEON_INFO_ENABLE &&
                z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == PAUSE_WORLD_MAP &&
+               z64_game.pause_ctxt.screen_idx == PAUSE_ITEM &&
                !z64_game.pause_ctxt.changing &&
                z64_ctxt.input[0].raw.pad.a;
     if (!draw)
@@ -66,13 +66,12 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     int icon_size = 16;
     int padding = 1;
-    int rows = 13;
     int bg_width =
         padding +
         (8 * font_sprite.tile_w) + // dungeon names
         padding +
-        (7 * (icon_size + padding)); // key, key count, bk, map, compass, skull, skull count
-    int bg_height = padding + (rows * (icon_size + padding));
+        (7 * (icon_size + padding)); // skull, skull count, key, key count, bk, map, compass
+    int bg_height = padding + (dungeon_count * (icon_size + padding));
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
 
@@ -133,13 +132,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
         if (!d->has_tokens)
             continue;
 
-        int8_t token_flags = GET_GS_FLAGS(d->index);
-        int8_t tokens = 0;
-        while (token_flags)
-        {
-            tokens += token_flags & 1;
-            token_flags >>= 1;
-        }
+        int8_t tokens = get_tokens(d->index);
 
         char count[2] = "0";
         count[0] += (tokens % 10);
@@ -168,8 +161,6 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     // Draw small key counts
 
-    sprite_load(db, &quest_items_sprite, 17, 1);
-
     for (int i = 0; i < dungeon_count; i++)
     {
         dungeon_entry_t *d = &(dungeons[i]);
@@ -177,13 +168,12 @@ void draw_dungeon_info(z64_disp_buf_t *db)
             continue;
 
         int8_t keys = z64_file.dungeon_keys[d->index];
-        if (keys < 0)
+        if (keys < 0) {
             keys = 0;
-        if (keys > 9)
-            keys = 9;
+        }
 
         char count[2] = "0";
-        count[0] += keys;
+        count[0] += (keys % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }

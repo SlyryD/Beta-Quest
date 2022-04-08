@@ -7,19 +7,25 @@
 
 #define PAUSE_MAP 1
 
-uint8_t world_map_areas[] = {
-    21, // HAUNTED_WASTELAND
-    20, // GERUDOS_FORTRESS
-    19, // GERUDO_VALLEY
-    18, // LAKE_HYLIA
-    11, // LON_LON_RANCH
-    14, // MARKET
-    10, // HYRULE_FIELD
-    15, // DEATH_MOUNTAIN
-    16, // KAKARIKO_VILLAGE
-    13, // LOST_WOODS
-    12, // KOKIRI_FOREST
-    17, // ZORAS_DOMAIN
+typedef struct
+{
+    uint8_t index;
+    char name[15];
+} world_map_area_entry_t;
+
+world_map_area_entry_t world_map_areas[] = {
+    {21, "Wasteland"},
+    {20, "Fortress"},
+    {19, "Gerudo Valley"},
+    {18, "Lake Hylia"},
+    {11, "Lon Lon Ranch"},
+    {14, "Market"},
+    {10, "Hyrule Field"},
+    {15, "Death Mountain"},
+    {16, "Kakariko"},
+    {13, "Lost Woods"},
+    {12, "Kokiri Forest"},
+    {17, "Zoras Domain"},
 };
 
 int world_map_area_count = array_size(world_map_areas);
@@ -29,13 +35,30 @@ extern uint32_t CFG_WORLD_MAP_INFO_ENABLE;
 uint32_t gGsFlagsMasks[] = {0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000};
 uint32_t gGsFlagsShifts[] = {0, 8, 16, 24};
 
+// gs_flags at 8011B46C
+#define GET_GS_FLAGS(index) \
+    ((z64_file.gs_flags[(index) >> 2] & gGsFlagsMasks[(index)&3]) >> gGsFlagsShifts[(index)&3])
+
+int8_t get_tokens(uint8_t index)
+{
+    int8_t tokens = 0;
+    int32_t token_flags = GET_GS_FLAGS(index);
+    while (token_flags)
+    {
+        tokens += token_flags & 1;
+        token_flags >>= 1;
+    }
+
+    return tokens;
+}
+
 void draw_world_map_info(z64_disp_buf_t *db)
 {
     int draw = CFG_WORLD_MAP_INFO_ENABLE &&
-               CAN_DRAW_TOKEN &&
                z64_game.pause_ctxt.state == 6 &&
                z64_game.pause_ctxt.screen_idx == PAUSE_MAP &&
-               !z64_game.pause_ctxt.changing;
+               !z64_game.pause_ctxt.changing &&
+               z64_ctxt.input[0].raw.pad.a;
     if (!draw)
     {
         return;
@@ -77,13 +100,26 @@ void draw_world_map_info(z64_disp_buf_t *db)
     int padding = 1;
     int bg_width =
         padding +
-        (1 * (icon_size + padding)); // skull count, hp count, planted bean count, silver rupee rooms?
-    int bg_height = padding + (1 * (icon_size + padding));
+        (14 * font_sprite.tile_w) + // world map area names
+        padding +
+        (4 * (icon_size + padding)); // skull, skull count, hp, hp count
+    int bg_height = padding + (world_map_area_count * (icon_size + padding));
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
-    int bg_top = Z64_SCREEN_HEIGHT - bg_height;
+    int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
 
     int left = bg_left + padding;
-    int top = bg_top;
+    int start_top = bg_top + padding;
+
+    // Draw background
+
+    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
+    gDPSetPrimColor(db->p++, 0, 0, 0x00, 0x00, 0x00, 0xD0);
+    gSPTextureRectangle(db->p++,
+                        bg_left << 2, bg_top << 2,
+                        (bg_left + bg_width) << 2, (bg_top + bg_height) << 2,
+                        0,
+                        0, 0,
+                        1 << 10, 1 << 10);
 
     // Set the primary color to white for drawing sprites
 
@@ -92,27 +128,74 @@ void draw_world_map_info(z64_disp_buf_t *db)
 
     gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
 
+    // Draw area names
+
+    for (int i = 0; i < world_map_area_count; i++)
+    {
+        world_map_area_entry_t *w = &(world_map_areas[i]);
+        int top = start_top + ((icon_size + padding) * i) + 1;
+        text_print(w->name, left, top);
+    }
+
+    left += (14 * font_sprite.tile_w) + padding;
+
     // Draw skull sprite
 
     sprite_load(db, &quest_items_sprite, 11, 1);
-    sprite_draw(db, &quest_items_sprite, 0,
-                left, top, icon_size, icon_size);
+
+    for (int i = 0; i < world_map_area_count; i++)
+    {
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &quest_items_sprite, 0,
+                    left, top, icon_size, icon_size);
+    }
 
     left += icon_size + padding;
 
     // Draw skull count
 
-    int8_t token_flags = GET_GS_FLAGS(world_map_areas[z64_game.pause_ctxt.map_cursor]);
-    int8_t tokens = 0;
-    while (token_flags)
+    for (int i = 0; i < world_map_area_count; i++)
     {
-        tokens += token_flags & 1;
-        token_flags >>= 1;
+        world_map_area_entry_t *w = &(world_map_areas[i]);
+
+        int8_t tokens = get_tokens(w->index);
+
+        char count[2] = "0";
+        count[0] += (tokens % 10);
+        int top = start_top + ((icon_size + padding) * i) + 1;
+        text_print(count, left, top);
     }
 
-    char count[2] = "0";
-    count[0] += (tokens % 10);
-    text_print(count, left, top + 1);
+    left += icon_size + padding;
+
+    // Draw hp sprite
+
+    sprite_load(db, &quest_items_sprite, 13, 1);
+
+    for (int i = 0; i < world_map_area_count; i++)
+    {
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &quest_items_sprite, 0,
+                    left, top, icon_size, icon_size);
+    }
+
+    left += icon_size + padding;
+
+    // Draw small hp counts
+
+    for (int i = 0; i < world_map_area_count; i++)
+    {
+        world_map_area_entry_t *w = &(world_map_areas[i]);
+
+        int8_t hps = 1; // z64_file.world_map_area_keys[w->index];
+
+        char count[2] = "0";
+        count[0] += (hps % 10);
+        int top = start_top + ((icon_size + padding) * i) + 1;
+        text_print(count, left, top);
+    }
+
+    left += icon_size + padding;
 
     // Finish
 
@@ -120,12 +203,4 @@ void draw_world_map_info(z64_disp_buf_t *db)
 
     gDPFullSync(db->p++);
     gSPEndDisplayList(db->p++);
-}
-
-void set_world_map_points(z64_game_t *game)
-{
-    for (int i = 0; i < ARRAY_COUNT(game->pause_ctxt.world_map_points); i++)
-    {
-        game->pause_ctxt.world_map_points[i] = 1;
-    }
 }
