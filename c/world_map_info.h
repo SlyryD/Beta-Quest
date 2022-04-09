@@ -37,7 +37,8 @@ int8_t get_tokens(uint8_t index);
 #define TWINROVA 0x17
 #define BONGO_BONGO 0x18
 
-#define DOG_LADY 0x35
+#define DOG_LADY_HOUSE 0x35
+#define IMPAS_HOUSE 0x37
 #define LAKESIDE_LABORATORY 0x38
 #define GROTTOS 0x3E
 #define REDEAD_GRAVE 0x3F
@@ -64,6 +65,33 @@ int8_t get_tokens(uint8_t index);
 #define DEATH_MOUNTAIN_CRATER 0x61
 #define GORON_CITY 0x62
 
-void draw_world_map_info();
+typedef struct
+{
+    struct
+    {
+        uint8_t is_chest : 1;
+        uint8_t is_collect : 1;
+        uint8_t is_event_chk_inf : 1;
+        uint8_t is_item_get_inf : 1;
+        uint8_t is_inf_table : 1;
+    };
+    uint8_t scene;
+    uint8_t byte_offset;
+    uint8_t bit_values;
+} flag_info_t;
+
+typedef struct
+{
+    uint8_t area_index;
+    struct
+    {
+        uint8_t is_sub_area : 1;
+    };
+    uint8_t hp_scenes[6];
+    char name[10];
+} world_map_area_entry_t;
+
+void draw_world_map_info(z64_disp_buf_t *db);
+void draw_world_map_areas(z64_disp_buf_t *db, world_map_area_entry_t *areas, int area_count, int center_x);
 
 #endif
