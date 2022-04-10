@@ -7,37 +7,218 @@
 
 #define PAUSE_MAP 1
 
+#define COLOSSUS_FREESTANDING_HP             \
+    {                                        \
+        0, 1, 0, 0, 0, DESERT_COLOSSUS, 0x0D \
+    }
+#define GF_CHEST                              \
+    {                                         \
+        1, 0, 0, 0, 0, GERUDOS_FORTRESS, 0x00 \
+    }
+#define GF_HBA_1000_POINTS                    \
+    {                                         \
+        0, 0, 1, 0, 0, GERUDOS_FORTRESS, 0x3E \
+    }
+#define GV_CRATE_FREESTANDING_HP           \
+    {                                      \
+        0, 1, 0, 0, 0, GERUDO_VALLEY, 0x02 \
+    }
+#define GV_WATERFALL_FREESTANDING_HP       \
+    {                                      \
+        0, 1, 0, 0, 0, GERUDO_VALLEY, 0x01 \
+    }
+#define LH_CHILD_FISHING                  \
+    {                                     \
+        0, 0, 1, 0, 0, FISHING_POND, 0x3E \
+    }
+#define LH_LAB_DIVE                              \
+    {                                            \
+        0, 0, 1, 0, 0, LAKESIDE_LABORATORY, 0x3E \
+    }
+#define LH_FREESTANDING_HP              \
+    {                                   \
+        0, 1, 0, 0, 0, LAKE_HYLIA, 0x1E \
+    }
+#define LLR_FREESTANDING_HP                   \
+    {                                         \
+        0, 1, 0, 0, 0, RANCH_HOUSE_SILO, 0x01 \
+    }
+#define MARKET_BOMBCHU_BOWLING_SECOND_PRIZE        \
+    {                                              \
+        0, 0, 1, 0, 0, BOMBCHU_BOWLING_ALLEY, 0x3E \
+    }
+#define MARKET_LOST_DOG                     \
+    {                                       \
+        0, 0, 1, 0, 0, DOG_LADY_HOUSE, 0x3E \
+    }
+#define MARKET_TREASURE_CHEST_GAME_REWARD      \
+    {                                          \
+        1, 0, 0, 0, 0, TREASURE_BOX_SHOP, 0x0A \
+    }
+#define HF_TEKTITE_GROTTO_FREESTANDING_HP \
+    {                                     \
+        0, 1, 0, 0, 0, GROTTOS, 0x01      \
+    }
+#define HF_DEKU_SCRUB_GROTTO         \
+    {                                \
+        0, 0, 0, 0, 0, GROTTOS, 0x3E \
+    }
+#define DMT_FREESTANDING_HP                       \
+    {                                             \
+        0, 1, 0, 0, 0, DEATH_MOUNTAIN_TRAIL, 0x1E \
+    }
+#define DMC_VOLCANO_FREESTANDING_HP                \
+    {                                              \
+        0, 1, 0, 0, 0, DEATH_MOUNTAIN_CRATER, 0x08 \
+    }
+#define DMC_WALL_FREESTANDING_HP                   \
+    {                                              \
+        0, 1, 0, 0, 0, DEATH_MOUNTAIN_CRATER, 0x02 \
+    }
+#define GC_POT_FREESTANDING_HP          \
+    {                                   \
+        0, 1, 0, 0, 0, GORON_CITY, 0x1F \
+    }
+#define KAK_IMPAS_HOUSE_FREESTANDING_HP  \
+    {                                    \
+        0, 1, 0, 0, 0, IMPAS_HOUSE, 0x01 \
+    }
+#define KAK_WINDMILL_FREESTANDING_HP               \
+    {                                              \
+        0, 1, 0, 0, 0, DAMPES_GRAVE_WINDMILL, 0x01 \
+    }
+#define KAK_MAN_ON_ROOF                       \
+    {                                         \
+        0, 0, 1, 0, 0, KAKARIKO_VILLAGE, 0x3E \
+    }
+#define KAK_50_GOLD_SKULLTULA_REWARD            \
+    {                                           \
+        0, 0, 1, 0, 0, HOUSE_OF_SKULLTULA, 0x3E \
+    }
+#define GRAVEYARD_HEART_PIECE_GRAVE_CHEST \
+    {                                     \
+        1, 0, 0, 0, 0, REDEAD_GRAVE, 0x00 \
+    }
+#define GRAVEYARD_FREESTANDING_HP      \
+    {                                  \
+        0, 1, 0, 0, 0, GRAVEYARD, 0x04 \
+    }
+#define GRAVEYARD_DAMPE_GRAVEDIGGING_TOUR \
+    {                                     \
+        0, 1, 0, 0, 0, GRAVEYARD, 0x08    \
+    }
+#define GRAVEYARD_DAMPE_RACE_FREESTANDING_HP       \
+    {                                              \
+        0, 1, 0, 0, 0, DAMPES_GRAVE_WINDMILL, 0x07 \
+    }
+#define LW_OCARINA_MEMORY_GAME          \
+    {                                   \
+        0, 0, 1, 0, 0, LOST_WOODS, 0x76 \
+    }
+#define LW_SKULL_KID                    \
+    {                                   \
+        0, 0, 1, 0, 0, LOST_WOODS, 0x3E \
+    }
+#define ZR_FROGS_IN_THE_RAIN             \
+    {                                    \
+        0, 0, 1, 0, 0, ZORAS_RIVER, 0x3E \
+    }
+#define ZR_FROGS_OCARINA_GAME            \
+    {                                    \
+        0, 0, 1, 0, 0, ZORAS_RIVER, 0x76 \
+    }
+#define ZR_NEAR_OPEN_GROTTO_FREESTANDING_HP \
+    {                                       \
+        0, 1, 0, 0, 0, ZORAS_RIVER, 0x04    \
+    }
+#define ZR_NEAR_DOMAIN_FREESTANDING_HP   \
+    {                                    \
+        0, 1, 0, 0, 0, ZORAS_RIVER, 0x0B \
+    }
+#define ZD_CHEST                          \
+    {                                     \
+        1, 0, 0, 0, 0, ZORAS_DOMAIN, 0x00 \
+    }
+#define ZF_ICEBERG_FREESTANDING_HP          \
+    {                                       \
+        0, 1, 0, 0, 0, ZORAS_FOUNTAIN, 0x01 \
+    }
+#define ZF_BOTTOM_FREESTANDING_HP           \
+    {                                       \
+        0, 1, 0, 0, 0, ZORAS_FOUNTAIN, 0x14 \
+    }
+
+// Waste/Col Area Skulls
+// GF Area Skulls
+// GV Area HPs, Skulls
+// Lake Area Skulls
+// LLR Area Skulls
+// HF Area Skulls
+// DM Area Skulls
+// DMC HPs
+// Kak Area Skulls
+// LW Area HPs, Skulls
+// KF Area Skulls
+// Zora Area HPs, Skulls
+
+/**
+ * Tests if current scene chest flag is set.
+ */
+int32_t Flags_GetTreasure(z64_game_t *globalCtx, uint8_t scene_index, int32_t flag)
+{
+    return z64_file.scene_flags[scene_index].chest & (1 << flag);
+}
+
+// Flags_GetCollectible
+// Flags_GetEventChkInf
+
+/**
+ * Tests if event_chk_inf flag is set.
+ */
+int32_t Flags_GetItemGetInf(int32_t flag)
+{
+    return z64_file.item_get_inf[flag >> 4] & (1 << (flag & 0xF));
+}
+
+// Flags_GetInfTable
+
+typedef struct
+{
+    struct
+    {
+        uint8_t is_chest : 1;
+        uint8_t is_collect : 1;
+        uint8_t is_event_chk_inf : 1;
+        uint8_t is_item_get_inf : 1;
+        uint8_t is_inf_table : 1;
+    };
+    uint8_t scene;
+    int32_t flag;
+} flag_info_t;
+
+typedef struct
+{
+    uint8_t area_index;
+    flag_info_t hp_flags[8];
+    char name[15];
+} world_map_area_entry_t;
+
 world_map_area_entry_t world_map_areas[] = {
-    {21, 0, {DESERT_COLOSSUS}, "Waste/Col"},                                                                                  // 4 tokens, 1 HPs
-    {20, 0, {GERUDOS_FORTRESS}, "Fortress"},                                                                                  // 2 tokens, 2 HPs
-    {19, 0, {GERUDO_VALLEY}, "Valley"},                                                                                       // 4 tokens, 2 HPs
-    {18, 0, {LAKESIDE_LABORATORY, FISHING_POND, LAKE_HYLIA}, "Lake"},                                                         // 5 tokens, 3 HPs
-    {11, 0, {RANCH_HOUSE_SILO}, "Ranch"},                                                                                     // 4 tokens, 1 HPs
-    {14, 0, {TREASURE_BOX_SHOP, BOMBCHU_BOWLING_ALLEY, DOG_LADY_HOUSE}, "Market"},                                            // 4 tokens, 3 HPs
-    {10, 0, {GROTTOS}, "Field"},                                                                                              // 2 tokens, 2 HPs
-    {15, 0, {DEATH_MOUNTAIN_TRAIL, DEATH_MOUNTAIN_CRATER, GORON_CITY}, "Death Mtn"},                                          // 8 tokens, 4 HPs
-    {16, 0, {IMPAS_HOUSE, REDEAD_GRAVE, DAMPES_GRAVE_WINDMILL, HOUSE_OF_SKULLTULA, KAKARIKO_VILLAGE, GRAVEYARD}, "Kak Area"}, // 8 tokens, 8 HPs
-    {13, 0, {LOST_WOODS}, "Lost Wds"},                                                                                        // 4 tokens, 2 HPs
-    {12, 0, {}, "Kokiri"},                                                                                                    // 3 tokens, 0 HPs
-    {17, 0, {ZORAS_RIVER, ZORAS_DOMAIN, ZORAS_FOUNTAIN}, "Zora Area"},                                                        // 8 tokens, 7 HPs
+    {21, {COLOSSUS_FREESTANDING_HP}, "Wasteland Area"},                                                                                                                                                                                                                           // 4 tokens, 1 HPs
+    {20, {GF_CHEST, GF_HBA_1000_POINTS}, "Fortress Area"},                                                                                                                                                                                                                        // 2 tokens, 2 HPs
+    {19, {GV_CRATE_FREESTANDING_HP, GV_WATERFALL_FREESTANDING_HP}, "Gerudo Valley"},                                                                                                                                                                                              // 4 tokens, 2 HPs
+    {18, {LH_CHILD_FISHING, LH_LAB_DIVE, LH_FREESTANDING_HP}, "Lake Hylia"},                                                                                                                                                                                                      // 5 tokens, 3 HPs
+    {11, {LLR_FREESTANDING_HP}, "Lon Lon Ranch"},                                                                                                                                                                                                                                 // 4 tokens, 1 HPs
+    {14, {MARKET_BOMBCHU_BOWLING_SECOND_PRIZE, MARKET_LOST_DOG, MARKET_TREASURE_CHEST_GAME_REWARD}, "Market Area"},                                                                                                                                                               // 4 tokens, 2 HPs
+    {10, {HF_TEKTITE_GROTTO_FREESTANDING_HP, HF_DEKU_SCRUB_GROTTO}, "Hyrule Field"},                                                                                                                                                                                              // 2 tokens, 2 HPs
+    {15, {DMT_FREESTANDING_HP, DMC_VOLCANO_FREESTANDING_HP, DMC_WALL_FREESTANDING_HP, GC_POT_FREESTANDING_HP}, "Death Mountain"},                                                                                                                                                 // 8 tokens, 4 HPs
+    {16, {KAK_IMPAS_HOUSE_FREESTANDING_HP, KAK_WINDMILL_FREESTANDING_HP, KAK_MAN_ON_ROOF, KAK_50_GOLD_SKULLTULA_REWARD, GRAVEYARD_HEART_PIECE_GRAVE_CHEST, GRAVEYARD_FREESTANDING_HP, GRAVEYARD_DAMPE_GRAVEDIGGING_TOUR, GRAVEYARD_DAMPE_RACE_FREESTANDING_HP}, "Kakariko Area"}, // 8 tokens, 8 HPs
+    {13, {LW_OCARINA_MEMORY_GAME, LW_SKULL_KID}, "Lost Woods"},                                                                                                                                                                                                                   // 4 tokens, 2 HPs
+    {12, {}, "Kokiri Forest"},                                                                                                                                                                                                                                                    // 3 tokens, 0 HPs
+    {17, {ZR_FROGS_IN_THE_RAIN, ZR_FROGS_OCARINA_GAME, ZR_NEAR_OPEN_GROTTO_FREESTANDING_HP, ZR_NEAR_DOMAIN_FREESTANDING_HP, ZD_CHEST, ZF_ICEBERG_FREESTANDING_HP, ZF_BOTTOM_FREESTANDING_HP}, "Zora Area"},                                                                       // 8 tokens, 7 HPs
 };
 
 int world_map_area_count = array_size(world_map_areas);
-
-world_map_area_entry_t world_map_sub_areas[] = {
-    {21, 1, {}, "Wasteland"},                                                                        // 1 tokens, 0 HPs
-    {21, 1, {DESERT_COLOSSUS}, "Colossus"},                                                          // 3 tokens, 1 HPs
-    {15, 1, {DEATH_MOUNTAIN_TRAIL}, "Trail"},                                                        // 4 tokens, 1 HPs
-    {15, 1, {DEATH_MOUNTAIN_CRATER}, "Crater"},                                                      // 2 tokens, 2 HPs
-    {15, 1, {GORON_CITY}, "Goron Cty"},                                                              // 2 tokens, 1 HPs
-    {16, 0, {IMPAS_HOUSE, DAMPES_GRAVE_WINDMILL, HOUSE_OF_SKULLTULA, KAKARIKO_VILLAGE}, "Kakariko"}, // 8 tokens, 8 HPs
-    {16, 0, {REDEAD_GRAVE, DAMPES_GRAVE_WINDMILL, GRAVEYARD}, "Graveyard"},                          // 8 tokens, 8 HPs
-    {17, 1, {ZORAS_RIVER}, "River"},                                                                 // 4 tokens, 4 HPs
-    {17, 1, {ZORAS_DOMAIN}, "Domain"},                                                               // 1 tokens, 1 HPs
-    {17, 1, {ZORAS_FOUNTAIN}, "Fountain"},                                                           // 3 tokens, 2 HPs
-};
-
-int world_map_sub_area_count = array_size(world_map_sub_areas);
 
 extern uint32_t CFG_WORLD_MAP_INFO_ENABLE;
 
@@ -99,22 +280,6 @@ void draw_world_map_info(z64_disp_buf_t *db)
 
     db->p = db->buf;
 
-    int areas_center_x = Z64_SCREEN_WIDTH / 4;
-    draw_world_map_areas(db, world_map_areas, world_map_area_count, areas_center_x);
-
-    int sub_areas_center_x = Z64_SCREEN_WIDTH * 3 / 4;
-    draw_world_map_areas(db, world_map_sub_areas, world_map_sub_area_count, sub_areas_center_x);
-
-    // Finish
-
-    text_flush(db);
-
-    gDPFullSync(db->p++);
-    gSPEndDisplayList(db->p++);
-}
-
-void draw_world_map_areas(z64_disp_buf_t *db, world_map_area_entry_t *areas, int area_count, int center_x)
-{
     // Call setup display list
 
     gSPDisplayList(db->p++, &setup_db);
@@ -125,11 +290,11 @@ void draw_world_map_areas(z64_disp_buf_t *db, world_map_area_entry_t *areas, int
     int padding = 1;
     int bg_width =
         padding +
-        (9 * font_sprite.tile_w) + // world map area names
+        (14 * font_sprite.tile_w) + // world map area names
         padding +
         (4 * (icon_size + padding)); // skull, skull count, hp, hp count
-    int bg_height = padding + (area_count * (icon_size + padding));
-    int bg_left = center_x - (bg_width / 2);
+    int bg_height = padding + (world_map_area_count * (icon_size + padding));
+    int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
 
     int left = bg_left + padding;
@@ -155,27 +320,20 @@ void draw_world_map_areas(z64_disp_buf_t *db, world_map_area_entry_t *areas, int
 
     // Draw area names
 
-    for (int i = 0; i < area_count; i++)
+    for (int i = 0; i < world_map_area_count; i++)
     {
-        world_map_area_entry_t *w = &(areas[i]);
+        world_map_area_entry_t *w = &(world_map_areas[i]);
         int top = start_top + ((icon_size + padding) * i) + 1;
-        if (w->is_sub_area)
-        {
-            text_print(w->name, left, top);
-        }
-        else
-        {
-            text_print(w->name, left, top);
-        }
+        text_print(w->name, left, top);
     }
 
-    left += (9 * font_sprite.tile_w) + padding;
+    left += (14 * font_sprite.tile_w) + padding;
 
     // Draw skull sprite
 
     sprite_load(db, &quest_items_sprite, 11, 1);
 
-    for (int i = 0; i < area_count; i++)
+    for (int i = 0; i < world_map_area_count; i++)
     {
         int top = start_top + ((icon_size + padding) * i);
         sprite_draw(db, &quest_items_sprite, 0,
@@ -186,23 +344,16 @@ void draw_world_map_areas(z64_disp_buf_t *db, world_map_area_entry_t *areas, int
 
     // Draw skull count
 
-    for (int i = 0; i < area_count; i++)
+    for (int i = 0; i < world_map_area_count; i++)
     {
-        world_map_area_entry_t *w = &(areas[i]);
+        world_map_area_entry_t *w = &(world_map_areas[i]);
 
         int8_t tokens = get_tokens(w->area_index);
 
         char count[2] = "0";
         count[0] += (tokens % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
-        if (w->is_sub_area)
-        {
-            text_print("-", left, top);
-        }
-        else
-        {
-            text_print(count, left, top);
-        }
+        text_print(count, left, top);
     }
 
     left += icon_size + padding;
@@ -211,7 +362,7 @@ void draw_world_map_areas(z64_disp_buf_t *db, world_map_area_entry_t *areas, int
 
     sprite_load(db, &quest_items_sprite, 13, 1);
 
-    for (int i = 0; i < area_count; i++)
+    for (int i = 0; i < world_map_area_count; i++)
     {
         int top = start_top + ((icon_size + padding) * i);
         sprite_draw(db, &quest_items_sprite, 0,
@@ -222,26 +373,24 @@ void draw_world_map_areas(z64_disp_buf_t *db, world_map_area_entry_t *areas, int
 
     // Draw small hp counts
 
-    for (int i = 0; i < area_count; i++)
+    for (int i = 0; i < world_map_area_count; i++)
     {
-        world_map_area_entry_t *w = &(areas[i]);
+        world_map_area_entry_t *w = &(world_map_areas[i]);
 
         int8_t hps = 1; // z64_file.world_map_area_keys[w->area_index];
 
         char count[2] = "0";
         count[0] += (hps % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
-        if (w->is_sub_area)
-        {
-            text_print(count, left, top);
-        }
-        else
-        {
-            text_print("-", left, top);
-        }
-
         text_print(count, left, top);
     }
 
     left += icon_size + padding;
+
+    // Finish
+
+    text_flush(db);
+
+    gDPFullSync(db->p++);
+    gSPEndDisplayList(db->p++);
 }
