@@ -6,11 +6,6 @@
 #include "text.h"
 #include "util.h"
 
-extern uint32_t gGsFlagsMasks[4];
-extern uint32_t gGsFlagsShifts[4];
-
-int8_t get_tokens(uint8_t index);
-
 #define DEKU_TREE 0x0
 #define DODONGOS_CAVERN 0x1
 #define JABU_JABU 0x2
@@ -64,6 +59,9 @@ int8_t get_tokens(uint8_t index);
 #define DEATH_MOUNTAIN_TRAIL 0x60
 #define DEATH_MOUNTAIN_CRATER 0x61
 #define GORON_CITY 0x62
+
+int8_t get_tokens(uint8_t index);
+int8_t get_hps(uint8_t area_entry_index);
 
 void draw_world_map_info(z64_disp_buf_t *db);
 
