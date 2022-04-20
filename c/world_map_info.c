@@ -45,6 +45,7 @@ typedef struct
     {                                      \
         0, 1, 0, 0, 0, GERUDO_VALLEY, 0x01 \
     }
+// TODO: BROKEN
 #define LH_CHILD_FISHING                  \
     {                                     \
         0, 0, 1, 0, 0, FISHING_POND, 0x3E \
@@ -155,7 +156,7 @@ typedef struct
     }
 #define ZD_CHEST                          \
     {                                     \
-        1, 0, 0, 0, 0, ZORAS_DOMAIN, 0x1F \
+        1, 0, 0, 0, 0, ZORAS_DOMAIN, 0x00 \
     }
 #define ZF_ICEBERG_FREESTANDING_HP          \
     {                                       \
@@ -200,6 +201,21 @@ uint32_t gGsFlagsShifts[] = {0, 8, 16, 24};
 #define GET_GS_FLAGS(area_index) \
     ((z64_file.gs_flags[(area_index) >> 2] & gGsFlagsMasks[(area_index)&3]) >> gGsFlagsShifts[(area_index)&3])
 
+#define HAS_CHEST(hp_flag) \
+    (hp_flag.is_chest && ((z64_game.scene_index == hp_flag.scene_index && z64_game.chest_flags & (1 << hp_flag.flag)) || z64_file.scene_flags[hp_flag.scene_index].chest & (1 << hp_flag.flag)))
+
+#define HAS_COLLECT(hp_flag) \
+    (hp_flag.is_collect && ((z64_game.scene_index == hp_flag.scene_index && z64_game.collect_flags & (1 << hp_flag.flag)) || z64_file.scene_flags[hp_flag.scene_index].collect & (1 << hp_flag.flag)))
+
+#define HAS_EVENT_CHK_INF(hp_flag) \
+    (hp_flag.is_event_chk_inf && z64_file.event_chk_inf[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
+
+#define HAS_ITEM_GET_INF(hp_flag) \
+    (hp_flag.is_item_get_inf && z64_file.item_get_inf[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
+
+#define HAS_INF_TABLE(hp_flag) \
+    (hp_flag.is_inf_table && z64_file.inf_table[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
+
 int8_t get_tokens(uint8_t area_index)
 {
     int8_t tokens = 0;
@@ -220,23 +236,7 @@ int8_t get_hps(uint8_t area_entry_index)
     for (int i = 0; i < area.hp_flags_length; i++)
     {
         flag_info_t hp_flag = area.hp_flags[i];
-        if (hp_flag.is_chest && z64_file.scene_flags[hp_flag.scene_index].chest & (1 << hp_flag.flag))
-        {
-            hps += 1;
-        }
-        else if (hp_flag.is_collect && z64_file.scene_flags[hp_flag.scene_index].collect & (1 << hp_flag.flag))
-        {
-            hps += 1;
-        }
-        else if (hp_flag.is_event_chk_inf && z64_file.event_chk_inf[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
-        {
-            hps += 1;
-        }
-        else if (hp_flag.is_item_get_inf && z64_file.item_get_inf[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
-        {
-            hps += 1;
-        }
-        else if (hp_flag.is_inf_table && z64_file.inf_table[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
+        if (HAS_CHEST(hp_flag) || HAS_COLLECT(hp_flag) || HAS_EVENT_CHK_INF(hp_flag) || HAS_ITEM_GET_INF(hp_flag) || HAS_INF_TABLE(hp_flag))
         {
             hps += 1;
         }
@@ -254,30 +254,6 @@ void draw_world_map_info(z64_disp_buf_t *db)
                z64_ctxt.input[0].raw.pad.a;
     if (!draw)
     {
-        return;
-    }
-
-    // Not a dungeon scene
-    switch (z64_game.scene_index)
-    {
-    case DEKU_TREE:
-    case DODONGOS_CAVERN:
-    case JABU_JABU:
-    case FOREST_TEMPLE:
-    case FIRE_TEMPLE:
-    case WATER_TEMPLE:
-    case SPIRIT_TEMPLE:
-    case SHADOW_TEMPLE:
-    case BOTTOM_OF_THE_WELL:
-    case ICE_CAVERN:
-    case GOHMA:
-    case KING_DODONGO:
-    case BARINADE:
-    case PHANTOM_GANON:
-    case VOLVAGIA:
-    case MORPHA:
-    case TWINROVA:
-    case BONGO_BONGO:
         return;
     }
 
