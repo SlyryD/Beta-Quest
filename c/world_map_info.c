@@ -13,6 +13,7 @@ typedef struct
     {
         uint8_t is_chest : 1;
         uint8_t is_collect : 1;
+        uint8_t is_high_scores : 1;
         uint8_t is_event_chk_inf : 1;
         uint8_t is_item_get_inf : 1;
         uint8_t is_inf_table : 1;
@@ -23,148 +24,147 @@ typedef struct
 
 #define COLOSSUS_FREESTANDING_HP             \
     {                                        \
-        0, 1, 0, 0, 0, DESERT_COLOSSUS, 0x0D \
+        0, 1, 0, 0, 0, 0, DESERT_COLOSSUS, 0x0D \
     }
 #define GF_CHEST                              \
     {                                         \
-        1, 0, 0, 0, 0, GERUDOS_FORTRESS, 0x00 \
+        1, 0, 0, 0, 0, 0, GERUDOS_FORTRESS, 0x00 \
     }
 #define GF_HBA_1000_POINTS                     \
     {                                          \
-        0, 0, 0, 0, 1, GERUDOS_FORTRESS, 0x198 \
-    }
+        0, 0, 0, 0, 0, 1, GERUDOS_FORTRESS, 0x190 \
+    } // 0x198?
 #define GF_CHILD_HP                           \
     {                                         \
-        0, 1, 0, 0, 0, GERUDOS_FORTRESS, 0x01 \
+        0, 1, 0, 0, 0, 0, GERUDOS_FORTRESS, 0x01 \
     }
 #define GV_CRATE_FREESTANDING_HP           \
     {                                      \
-        0, 1, 0, 0, 0, GERUDO_VALLEY, 0x02 \
+        0, 1, 0, 0, 0, 0, GERUDO_VALLEY, 0x02 \
     }
 #define GV_WATERFALL_FREESTANDING_HP       \
     {                                      \
-        0, 1, 0, 0, 0, GERUDO_VALLEY, 0x01 \
+        0, 1, 0, 0, 0, 0, GERUDO_VALLEY, 0x01 \
     }
-// TODO: BROKEN
 #define LH_CHILD_FISHING                  \
     {                                     \
-        0, 0, 1, 0, 0, FISHING_POND, 0x3E \
+        0, 0, 1, 0, 0, 0, HS_FISHING, 0x400 \
     }
 #define LH_LAB_DIVE                              \
     {                                            \
-        0, 0, 0, 1, 0, LAKESIDE_LABORATORY, 0x18 \
-    }
+        0, 0, 0, 0, 1, 0, LAKESIDE_LABORATORY, 0x10 \
+    } // 0x18?
 #define LH_FREESTANDING_HP              \
     {                                   \
-        0, 1, 0, 0, 0, LAKE_HYLIA, 0x1E \
+        0, 1, 0, 0, 0, 0, LAKE_HYLIA, 0x1E \
     }
 #define LLR_FREESTANDING_HP                   \
     {                                         \
-        0, 1, 0, 0, 0, RANCH_HOUSE_SILO, 0x01 \
+        0, 1, 0, 0, 0, 0, RANCH_HOUSE_SILO, 0x01 \
     }
 #define MARKET_BOMBCHU_BOWLING_SECOND_PRIZE        \
     {                                              \
-        0, 0, 1, 0, 0, BOMBCHU_BOWLING_ALLEY, 0x3E \
+        0, 0, 0, 0, 1, 0, BOMBCHU_BOWLING_ALLEY, 0x12 \
     }
 #define MARKET_LOST_DOG                      \
     {                                        \
-        0, 0, 0, 0, 1, DOG_LADY_HOUSE, 0x199 \
-    }
+        0, 0, 0, 0, 0, 1, DOG_LADY_HOUSE, 0x191 \
+    } // 0x0199?
 #define MARKET_TREASURE_CHEST_GAME_REWARD      \
     {                                          \
-        1, 0, 0, 0, 0, TREASURE_BOX_SHOP, 0x0A \
+        1, 0, 0, 0, 0, 0, TREASURE_BOX_SHOP, 0x0A \
     }
 #define HF_TEKTITE_GROTTO_FREESTANDING_HP \
     {                                     \
-        0, 1, 0, 0, 0, GROTTOS, 0x01      \
+        0, 1, 0, 0, 0, 0, GROTTOS, 0x01      \
     }
 #define HF_DEKU_SCRUB_GROTTO         \
     {                                \
-        0, 0, 0, 1, 0, GROTTOS, 0x03 \
-    }
+        0, 0, 0, 0, 1, 0, GROTTOS, 0x0B \
+    } // 0x03
 #define DMT_FREESTANDING_HP                       \
     {                                             \
-        0, 1, 0, 0, 0, DEATH_MOUNTAIN_TRAIL, 0x1E \
+        0, 1, 0, 0, 0, 0, DEATH_MOUNTAIN_TRAIL, 0x1E \
     }
 #define DMC_VOLCANO_FREESTANDING_HP                \
     {                                              \
-        0, 1, 0, 0, 0, DEATH_MOUNTAIN_CRATER, 0x08 \
+        0, 1, 0, 0, 0, 0, DEATH_MOUNTAIN_CRATER, 0x08 \
     }
 #define DMC_WALL_FREESTANDING_HP                   \
     {                                              \
-        0, 1, 0, 0, 0, DEATH_MOUNTAIN_CRATER, 0x02 \
+        0, 1, 0, 0, 0, 0, DEATH_MOUNTAIN_CRATER, 0x02 \
     }
 #define GC_POT_FREESTANDING_HP          \
     {                                   \
-        0, 1, 0, 0, 0, GORON_CITY, 0x1F \
+        0, 1, 0, 0, 0, 0, GORON_CITY, 0x1F \
     }
 #define KAK_IMPAS_HOUSE_FREESTANDING_HP  \
     {                                    \
-        0, 1, 0, 0, 0, IMPAS_HOUSE, 0x01 \
+        0, 1, 0, 0, 0, 0, IMPAS_HOUSE, 0x01 \
     }
 #define KAK_WINDMILL_FREESTANDING_HP               \
     {                                              \
-        0, 1, 0, 0, 0, DAMPES_GRAVE_WINDMILL, 0x01 \
+        0, 1, 0, 0, 0, 0, DAMPES_GRAVE_WINDMILL, 0x01 \
     }
 #define KAK_MAN_ON_ROOF                       \
     {                                         \
-        0, 0, 1, 0, 0, KAKARIKO_VILLAGE, 0x1D \
+        0, 0, 0, 1, 0, 0, KAKARIKO_VILLAGE, 0x1D \
     }
 #define KAK_50_GOLD_SKULLTULA_REWARD            \
     {                                           \
-        0, 0, 1, 0, 0, HOUSE_OF_SKULLTULA, 0xDE \
+        0, 0, 0, 1, 0, 0, HOUSE_OF_SKULLTULA, 0xDE \
     }
 #define GRAVEYARD_HEART_PIECE_GRAVE_CHEST \
     {                                     \
-        1, 0, 0, 0, 0, REDEAD_GRAVE, 0x00 \
+        1, 0, 0, 0, 0, 0, REDEAD_GRAVE, 0x00 \
     }
 #define GRAVEYARD_FREESTANDING_HP      \
     {                                  \
-        0, 1, 0, 0, 0, GRAVEYARD, 0x04 \
+        0, 1, 0, 0, 0, 0, GRAVEYARD, 0x04 \
     }
 #define GRAVEYARD_DAMPE_GRAVEDIGGING_TOUR \
     {                                     \
-        0, 0, 0, 1, 0, GRAVEYARD, 0x1C    \
+        0, 0, 0, 0, 1, 0, GRAVEYARD, 0x1C    \
     }
 #define GRAVEYARD_DAMPE_RACE_FREESTANDING_HP       \
     {                                              \
-        0, 1, 0, 0, 0, DAMPES_GRAVE_WINDMILL, 0x07 \
+        0, 1, 0, 0, 0, 0, DAMPES_GRAVE_WINDMILL, 0x07 \
     }
 #define LW_OCARINA_MEMORY_GAME          \
     {                                   \
-        0, 0, 1, 0, 0, LOST_WOODS, 0x1F \
+        0, 0, 0, 1, 0, 0, LOST_WOODS, 0x1F \
     }
 #define LW_SKULL_KID                    \
     {                                   \
-        0, 0, 1, 0, 0, LOST_WOODS, 0x1E \
+        0, 0, 0, 1, 0, 0, LOST_WOODS, 0x1E \
     }
 #define ZR_FROGS_IN_THE_RAIN             \
     {                                    \
-        0, 0, 1, 0, 0, ZORAS_RIVER, 0xD6 \
+        0, 0, 0, 1, 0, 0, ZORAS_RIVER, 0xD6 \
     }
 #define ZR_FROGS_OCARINA_GAME            \
     {                                    \
-        0, 0, 1, 0, 0, ZORAS_RIVER, 0xD0 \
+        0, 0, 0, 1, 0, 0, ZORAS_RIVER, 0xD0 \
     }
 #define ZR_NEAR_OPEN_GROTTO_FREESTANDING_HP \
     {                                       \
-        0, 1, 0, 0, 0, ZORAS_RIVER, 0x04    \
+        0, 1, 0, 0, 0, 0, ZORAS_RIVER, 0x04    \
     }
 #define ZR_NEAR_DOMAIN_FREESTANDING_HP   \
     {                                    \
-        0, 1, 0, 0, 0, ZORAS_RIVER, 0x0B \
+        0, 1, 0, 0, 0, 0, ZORAS_RIVER, 0x0B \
     }
 #define ZD_CHEST                          \
     {                                     \
-        1, 0, 0, 0, 0, ZORAS_DOMAIN, 0x00 \
+        1, 0, 0, 0, 0, 0, ZORAS_DOMAIN, 0x00 \
     }
 #define ZF_ICEBERG_FREESTANDING_HP          \
     {                                       \
-        0, 1, 0, 0, 0, ZORAS_FOUNTAIN, 0x01 \
+        0, 1, 0, 0, 0, 0, ZORAS_FOUNTAIN, 0x01 \
     }
 #define ZF_BOTTOM_FREESTANDING_HP           \
     {                                       \
-        0, 1, 0, 0, 0, ZORAS_FOUNTAIN, 0x14 \
+        0, 1, 0, 0, 0, 0, ZORAS_FOUNTAIN, 0x14 \
     }
 
 typedef struct
@@ -206,6 +206,9 @@ uint32_t gGsFlagsShifts[] = {0, 8, 16, 24};
 
 #define HAS_COLLECT(hp_flag) \
     (hp_flag.is_collect && ((z64_game.scene_index == hp_flag.scene_index && z64_game.collect_flags & (1 << hp_flag.flag)) || z64_file.scene_flags[hp_flag.scene_index].collect & (1 << hp_flag.flag)))
+
+#define HAS_HIGH_SCORE(hp_flag) \
+    (z64_file.high_scores[hp_flag.scene_index] & hp_flag.flag)
 
 #define HAS_EVENT_CHK_INF(hp_flag) \
     (hp_flag.is_event_chk_inf && z64_file.event_chk_inf[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
