@@ -8,6 +8,9 @@
 
 #define PAUSE_ITEM 0
 
+#define HAS_ICE_CAVERN_HP \
+    ((z64_game.scene_index == ICE_CAVERN && z64_game.collect_flags & (1 << 0x01)) || z64_file.scene_flags[ICE_CAVERN].collect & (1 << 0x01))
+
 typedef struct
 {
     uint8_t index;
@@ -52,9 +55,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
                !z64_game.pause_ctxt.changing &&
                z64_ctxt.input[0].raw.pad.a;
     if (!draw)
-    {
         return;
-    }
 
     db->p = db->buf;
 
@@ -157,6 +158,21 @@ void draw_dungeon_info(z64_disp_buf_t *db)
                     left, top, icon_size, icon_size);
     }
 
+    // Draw hp sprite
+
+    sprite_load(db, &quest_items_sprite, 13, 1);
+
+    for (int i = 0; i < world_map_area_count; i++)
+    {
+        dungeon_entry_t *d = &(dungeons[i]);
+        if (d->index != ICE_CAVERN)
+            continue;
+
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &quest_items_sprite, 0,
+                    left, top, icon_size, icon_size);
+    }
+
     left += icon_size + padding;
 
     // Draw small key counts
@@ -168,12 +184,29 @@ void draw_dungeon_info(z64_disp_buf_t *db)
             continue;
 
         int8_t keys = z64_file.dungeon_keys[d->index];
-        if (keys < 0) {
+        if (keys < 0)
             keys = 0;
-        }
 
         char count[2] = "0";
         count[0] += (keys % 10);
+        int top = start_top + ((icon_size + padding) * i) + 1;
+        text_print(count, left, top);
+    }
+
+    // Draw hp count
+
+    for (int i = 0; i < dungeon_count; i++)
+    {
+        dungeon_entry_t *d = &(dungeons[i]);
+        if (d->index != ICE_CAVERN)
+            continue;
+
+        int8_t hps = 0;
+        if (HAS_ICE_CAVERN_HP)
+            hps = 1;
+
+        char count[2] = "0";
+        count[0] += (hps % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }
