@@ -1,42 +1,49 @@
+#!/usr/bin/env python3
+import os
 import argparse
 import json
-import os
 import re
 from subprocess import check_call as call
 from rom_diff import create_diff
+from ntype import BigStream
 from crc import calculate_crc
-from Patches.Rom import *
-from Patches.Patches import patch_rom
 
+from Rom import *
+from Patches import patch_rom
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pj64sym', help="Output path for PJ64 debugging symbols")
 parser.add_argument('--compile-c', action='store_true', help="Recompile C modules")
+parser.add_argument('--dump-obj', action='store_true', help="Dumps extra object info for debugging purposes. Does nothing without --compile-c")
+parser.add_argument('--diff-only', action='store_true', help="Creates diff output without running armips")
 
 args = parser.parse_args()
 pj64_sym_path = args.pj64sym
 compile_c = args.compile_c
+dump_obj = args.dump_obj
+diff_only = args.diff_only
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
+scripts_dir = os.path.dirname(os.path.realpath(__file__))
+root_dir = os.path.join(scripts_dir, '..')
+compress_dir = os.path.join(root_dir, 'Compress')
+os.environ['PATH'] = scripts_dir + os.pathsep + os.environ['PATH']
+os.environ['PATH'] = compress_dir + os.pathsep + os.environ['PATH']
 
-run_dir = script_dir + '/..'
-
-os.chdir(run_dir)
-compress_dir = run_dir + '/Compress'
+run_dir = root_dir
 
 # Compile code
 
-os.environ['PATH'] = script_dir + os.pathsep + os.environ['PATH']
-os.environ['PATH'] = compress_dir + os.pathsep + os.environ['PATH']
-print(os.environ['PATH'])
-
+os.chdir(run_dir)
 if compile_c:
-    os.chdir(run_dir + '/c')
-    call(['make'])
+    clist = ['make']
+    if dump_obj:
+        clist.append('RUN_OBJDUMP=1')
+    call(clist)
 
-os.chdir(run_dir + '/src')
-print(os.getcwd())
-call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
+if not diff_only:
+    os.chdir(run_dir + '/src')
+    call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
+
 os.chdir(run_dir)
 
 with open('build/asm_symbols.txt', 'rb') as f:
@@ -47,7 +54,9 @@ with open('build/asm_symbols.txt', 'wb') as f:
     f.write(asm_symbols_content)
 
 # Parse symbols
+
 c_sym_types = {}
+
 with open('build/c_symbols.txt', 'r') as f:
     for line in f:
         m = re.match('''
@@ -68,6 +77,7 @@ with open('build/c_symbols.txt', 'r') as f:
             c_sym_types[name] = 'code' if sym_type == 'text' else 'data'
 
 symbols = {}
+
 with open('build/asm_symbols.txt', 'r') as f:
     for line in f:
         parts = line.strip().split(' ')
@@ -85,7 +95,9 @@ with open('build/asm_symbols.txt', 'r') as f:
         }
 
 # Output symbols
+
 os.chdir(run_dir)
+
 data_symbols = {}
 for (name, sym) in symbols.items():
     if sym['type'] == 'data':
@@ -95,6 +107,8 @@ for (name, sym) in symbols.items():
         else:
             continue
         data_symbols[name] = '{0:08X}'.format(addr)
+if (not os.path.exists('data')):
+    os.mkdir('data')
 with open('data/symbols.json', 'w') as f:
     json.dump(data_symbols, f, indent=4, sort_keys=True)
 
@@ -110,21 +124,16 @@ rom = Rom('roms/port.z64')
 patch_rom(rom)
 rom.write_to_file('roms/port.z64')
 
-# update crc
 with open('roms/port.z64', 'r+b') as stream:
     buffer = bytearray(stream.read(0x101000))
-    crc = calculate_crc(buffer)
+    crc = calculate_crc(BigStream(buffer))
     stream.seek(0x10)
     stream.write(bytearray(crc))
 
-#recompress
+# Recompress
 os.chdir(run_dir + '/Compress')
 call(['Compress', run_dir + '/roms/port.z64'])
 
-
-
-
-
-
 # Diff ROMs
-# create_diff('roms/base.z64', 'roms/oot_mm.z64', '../data/generated/rom_patch.txt')
+os.chdir(run_dir)
+create_diff('roms/base.z64', 'roms/port.z64', 'data/rom_patch.txt')

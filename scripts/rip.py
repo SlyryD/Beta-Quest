@@ -1,7 +1,7 @@
 import io
 
 rom = None
-with open('../roms/V1a.z64', 'rb') as file:
+with open('../roms/port.z64', 'rb') as file:
     rom = bytearray(file.read())
 
 def rip(name, start, size):

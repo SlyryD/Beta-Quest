@@ -2,7 +2,8 @@
 
 import logging
 import random
-from Patches.TextBox import line_wrap
+from TextBox import line_wrap
+from Utils import find_last
 
 TEXT_START = 0x92D000
 ENG_TEXT_SIZE_LIMIT = 0x39000
@@ -353,10 +354,11 @@ class Message:
         slows_text = [0x08, 0x09, 0x14]
 
         text_codes = []
+        instant_text_code = Text_Code(0x08, 0)
 
         # # speed the text
         if speed_up_text:
-            text_codes.append(Text_Code(0x08, 0)) # allow instant
+            text_codes.append(instant_text_code) # allow instant
 
         # write the message
         for code in self.text_codes:
@@ -377,10 +379,10 @@ class Message:
                     self.id == 0x7070
                 ):   # zelda ending text
                     text_codes.append(code)
-                    text_codes.append(Text_Code(0x08, 0))  # allow instant
+                    text_codes.append(instant_text_code)  # allow instant
                 else:
                     text_codes.append(Text_Code(0x04, 0))  # un-delayed break
-                    text_codes.append(Text_Code(0x08, 0))  # allow instant
+                    text_codes.append(instant_text_code)  # allow instant
             else:
                 text_codes.append(code)
 
@@ -627,7 +629,7 @@ def move_shop_item_messages(messages, shop_items):
 def update_item_messages(messages):
     new_item_messages = {**ITEM_MESSAGES}
     for id, text in new_item_messages.items():
-            update_message_by_id(messages, id, text, 0x23)
+        update_message_by_id(messages, id, text, 0x23)
 
 
 

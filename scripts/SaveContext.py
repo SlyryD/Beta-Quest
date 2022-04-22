@@ -1,4 +1,36 @@
 from itertools import chain
+from enum import IntEnum
+
+class Scenes(IntEnum):
+    # Dungeons
+    DEKU_TREE = 0x00
+    DODONGOS_CAVERN = 0x01
+    KING_DODONGO_LOBBY = 0x12
+    JABU_JABU = 0x02
+    FOREST_TEMPLE = 0x03
+    FIRE_TEMPLE = 0x04
+    WATER_TEMPLE = 0x05
+    SPIRIT_TEMPLE = 0x06
+    SHADOW_TEMPLE = 0x07
+    # Bean patch scenes
+    GRAVEYARD = 0x53
+    ZORAS_RIVER = 0x54
+    KOKIRI_FOREST = 0x55
+    LAKE_HYLIA = 0x57
+    GERUDO_VALLEY = 0x5A
+    LOST_WOODS = 0x5B
+    DESERT_COLOSSUS = 0x5C
+    DEATH_MOUNTAIN_TRAIL = 0x60
+    DEATH_MOUNTAIN_CRATER = 0x61
+
+class FlagType(IntEnum):
+    CHEST = 0x00
+    SWITCH = 0x01
+    CLEAR = 0x02
+    COLLECT = 0x03
+    # 0x04 unused
+    VISITED_ROOM = 0x05
+    VISITED_FLOOR = 0x06
 
 class Address():
     prev_address = None
@@ -156,6 +188,14 @@ class SaveContext():
         else:
             address.get_writes(self)
 
+    def write_permanent_flag(self, scene, type, byte_offset, bit_values):
+        # Save format is described here: https://wiki.cloudmodding.com/oot/Save_Format
+        # Permanent flags start at offset 0x00D4. Each scene has 7 types of flags, one
+        # of which is unused. Each flag type is 4 bytes wide per-scene, thus each scene
+        # takes 28 (0x1C) bytes.
+        # Scenes and FlagType enums are defined for increased readability when using
+        # this function.
+        self.write_bits(0x00D4 + scene * 0x1C + type * 0x04 + byte_offset, bit_values)
 
     def set_ammo_max(self):
         ammo_maxes = {
@@ -221,15 +261,13 @@ class SaveContext():
         self.addresses['quest']['heart_pieces'].value = int((health % 1) * 4)
 
 
-    def give_raw_item(self, item):
-        if item.endswith(')'):
-            item_base, count = item[:-1].split(' (', 1)
-            if count.isdigit():
-                return self.give_item(item_base, count=int(count))
-        return self.give_item(item)
-
-
     def give_item(self, item, count=1):
+        if item.endswith(')'):
+            item_base, implicit_count = item[:-1].split(' (', 1)
+            if implicit_count.isdigit():
+                item = item_base
+                count *= int(implicit_count)
+
         if item in SaveContext.bottle_types:
             self.give_bottle(item, count)
         elif item in ["Piece of Heart", "Piece of Heart (Treasure Chest Game)"]:
@@ -925,7 +963,7 @@ class SaveContext():
     }
 
     giveable_items = set(chain(save_writes_table.keys(), bottle_types.keys(),
-        ["Piece of Heart", "Piece of Heart (Treasure Chest Game)", "Heart Container", "Rupee (1)"]))
+        ["Piece of Heart", "Piece of Heart (Treasure Chest Game)", "Heart Container", "Rupee (1)", "Recovery Heart"]))
 
 
     equipable_items = {

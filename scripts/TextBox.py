@@ -1,4 +1,4 @@
-import Patches.Messages
+import Messages
 import re
 
 # Least common multiple of all possible character widths. A line wrap must occur when the combined widths of all of the

@@ -146,3 +146,10 @@ FAST_BUNNY_HOOD_ENABLED:
 .byte 0x00
 
 .align 4
+
+CFG_DUNGEON_INFO_ENABLE:
+.word 1
+CFG_WORLD_MAP_INFO_ENABLE:
+.word 1
+
+.align 4

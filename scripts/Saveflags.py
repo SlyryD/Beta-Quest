@@ -1,5 +1,5 @@
-from Patches.Rom import Rom
-from Patches.SaveContext import SaveContext
+from Rom import Rom
+from SaveContext import SaveContext
 
 def default_save_flags(rom):
     save_context = SaveContext()

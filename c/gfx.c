@@ -5,7 +5,6 @@
 
 extern uint8_t FONT_TEXTURE[];
 extern uint8_t DPAD_TEXTURE[];
-extern uint8_t TRIFORCE_ICON_TEXTURE[];
 
 Gfx setup_db[] =
 {
@@ -57,11 +56,6 @@ sprite_t font_sprite = {
 sprite_t dpad_sprite = {
     NULL, 32, 32, 1,
     G_IM_FMT_IA, G_IM_SIZ_16b, 2
-};  
-
-sprite_t triforce_sprite = {
-    NULL, 16, 16, 16,
-    G_IM_FMT_IA, G_IM_SIZ_8b, 1
 };  
 
 sprite_t song_note_sprite = {
@@ -156,7 +150,6 @@ void gfx_init() {
     items_sprite.buf = icon_item_static.buf;
     quest_items_sprite.buf = icon_item_24_static.buf;
     dpad_sprite.buf = DPAD_TEXTURE;
-    triforce_sprite.buf = TRIFORCE_ICON_TEXTURE;
     song_note_sprite.buf = icon_item_static.buf + 0x00088040;
     key_rupee_clock_sprite.buf = parameter_static.buf + 0x00001E00;
     item_digit_sprite.buf = parameter_static.buf + 0x000035C0;
