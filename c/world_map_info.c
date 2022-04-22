@@ -342,6 +342,10 @@ void draw_world_map_info(z64_disp_buf_t *db)
 
     for (int i = 0; i < world_map_area_count; i++)
     {
+        world_map_area_entry_t *w = &(world_map_areas[i]);
+        if (w->hp_flags_length == 0)
+            continue;
+
         int top = start_top + ((icon_size + padding) * i);
         sprite_draw(db, &quest_items_sprite, 0,
                     left, top, icon_size, icon_size);
@@ -349,11 +353,13 @@ void draw_world_map_info(z64_disp_buf_t *db)
 
     left += icon_size + padding;
 
-    // Draw small hp counts
+    // Draw hp counts
 
     for (int i = 0; i < world_map_area_count; i++)
     {
         world_map_area_entry_t *w = &(world_map_areas[i]);
+        if (w->hp_flags_length == 0)
+            continue;
 
         int8_t hps = get_hps(i);
 

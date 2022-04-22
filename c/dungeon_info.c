@@ -162,7 +162,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &quest_items_sprite, 13, 1);
 
-    for (int i = 0; i < world_map_area_count; i++)
+    for (int i = 0; i < dungeon_count; i++)
     {
         dungeon_entry_t *d = &(dungeons[i]);
         if (d->index != ICE_CAVERN)
@@ -193,7 +193,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
         text_print(count, left, top);
     }
 
-    // Draw hp count
+    // Draw hp counts
 
     for (int i = 0; i < dungeon_count; i++)
     {
