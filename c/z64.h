@@ -552,11 +552,15 @@ typedef struct
   uint32_t        fw_room_index;            /* 0x0E7C */
   int32_t         fw_set;                   /* 0x0E80 */
   char            unk_0C_[0x0018];          /* 0x0E84 */
-  uint8_t         gs_flags[56];             /* 0x0E9C */
+  int32_t         gs_flags[6];              /* 0x0E9C */
+  char            unk_EB4[0x4];             /* 0x0EB4 */
+  int32_t         high_scores[7];           /* 0x0EB8 */
   uint16_t        event_chk_inf[14];        /* 0x0ED4 */
   uint16_t        item_get_inf[4];          /* 0x0EF0 */
   uint16_t        inf_table[30];            /* 0x0EF8 */
-  char            unk_0D_[0x041E];          /* 0x0F34 */
+  char            unk_F34[0x04];            /* 0x0F34 */ 
+  uint32_t        area_arrival;             /* 0x0F38 */ 
+  char            unk_F3C[0x416];           /* 0x0F3C */
   uint16_t        checksum;                 /* 0x1352 */
   int32_t         file_index;               /* 0x1354 */
   char            unk_0F_[0x0004];          /* 0x1358 */
@@ -932,8 +936,8 @@ typedef struct
     int16_t           quest_hilite;             /* 0x024A */
     char              unk_0B_[0x0018];          /* 0x024C */
     int16_t           quest_song;               /* 0x0264 */
-    char              unk_0C_[0x0016];          /* 0x0266 */
-                                                /* unknown structure */
+    uint8_t           world_map_points[20];     /* 0x0266 */
+    uint8_t           trade_quest_location;     /* 0x027A */
     char              s27C[0x0038];             /* 0x027C */
                                                 /* 0x02B4 */
 } z64_pause_ctxt_t;
