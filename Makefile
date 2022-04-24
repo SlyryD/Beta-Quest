@@ -14,9 +14,9 @@ vpath %.h c
 
 OBJECTS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(sort $(wildcard $(SRCDIR)/*.c)))
 
-.PHONY: all clean bundle symbols
+.PHONY: all clean bundle symbols makesrc
 
-all: clean bundle symbols
+all: clean bundle symbols makesrc
 
 $(OBJDIR)/%.o: %.c 
 	$(CC) -o $@ -c $< $(CFLAGS) $(CPPFLAGS)
@@ -39,6 +39,9 @@ ifdef RUN_OBJDUMP
 		$(OBJDUMP) -d $(OUTDIR)/bundle.o | tr -d '\015' > $(OUTDIR)/bundle_d.txt
 		$(OBJDUMP) -r $(OUTDIR)/bundle.o | tr -d '\015' > $(OUTDIR)/bundle_r.txt
 endif
+
+makesrc:
+	$(MAKE) -C src
 
 clean:
 	rm -f $(OBJDIR)/*.o
