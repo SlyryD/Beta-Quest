@@ -8,9 +8,7 @@ Updated with some quality of life improvements mostly taken from OOT Rando.
 
 * Install the same toolchain used for TestRunnerSRL/OoT-Randomizer (described in [ASM/README.md](https://github.com/TestRunnerSRL/OoT-Randomizer/blob/Dev/ASM/README.md))
 
-* Run make in the src directory
-
-* Run build.py in the scripts directory to generate port-comp.z64 within the roms folder
+* Run `./scripts/build.py --compile-c` to generate port-comp.z64 within the roms folder
 
 ## What is this?
 
