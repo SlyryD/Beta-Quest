@@ -177,7 +177,7 @@ typedef struct
 
 world_map_area_entry_t world_map_areas[] = {
     {21, {COLOSSUS_FREESTANDING_HP}, 1, "Wasteland Area"},                                                                                                                                                                                                                           // 4 tokens, 1 HPs
-    {20, {GF_CHEST, GF_HBA_1000_POINTS, GF_CHILD_HP}, 2, "Fortress Area"},                                                                                                                                                                                                           // 2 tokens, 2 HPs
+    {20, {GF_CHEST, GF_HBA_1000_POINTS, GF_CHILD_HP}, 3, "Fortress Area"},                                                                                                                                                                                                           // 2 tokens, 2 HPs
     {19, {GV_CRATE_FREESTANDING_HP, GV_WATERFALL_FREESTANDING_HP}, 2, "Gerudo Valley"},                                                                                                                                                                                              // 4 tokens, 2 HPs
     {18, {LH_CHILD_FISHING, LH_LAB_DIVE, LH_FREESTANDING_HP}, 3, "Lake Hylia"},                                                                                                                                                                                                      // 5 tokens, 3 HPs
     {11, {LLR_FREESTANDING_HP}, 1, "Lon Lon Ranch"},                                                                                                                                                                                                                                 // 4 tokens, 1 HPs
@@ -207,8 +207,8 @@ uint32_t gGsFlagsShifts[] = {0, 8, 16, 24};
 #define HAS_COLLECT(hp_flag) \
     (hp_flag.is_collect && ((z64_game.scene_index == hp_flag.scene_index && z64_game.collect_flags & (1 << hp_flag.flag)) || z64_file.scene_flags[hp_flag.scene_index].collect & (1 << hp_flag.flag)))
 
-#define HAS_HIGH_SCORE(hp_flag) \
-    (z64_file.high_scores[hp_flag.scene_index] & hp_flag.flag)
+#define HAS_HIGH_SCORES(hp_flag) \
+    (hp_flag.is_high_scores && z64_file.high_scores[hp_flag.scene_index] & hp_flag.flag)
 
 #define HAS_EVENT_CHK_INF(hp_flag) \
     (hp_flag.is_event_chk_inf && z64_file.event_chk_inf[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
@@ -239,7 +239,7 @@ int8_t get_hps(uint8_t area_entry_index)
     for (int i = 0; i < area.hp_flags_length; i++)
     {
         flag_info_t hp_flag = area.hp_flags[i];
-        if (HAS_CHEST(hp_flag) || HAS_COLLECT(hp_flag) || HAS_EVENT_CHK_INF(hp_flag) || HAS_ITEM_GET_INF(hp_flag) || HAS_INF_TABLE(hp_flag))
+        if (HAS_CHEST(hp_flag) || HAS_COLLECT(hp_flag) || HAS_HIGH_SCORES(hp_flag) || HAS_EVENT_CHK_INF(hp_flag) || HAS_ITEM_GET_INF(hp_flag) || HAS_INF_TABLE(hp_flag))
             hps += 1;
     }
 
