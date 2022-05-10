@@ -123,20 +123,14 @@
 .orga 0x28A6104 :: .byte 0xFB
 .orga 0x28D0094 :: .byte 0xFB
 
-
-
-
-
-
-
-; TODO save context from lines 910 to 977 from Patches.py
-
+; Fix proximity textboxes (Navi)
+.orga 0xDF8B84 :: .byte 0x00, 0x00, 0x00, 0x00
 
 ; Not ported
 ; anything before the next one
 ; Speed scene after Deku Tree
 ; Darunia won't dance
-; Zora moves quickly
+; King Zora moves quickly
 ; Speed Jabu Jabu swallowing Link
 ; Ruto no longer points to Zora Sapphire
 ; Speed up Epona race start
