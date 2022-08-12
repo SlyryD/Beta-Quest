@@ -71,7 +71,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
         padding +
         (8 * font_sprite.tile_w) + // dungeon names
         padding +
-        (7 * (icon_size + padding)); // skull, skull count, key, key count, bk, map, compass
+        (8 * (icon_size + padding)); // skull, skull count, key, unused key count, total key count, bk, map, compass
     int bg_height = padding + (dungeon_count * (icon_size + padding));
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
@@ -183,12 +183,17 @@ void draw_dungeon_info(z64_disp_buf_t *db)
         if (!d->has_keys)
             continue;
 
-        int8_t keys = z64_file.dungeon_keys[d->index];
-        if (keys < 0)
-            keys = 0;
+        int8_t current_keys = z64_file.dungeon_keys[d->index];
+        if (current_keys < 0)
+            current_keys = 0;
 
-        char count[2] = "0";
-        count[0] += (keys % 10);
+        int8_t total_keys = z64_file.scene_flags[d->index].unk_00_ >> 0x10;
+        if (total_keys < 0)
+            total_keys = 0;
+
+        char count[5] = "0(0)";
+        count[0] += (current_keys % 10);
+        count[2] += (total_keys % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }

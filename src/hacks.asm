@@ -66,3 +66,44 @@ Gameplay_InitSkybox:
     nop
 .skip 4 * 24
 @@after_chest_speed_check:
+
+;==================================================================================================
+; Song of Storms Effect Trigger Changes
+;==================================================================================================
+; Allow a storm to be triggered with the song in any environment
+; Replaces: lui     t5, 0x800F
+;           lbu     t5, 0x1648(t5)
+.orga 0xE6BF4C
+    li      t5, 0
+    nop
+
+; Remove the internal cooldown between storm effects (to open grottos, grow bean plants...)
+; Replaces: bnez     at, 0x80AECC6C
+.orga 0xE6BEFC
+    nop
+
+;==================================================================================================
+; Handle total small key count for the dungeon info menu
+;==================================================================================================
+; Replaces:
+;   lui     t0, 0x8012                 # t0 = 80120000
+;   addiu   t0, t0, 0xA5D0             # t0 = 8011A5D0
+;   lhu     t9, 0x1402(t0)             # 8011B9D2
+;   addiu   t1, r0, 0x0001             # t1 = 00000001
+;   addiu   v0, r0, 0x00FF             # v0 = 000000FF
+;   addu    v1, t0, t9
+;   lb      a0, 0x00BC(v1)             # 000000BC
+;   bgez    a0, lbl_80070198
+;   addiu   t7, a0, 0x0001             # t7 = 00000001
+;   sb      t1, 0x00BC(v1)             # 000000BC
+.orga 0xAE60C8 ; In Memory: 0x80070168
+    nop
+    jal     give_small_key
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
