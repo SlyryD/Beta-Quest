@@ -217,6 +217,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
     }
 
     left += icon_size + padding;
+    left += icon_size + padding;
 
     // Draw boss keys
 
