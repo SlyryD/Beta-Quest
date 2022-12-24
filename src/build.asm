@@ -292,6 +292,7 @@ RANDO_CONTEXT:
 .include "every_frame.asm"
 .include "dpad.asm"
 .include "initial_save.asm"
+.include "bonk.asm"
 
 .align 0x10
 .importobj "../build/bundle.o"

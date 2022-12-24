@@ -407,6 +407,11 @@ def patch_rom(rom:Rom, options):
         ]
         patch_files(rom, mq_scenes)
 
+    # Bonk One Hit KO
+    if options['bonko']:
+        rom.write_int32(rom.sym('CFG_DEADLY_BONKS'), 1)
+        rom.write_int16(rom.sym('CFG_BONK_DAMAGE'), 0xFFFE)
+
     # Load Message and Shop Data
     messages = read_messages(rom)
 
