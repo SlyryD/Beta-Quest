@@ -22,8 +22,9 @@ void text_init() {
     text_end = text_buf;
 }
 
-void text_print(char *s, int left, int top) {
+int text_print(char *s, int left, int top) {
     char c;
+    int count;
     while (c = *(s++)) {
         if (text_end >= text_buf + text_max_chars) break;
         text_end->c = c;
@@ -31,7 +32,9 @@ void text_print(char *s, int left, int top) {
         text_end->top = top;
         text_end++;
         left += font_sprite.tile_w;
+        count++;
     }
+    return count;
 }
 
 void text_flush(z64_disp_buf_t *db) {
