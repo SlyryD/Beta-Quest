@@ -1,4 +1,5 @@
 #include "dungeon_info.h"
+#include "entrance_info.h"
 #include "gfx.h"
 #include "text.h"
 #include "util.h"
@@ -21,6 +22,7 @@ void before_game_state_update() {
 
 void after_game_state_update() {
     draw_dungeon_info(&(z64_ctxt.gfx->overlay));
+    draw_entrance_info(&(z64_ctxt.gfx->overlay));
     draw_world_map_info(&(z64_ctxt.gfx->overlay));
 }
 
