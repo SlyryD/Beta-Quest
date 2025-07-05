@@ -18,6 +18,7 @@ parser.add_argument('--dump-obj', action='store_true', help="Dumps extra object 
 parser.add_argument('--diff-only', action='store_true', help="Creates diff output without running armips")
 parser.add_argument('--mq', action='store_true', help="Patches Beta Quest with Master Quest dungeons")
 parser.add_argument('--bonko', action='store_true', help="Patches Beta Quest with Bonk One Hit KO")
+parser.add_argument('--song_speedup', action='store_true', help="Patches Beta Quest with Song Speedups")
 
 args = parser.parse_args()
 pj64_sym_path = args.pj64sym
@@ -26,6 +27,7 @@ dump_obj = args.dump_obj
 diff_only = args.diff_only
 mq_enabled = args.mq
 bonko = args.bonko
+song_speedup = args.song_speedup
 
 scripts_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.join(scripts_dir, '..')
@@ -125,7 +127,7 @@ if pj64_sym_path:
 
 # Apply python patches
 rom = Rom('roms/port.z64')
-patch_rom(rom, { 'mq_enabled': mq_enabled, 'bonko': bonko })
+patch_rom(rom, { 'mq_enabled': mq_enabled, 'bonko': bonko, 'song_speedup': song_speedup })
 rom.write_to_file('roms/port.z64')
 
 with open('roms/port.z64', 'r+b') as stream:

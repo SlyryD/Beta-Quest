@@ -112,8 +112,20 @@ V2.2 Changes:
 
 * Added Master Quest dungeon option (`./scripts/build.py --compile-c --mq`)
 
+* Added bonko (Bonk One Hit KO) option (`./scripts/build.py --compile-c --bonko`)
+
 * Added small key total to dungeon info menu
 
 * Added fix for entering SoS grottos in Zora's Domain and Sacred Forest Meadow
 
 * Added more quality of life improvements from Better OoT
+
+V2.3 Changes:
+
+* Restore light arrow cutscene BA with Better OoT version of the cutscenes
+
+* Added song cutscene speedups option (`./scripts/build.py --compile-c --song_speedup`)
+
+* TODO: Count maps, compasses, equipment, etc.
+
+* TODO: Fix up in-game spoiler log??

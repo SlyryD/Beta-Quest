@@ -85,6 +85,67 @@ def patch_rom(rom:Rom, options):
                                      0x0F671408, 0x00000000, 0x00000001])    # normal_XYZ
     rom.write_int16s(0x0218AF50, [0x003E, 0x0011, 0x0020, 0x0000])           # Action, start, end, ????
 
+    if options['song_speedup']:
+        # Speed learning Zelda's Lullaby
+        rom.write_int32s(0x02E8E90C, [0x000003E8, 0x00000001])                   # Terminator Execution
+        rom.write_int16s(None, [0x0073, 0x003B, 0x003C, 0x003C])                 # ID, start, end, end  
+        rom.write_int32s(0x02E8E91C, [0x00000013, 0x0000000C])                   # Textbox, Count
+        rom.write_int16s(None, [0x0017, 0x0000, 0x0010, 0x0002, 0x088B, 0xFFFF]) # ID, start, end, type, alt1, alt2        
+        rom.write_int16s(None, [0x00D4, 0x0011, 0x0020, 0x0000, 0xFFFF, 0xFFFF]) # ID, start, end, type, alt1, alt2
+    
+        # Speed learning Minuet of Forest
+        rom.write_int32(0x020AFF84, 0x0000003C)                                  # Header: frame_count
+        rom.write_int32s(0x020B0800, [0x00000013, 0x0000000A])                   # Textbox, Count
+        rom.write_int16s(None, [0x000F, 0x0000, 0x0010, 0x0002, 0x088B, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int16s(None, [0x0073, 0x0011, 0x0020, 0x0000, 0xFFFF, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int32s(0x020AFF88, [0x0000000A, 0x00000005])                   # Link, Count
+        rom.write_int16s(0x020AFF90, [0x0011, 0x0000, 0x0010, 0x0000])           # Action, start, end, ????
+        rom.write_int16s(0x020AFFC1, [0x003E, 0x0011, 0x0020, 0x0000])           # Action, start, end, ????
+        rom.write_int32s(0x020B0488, [0x00000056, 0x00000001])                   # Music Change, Count
+        rom.write_int16s(None, [0x003F, 0x0021, 0x0022, 0x0000])                 # Action, start, end, ????
+        rom.write_int32s(0x020B04C0, [0x0000007C, 0x00000001])                   # Music Fade Out, Count
+        rom.write_int16s(None, [0x0004, 0x0000, 0x0000, 0x0000])                 # Action, start, end, ????
+    
+        # Speed learning Bolero of Fire
+        rom.write_int32(0x0224B5D4, 0x0000003C)                                  # Header: frame_count
+        rom.write_int32s(0x0224D7E8, [0x00000013, 0x0000000A])                   # Textbox, Count
+        rom.write_int16s(None, [0x0010, 0x0000, 0x0010, 0x0002, 0x088B, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int16s(None, [0x0074, 0x0011, 0x0020, 0x0000, 0xFFFF, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int32s(0x0224B5D8, [0x0000000A, 0x0000000B])                   # Link, Count
+        rom.write_int16s(0x0224B5E0, [0x0011, 0x0000, 0x0010, 0x0000])           # Action, start, end, ????
+        rom.write_int16s(0x0224B610, [0x003E, 0x0011, 0x0020, 0x0000])           # Action, start, end, ????
+        rom.write_int32s(0x0224B7F0, [0x0000002F, 0x0000000E])                   # Sheik, Count
+        rom.write_int16s(0x0224B7F8, [0x0000])                                   # Action
+        rom.write_int16s(0x0224B828, [0x0000])                                   # Action
+        rom.write_int16s(0x0224B858, [0x0000])                                   # Action
+        rom.write_int16s(0x0224B888, [0x0000])                                   # Action
+    
+        # Speed learning Serenade of Water
+        rom.write_int32(0x02BEB254, 0x0000003C)                                  # Header: frame_count
+        rom.write_int32s(0x02BEC880, [0x00000013, 0x00000010])                   # Textbox, Count
+        rom.write_int16s(None, [0x0011, 0x0000, 0x0010, 0x0002, 0x088B, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int16s(None, [0x0075, 0x0011, 0x0020, 0x0000, 0xFFFF, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int32s(0x02BEB258, [0x0000000A, 0x0000000F])                   # Link, Count
+        rom.write_int16s(0x02BEB260, [0x0011, 0x0000, 0x0010, 0x0000])           # Action, start, end, ????
+        rom.write_int16s(0x02BEB290, [0x003E, 0x0011, 0x0020, 0x0000])           # Action, start, end, ????
+        rom.write_int32s(0x02BEB530, [0x0000002F, 0x00000006])                   # Sheik, Count
+        rom.write_int16s(0x02BEB538, [0x0000, 0x0000, 0x018A, 0x0000])           # Action, start, end, ????
+        rom.write_int32s(None,         [0x1BBB0000,                              # ???
+                                         0xFFFFFB10, 0x8000011A, 0x00000330,     # start_XYZ
+                                         0xFFFFFB10, 0x8000011A, 0x00000330])    # end_XYZ
+        rom.write_int32s(0x02BEC848, [0x00000056, 0x00000001])                   # Music Change, Count
+        rom.write_int16s(None, [0x0059, 0x0021, 0x0022, 0x0000])                 # Action, start, end, ????
+    
+        # Speed learning Prelude of Light
+        rom.write_int32(0x0252FD24, 0x0000003C)                                  # Header: frame_count
+        rom.write_int32s(0x02531320, [0x00000013, 0x0000000E])                   # Textbox, Count
+        rom.write_int16s(None, [0x0014, 0x0000, 0x0010, 0x0002, 0x088B, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int16s(None, [0x0078, 0x0011, 0x0020, 0x0000, 0xFFFF, 0xFFFF]) # ID, start, end, type, alt1, alt2
+        rom.write_int32s(0x0252FF10, [0x0000002F, 0x00000009])                   # Sheik, Count
+        rom.write_int16s(0x0252FF18, [0x0006, 0x0000, 0x0000, 0x0000])           # Action, start, end, ????
+        rom.write_int32s(0x025313D0, [0x00000056, 0x00000001])                   # Music Change, Count
+        rom.write_int16s(None, [0x003B, 0x0021, 0x0022, 0x0000])                 # Action, start, end, ????
+
     #Fix backwalk issue for Fairy Fountains
     rom.write_bytes(0xC8A5C4, [0x10, 0x00, 0x00, 0x2F]) # Branch to end of funtion
     rom.write_bytes(0xC8A5C8, [0xAE, 0x00, 0x00, 0x28]) # Keep fairy still
@@ -243,6 +304,23 @@ def patch_rom(rom:Rom, options):
                   0xFF, 0xFF, 0x00, 0x3C, 0x00, 0x81, 0xFF, 0xFF]
     rom.write_bytes(0x2151240, Block_code)
     rom.write_bytes(0x2150E20, [0xFF, 0xFF, 0xFA, 0x4C])
+
+    # Speed Zelda Light Arrow cutscene
+    rom.write_bytes(0x2531B40, [0x00, 0x20, 0x00, 0x01, 0x00, 0x02, 0x00, 0x02]) # Load into flashback ASAP
+    rom.write_bytes(0x01FC28C8, [0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x00, 0x01, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]) # Load into tot ASAP
+    rom.write_bytes(0x2532FBC, [0x00, 0x75])
+    rom.write_bytes(0x2532FEA, [0x00, 0x75, 0x00, 0x80])  
+    rom.write_byte(0x2533115, 0x05)
+    rom.write_bytes(0x2533141, [0x06, 0x00, 0x06, 0x00, 0x10])
+    rom.write_bytes(0x2533171, [0x0F, 0x00, 0x11, 0x00, 0x40])
+    rom.write_bytes(0x25331A1, [0x07, 0x00, 0x41, 0x00, 0x65])
+    rom.write_bytes(0x2533642, [0x00, 0x50])
+    rom.write_byte(0x253389D, 0x74)
+    rom.write_bytes(0x25338A4, [0x00, 0x72, 0x00, 0x75, 0x00, 0x79])
+    rom.write_bytes(0x25338BC, [0xFF, 0xFF])
+    rom.write_bytes(0x25338C2, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
+    rom.write_bytes(0x25339C2, [0x00, 0x75, 0x00, 0x76])
+    rom.write_bytes(0x2533830, [0x00, 0x31, 0x00, 0x81, 0x00, 0x82, 0x00, 0x82])
 
     # Speed Bridge of Light cutscene
     rom.write_bytes(0x292D644, [0x00, 0x00, 0x00, 0xA0])

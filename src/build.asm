@@ -91,9 +91,6 @@
 .orga 0x2511120
 .incbin("../resources/cs/lightmedallion.z64")
 
-.orga 0x25314E0
-.incbin("../resources/cs/lightarrow.z64")
-
 .orga 0x2AA1A60
 .incbin("../resources/cs/ganonlol.z64")
 
