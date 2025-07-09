@@ -197,3 +197,61 @@ Gameplay_InitSkybox:
 .orga 0xC3DC04
     jal     KING_DODONGO_BONKS
     nop
+
+;==================================================================================================
+; Repoint English Message Table to JP
+;==================================================================================================
+;To make room for more message table entries, store the jp table pointer to the english one as well.
+;The rest of this hack is implemented in Messages.py
+; Replaces: sw      t7, 0x00(a1)
+.orga 0xB575C8
+    sw      t6, 0x00(a1)
+
+; Dynamically load the en/jp message files for text lookup. Both files are utilized to make room
+; for additional text. The jp file is filled first. The segment value for the requested text ID
+; is used to manipulate the language bit to tell Message_OpenText (func_800DC838) which file
+; to load and search. Hook at VRAM 0x800DCB60 in message.s
+.orga 0xB52AC0
+    jal     set_message_file_to_search
+    nop
+
+; The message lookup function uses a fixed reference to the first entry's segment to strip it from
+; the combined segment/offset word. Since we have mixed segments in the table now, this is no
+; longer safe. Load the correct segment into register a2 from the current message.
+.orga 0xB4C980
+    j       load_correct_message_segment
+    nop
+
+; Since message lookup already occurs in the above hook, remove the lookup from both the JP and EN
+; branches.
+.orga 0xB52AD0 ; JP branch
+    nop
+    nop
+    nop
+    nop
+.orga 0xB52B64 ; EN branch
+    nop
+    nop
+
+;=========================================================================================
+; Add custom message control characters
+;=========================================================================================
+
+; In Message_Decode at the last control code check (0x01 for new line)
+; Replaces
+;   addiu   at, r0, 0x0001
+;   bne     v0, at, 0x800DC580
+.headersize (0x800110A0 - 0xA87000)
+.org 0x800DC568
+    j       Message_Decode_Control_Code_Hook
+    nop
+
+;================================================================================
+; Reset choiceNum when decoding a new message
+; prevents weird text alignment when going from message box with icon to no icon
+;================================================================================
+; Replaces sh   $zero, 0x4c0(at)
+;          lhu  a3, 0x4c0(a3)
+.org 0x800DA34C
+    j       Message_Decode_reset_msgCtx.textPosX
+    nop
