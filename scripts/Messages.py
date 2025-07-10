@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 from collections.abc import Callable, Iterable
+from enum import IntEnum
 from typing import TYPE_CHECKING, Optional, Any
 
-from TextBox import line_wrap
 from Utils import find_last
 
 if TYPE_CHECKING:
@@ -59,48 +59,92 @@ CONTROL_CODES: dict[int, tuple[str, int, Callable[[Any], str]]] = {
     0x1D: ('fish', 0, lambda _: '<fish weight>' ),
     0x1E: ('high-score', 1, lambda d: '<high-score ' + "{:02x}".format(d) + '>' ),
     0x1F: ('time', 0, lambda _: '<current time>' ),
-    # BQ only control codes
-    0xD0: ('region', 1, lambda d: '<region ' + "{:02x}".format(d) + '>' ),
-    0xD1: ('skulltula_region_count', 1, lambda d: '<skulltula region count ' + "{:02x}".format(d) + '>' ),
-    0xD2: ('heart_piece_region_count', 1, lambda d: '<heart piece region count ' + "{:02x}".format(d) + '>' ),
-    0xD3: ('carpenter_count', 0, lambda _: '<carpenter count>' ),
-    0xD4: ('gold_rupee_count', 0, lambda _: '<gold rupee count>' ),
-    0xD5: ('bean_count', 0, lambda _: '<bean count>' ),
-    # TODO: Control codes requiring new textboxes
-    # 0xD6: ('soft_soil_skulltula_count', 0, lambda _: '<soft soil skulltula count>' ),
-    # 0xD7: ('silver_rupee_room_count', 0, lambda _: '<silver rupee room count>' ),
-    # 0xD8: ('trial_beam_count', 0, lambda _: '<trial beam count>' ),
-    # 0xD9: ('beat_dungeon_count', 0, lambda _: '<beat dungeon count>' ),
-    # 0xDA: ('bean_planted_count', 0, lambda _: '<bean planted count>' ),
-    0xE0: ('elemental_arrow_count', 0, lambda _: '<elemental arrow count>' ),
-    0xE1: ('fairy_spell_count', 0, lambda _: '<fairy spell count>' ),
-    0xE2: ('bottle_slot_count', 0, lambda _: '<bottle slot count>' ),
-    0xE3: ('trap_count', 0, lambda _: '<trap count>' ),
     # stalfos count
     # wolfos count
     # lizalfos count
-    # gibdo count
-    # tentacles count
-    # knuckles count
-    # flare dancers count
-    # Existing Rando control codes
     0xF0: ('silver_rupee', 1, lambda d: '<silver rupee count ' + "{:02x}".format(d) + '>' ),
-    0xF1: ('key_count', 1, lambda d: '<key count ' + "{:02x}".format(d) + '>' ),
+    # regional_item_count format is \xF1\xXX\xYY where XX is the item id and YY is the region id
+    0xF1: ('regional_item_count', 2, lambda d: '<regional item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
     0xF2: ('outgoing_item_filename', 0, lambda _: '<outgoing item filename>' ),
     0xF3: ('farores_wind_destination', 0, lambda _: '<farores_wind_destination>' ),
-    # Additional control codes
-    0xF4: ('map_count', 0, lambda _: '<map count>' ),
-    0xF5: ('compass_count', 0, lambda _: '<compass count>' ),
-    0xF6: ('boss_key_count', 0, lambda _: '<boss_key count>' ),
-    0xF7: ('sword_count', 0, lambda _: '<sword count>' ),
-    0xF8: ('shield_count', 0, lambda _: '<shield count>' ),
-    0xF9: ('tunic_count', 0, lambda _: '<tunic count>' ),
-    0xFA: ('boot_count', 0, lambda _: '<boot count>' ),
-    0xFB: ('stone_count', 0, lambda _: '<stone count>' ),
-    0xFC: ('medallion_count', 0, lambda _: '<medallion count>' ),
-    0xFD: ('reward_count', 0, lambda _: '<reward count>' ),
-    0xFE: ('song_count', 0, lambda _: '<song count>' ),
+    # item_count format is \xF5\xXX where XX is the item id
+    0xF4: ('item_count', 1, lambda d: '<item count ' + "{:02x}".format(d) + '>' ),
 }
+
+
+class CountableItem(IntEnum):
+    # Equipment
+    SWORD = 0x00
+    SHIELD = 0x01
+    TUNIC = 0x02
+    BOOT = 0x03
+    # Quest
+    SONG = 0x10
+    MEDALLION = 0x11
+    STONE = 0x12
+    REWARD = 0x13
+    # Dungeon
+    BOSS_KEY = 0x20
+    COMPASS = 0x21
+    MAP = 0x22
+    # Inventory
+    ELEMENTAL_ARROW = 0x30
+    FAIRY_SPELL = 0x31
+    BOTTLE_SLOT = 0x32
+    # Flags
+    CARPENTER = 0x40
+    # Items not present in menu (count stored in save context)
+    BEAN = 0x50
+    TRAP = 0x51
+    GOLD_RUPEE = 0x52
+    # Enemies
+    IRON_KNUCKLE = 0x60
+    WHITE_WOLFOS = 0x61
+    LIZALFOS = 0x62
+    GIBDO = 0x63
+    TENTACLE = 0x64
+    STALFOS = 0x65
+    DEAD_HANDS = 0x66
+    FLARE_DANCER = 0x67
+
+
+class RegionalItem(IntEnum):
+    # Quest
+    TOKEN = 0x00
+    HEART_PIECE = 0x01
+    # Dungeon
+    SMALL_KEY = 0x10
+
+
+class Region(IntEnum):
+    DEKU_TREE = 0x00
+    DODONGOS_CAVERN = 0x01
+    JABU_JABU = 0x02
+    FOREST_TEMPLE = 0x03
+    FIRE_TEMPLE = 0x04
+    WATER_TEMPLE = 0x05
+    SPIRIT_TEMPLE = 0x06
+    SHADOW_TEMPLE = 0x07
+    BOTTOM_OF_THE_WELL = 0x08
+    ICE_CAVERN = 0x09
+    GANONS_TOWER = 0x0A
+    GERUDO_TRAINING_GROUND = 0x0B
+    THIEVES_HIDEOUT = 0x0C
+    INSIDE_GANONS_CASTLE = 0x0D
+    TREASURE_BOX_SHOP = 0x0E  # Used by rando for counting keys
+    WASTELAND_AREA = 0x0F
+    FORTRESS_AREA = 0x10
+    GERUDO_VALLEY = 0x11
+    LAKE_HYLIA = 0x12
+    LON_LON_RANCH = 0x13
+    MARKET_AREA = 0x14
+    HYRULE_FIELD = 0x15
+    DEATH_MOUNTAIN = 0x16
+    KAKARIKO_AREA = 0x17
+    LOST_WOODS = 0x18
+    KOKIRI_FOREST = 0x19
+    ZORA_AREA = 0x1A
+
 
 # Maps unicode characters to corresponding bytes in OOTR's character set.
 CHARACTER_MAP: dict[str, int] = {
