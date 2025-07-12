@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 from collections.abc import Callable, Iterable
-from enum import IntEnum
 from typing import TYPE_CHECKING, Optional, Any
 
 from Utils import find_last
+from scripts.Bingo import DungeonCountableItem
 
 if TYPE_CHECKING:
     from Rom import Rom
@@ -63,87 +63,15 @@ CONTROL_CODES: dict[int, tuple[str, int, Callable[[Any], str]]] = {
     # wolfos count
     # lizalfos count
     0xF0: ('silver_rupee', 1, lambda d: '<silver rupee count ' + "{:02x}".format(d) + '>' ),
-    # regional_item_count format is \xF1\xXX\xYY where XX is the item id and YY is the region id
-    0xF1: ('regional_item_count', 2, lambda d: '<regional item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
+    # dungeon_item_count format is \xF1\xXX\xYY where XX is the dungeon id and YY is the item id
+    0xF1: ('dungeon_item_count', 2, lambda d: '<dungeon item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
     0xF2: ('outgoing_item_filename', 0, lambda _: '<outgoing item filename>' ),
     0xF3: ('farores_wind_destination', 0, lambda _: '<farores_wind_destination>' ),
-    # item_count format is \xF5\xXX where XX is the item id
+    # item_count format is \xF4\xXX where XX is the item id
     0xF4: ('item_count', 1, lambda d: '<item count ' + "{:02x}".format(d) + '>' ),
+    # area_item_count format is \xF5\xXX\xYY where XX is the area id and YY is the item id
+    0xF5: ('area_item_count', 2, lambda d: '<area item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
 }
-
-
-class CountableItem(IntEnum):
-    # Equipment
-    SWORD = 0x00
-    SHIELD = 0x01
-    TUNIC = 0x02
-    BOOT = 0x03
-    # Quest
-    SONG = 0x10
-    MEDALLION = 0x11
-    STONE = 0x12
-    REWARD = 0x13
-    # Dungeon
-    BOSS_KEY = 0x20
-    COMPASS = 0x21
-    MAP = 0x22
-    # Inventory
-    ELEMENTAL_ARROW = 0x30
-    FAIRY_SPELL = 0x31
-    BOTTLE_SLOT = 0x32
-    # Flags
-    CARPENTER = 0x40
-    # Items not present in menu (count stored in save context)
-    BEAN = 0x50
-    TRAP = 0x51
-    GOLD_RUPEE = 0x52
-    # Enemies
-    IRON_KNUCKLE = 0x60
-    WHITE_WOLFOS = 0x61
-    LIZALFOS = 0x62
-    GIBDO = 0x63
-    TENTACLE = 0x64
-    STALFOS = 0x65
-    DEAD_HANDS = 0x66
-    FLARE_DANCER = 0x67
-
-
-class RegionalItem(IntEnum):
-    # Quest
-    TOKEN = 0x00
-    HEART_PIECE = 0x01
-    # Dungeon
-    SMALL_KEY = 0x10
-
-
-class Region(IntEnum):
-    DEKU_TREE = 0x00
-    DODONGOS_CAVERN = 0x01
-    JABU_JABU = 0x02
-    FOREST_TEMPLE = 0x03
-    FIRE_TEMPLE = 0x04
-    WATER_TEMPLE = 0x05
-    SPIRIT_TEMPLE = 0x06
-    SHADOW_TEMPLE = 0x07
-    BOTTOM_OF_THE_WELL = 0x08
-    ICE_CAVERN = 0x09
-    GANONS_TOWER = 0x0A
-    GERUDO_TRAINING_GROUND = 0x0B
-    THIEVES_HIDEOUT = 0x0C
-    INSIDE_GANONS_CASTLE = 0x0D
-    TREASURE_BOX_SHOP = 0x0E  # Used by rando for counting keys
-    WASTELAND_AREA = 0x0F
-    FORTRESS_AREA = 0x10
-    GERUDO_VALLEY = 0x11
-    LAKE_HYLIA = 0x12
-    LON_LON_RANCH = 0x13
-    MARKET_AREA = 0x14
-    HYRULE_FIELD = 0x15
-    DEATH_MOUNTAIN = 0x16
-    KAKARIKO_AREA = 0x17
-    LOST_WOODS = 0x18
-    KOKIRI_FOREST = 0x19
-    ZORA_AREA = 0x1A
 
 
 # Maps unicode characters to corresponding bytes in OOTR's character set.
@@ -559,7 +487,7 @@ for dungeon_name in dungeon_names:
 c = 0
 for dungeon_name in dungeon_names:
     if dungeon_name is not None:
-        KEYSANITY_MESSAGES.append((i, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for {dungeon_name}!\x01That's \x05\x41" + "\xF1" + c.to_bytes(1, 'big').decode() + "\x05\x40 of them.\x09"))
+        KEYSANITY_MESSAGES.append((i, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for {dungeon_name}!\x01That's \x05\x41" + "\xF1" + c.to_bytes(1, 'big').decode() + DungeonCountableItem.SMALL_KEY.to_bytes(1, 'big').decode() + "\x05\x40 of them.\x09"))
     i += 1
     c += 1
 for dungeon_name in dungeon_names:
