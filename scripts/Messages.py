@@ -64,10 +64,10 @@ CONTROL_CODES: dict[int, tuple[str, int, Callable[[Any], str]]] = {
     0xF1: ('dungeon_item_count', 2, lambda d: '<dungeon item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
     # 0xF2: ('outgoing_item_filename', 0, lambda _: '<outgoing item filename>' ),
     # 0xF3: ('farores_wind_destination', 0, lambda _: '<farores_wind_destination>' ),
-    # item_count format is \xF4\xXX where XX is the item id
-    0xF4: ('item_count', 1, lambda d: '<item count ' + "{:02x}".format(d) + '>' ),
-    # area_item_count format is \xF5\xXX\xYY where XX is the area id and YY is the item id
-    0xF5: ('area_item_count', 2, lambda d: '<area item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
+    # area_item_count format is \xF4\xXX\xYY where XX is the area id and YY is the item id
+    0xF4: ('area_item_count', 2, lambda d: '<area item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
+    # item_count format is \xF5\xXX where XX is the item id
+    0xF5: ('item_count', 1, lambda d: '<item count ' + "{:02x}".format(d) + '>' ),
 }
 
 

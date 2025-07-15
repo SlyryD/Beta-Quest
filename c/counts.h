@@ -122,4 +122,6 @@ typedef enum {
 
 uint8_t get_tokens(uint8_t gs_flags_index);
 
+uint8_t get_item_count(uint8_t item_index);
+
 #endif

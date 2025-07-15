@@ -1,6 +1,6 @@
 #include "dungeon_info.h"
 
-#include "bingo.h"
+#include "counts.h"
 #include "gfx.h"
 #include "text.h"
 #include "util.h"
@@ -42,6 +42,16 @@ int dungeon_count = array_size(dungeons);
 
 extern uint32_t CFG_DUNGEON_INFO_ENABLE;
 
+bool is_valid_dungeon_index(uint8_t dungeon_index) {
+    for (int i = 0; i < dungeon_count; i++) {
+        if (dungeons[i].index == dungeon_index) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 uint8_t get_dungeon_tokens(uint8_t dungeon_index) {
     return get_tokens(dungeon_index);
 }
@@ -52,6 +62,35 @@ uint8_t get_dungeon_hps(uint8_t dungeon_index) {
             bool has_ice_cavern_hp = (z64_game.scene_index == SCENE_ICE_CAVERN && z64_game.collect_flags & (1 << 0x01))
                 || z64_file.scene_flags[SCENE_ICE_CAVERN].collect & (1 << 0x01);
             return has_ice_cavern_hp ? 1 : 0;
+        }
+        default: {
+            return 0xFF;
+        }
+    }
+}
+
+uint8_t get_dungeon_small_keys(uint8_t dungeon_index) {
+    return z64_file.scene_flags[dungeon_index].unk_00_ >> 0x10;
+}
+
+uint8_t get_dungeon_unused_small_keys(uint8_t dungeon_index) {
+    return z64_file.dungeon_keys[dungeon_index];
+}
+
+uint8_t get_dungeon_item_count(uint8_t dungeon_index, uint8_t item_index) {
+    if (!is_valid_dungeon_index(dungeon_index)) {
+        return 0xFF;
+    }
+
+    switch (item_index) {
+        case DCI_TOKEN: {
+            return get_dungeon_tokens(dungeon_index);
+        }
+        case DCI_HEART_PIECE: {
+            return get_dungeon_hps(dungeon_index);
+        }
+        case DCI_SMALL_KEY: {
+            return get_dungeon_small_keys(dungeon_index);
         }
         default: {
             return 0xFF;
@@ -141,7 +180,7 @@ void draw_dungeon_info(z64_disp_buf_t *db) {
         if (!d->has_tokens)
             continue;
 
-        uint8_t tokens = get_tokens(d->index);
+        uint8_t tokens = get_dungeon_tokens(d->index);
 
         char count[2] = "0";
         count[0] += (tokens % 10);
@@ -188,13 +227,15 @@ void draw_dungeon_info(z64_disp_buf_t *db) {
         if (!d->has_keys)
             continue;
 
-        int8_t current_keys = z64_file.dungeon_keys[d->index];
-        if (current_keys < 0)
+        uint8_t current_keys = get_dungeon_unused_small_keys(d->index);
+        if (current_keys == 0xFF) {
             current_keys = 0;
+        }
 
-        int8_t total_keys = z64_file.scene_flags[d->index].unk_00_ >> 0x10;
-        if (total_keys < 0)
+        uint8_t total_keys = get_dungeon_small_keys(d->index);
+        if (total_keys == 0xFF) {
             total_keys = 0;
+        }
 
         char count[5] = "0(0)";
         count[0] += (current_keys % 10);
@@ -207,12 +248,9 @@ void draw_dungeon_info(z64_disp_buf_t *db) {
 
     for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
-        if (d->index != SCENE_ICE_CAVERN)
+        uint8_t hps = get_dungeon_hps(d->index);
+        if (hps == 0xFF)
             continue;
-
-        int8_t hps = 0;
-        if (HAS_ICE_CAVERN_HP)
-            hps = 1;
 
         char count[2] = "0";
         count[0] += (hps % 10);

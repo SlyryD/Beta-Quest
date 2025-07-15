@@ -1,6 +1,6 @@
 #include "message.h"
 #include "z64.h"
-#include "bingo.h"
+#include "counts.h"
 #include "dungeon_info.h"
 #include "world_map_info.h"
 #include "save.h"
@@ -85,31 +85,13 @@ void Message_AddFileName(MessageContext* msgCtx, void* pFont, uint32_t* pDecoded
 // Function that handles dungeon item counts
 bool decode_dungeon_item_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
     // Get the next character that tells us which dungeon
-    uint8_t dungeon = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t dungeon_index = msgRaw[++(msgCtx->msgBufPos)];
+
     // Get the next character that tells us which item
-    uint8_t item = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t item_index = msgRaw[++(msgCtx->msgBufPos)];
 
     // Get the count from the save context
-    uint8_t count = 0xFF;
-    switch (item) {
-        case DCI_TOKEN: {
-            count = get_tokens(dungeon);
-            break;
-        }
-        case DCI_HEART_PIECE: {
-            if (dungeon != SCENE_ICE_CAVERN) {
-                break;
-            }
-
-            count = HAS_ICE_CAVERN_HP ? 1 : 0;
-            break;
-        }
-        case DCI_SMALL_KEY: {
-            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
-            break;
-        }
-    }
-
+    uint8_t count = get_dungeon_item_count(dungeon_index, item_index);
     if (count == 0xFF) {
         return false;
     }
@@ -119,52 +101,31 @@ bool decode_dungeon_item_count(MessageContext* msgCtx, Font* pFont, char* msgRaw
     return true;
 }
 
-// Function that handles item counts
-bool decode_item_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+// Function that handles area item counts
+bool decode_area_item_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+    // Get the next character that tells us which area
+    uint8_t area_index = msgRaw[++(msgCtx->msgBufPos)];
+
     // Get the next character that tells us which item
-    uint8_t item = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t item_index = msgRaw[++(msgCtx->msgBufPos)];
 
     // Get the count from the save context
-    uint8_t count = 0xFF;
-    switch (item) {
-        case CI_SWORD: {
-            count = get_tokens(dungeon);
-            break;
-        }
-        case CI_SHIELD: {
-            count = HAS_ICE_CAVERN_HP ? 1 : 0;
-            break;
-        }
-        case CI_TUNIC: {
-            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
-            break;
-        }
-        case CI_BOOT: {
-            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
-            break;
-        }
-        case CI_SONG: {
-            count = 0;
-            break;
-        }
-        case CI_MEDALLION: {
-            count = 0;
-            break;
-        }
-        case CI_STONE: {
-            count = 0;
-            break;
-        }
-        case CI_REWARD: {
-            count = 0;
-            break;
-        }
-        case CI_BOSS_KEY: {
-            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
-            break;
-        }
+    uint8_t count = get_area_item_count(area_index, item_index);
+    if (count == 0xFF) {
+        return false;
     }
 
+    Message_AddInteger(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, count);
+    (*pDecodedBufPos)--;
+    return true;
+}
+
+bool decode_item_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+    // Get the next character that tells us which item
+    uint8_t item_index = msgRaw[++(msgCtx->msgBufPos)];
+
+    // Get the count from the save context
+    uint8_t count = get_item_count(item_index);
     if (count == 0xFF) {
         return false;
     }
@@ -192,10 +153,10 @@ bool Message_Decode_Additional_Control_Codes(uint8_t currChar, uint32_t* pDecode
             return decode_dungeon_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
         }
         case 0xF4: {
-            return decode_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
+            return decode_area_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
         }
         case 0xF5: {
-            return decode_area_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
+            return decode_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
         }
         default: {
             return false;

@@ -1,6 +1,6 @@
 #include "world_map_info.h"
 
-#include "bingo.h"
+#include "counts.h"
 #include "gfx.h"
 #include "text.h"
 #include "util.h"
@@ -221,8 +221,17 @@ extern uint32_t CFG_WORLD_MAP_INFO_ENABLE;
 #define HAS_INF_TABLE(hp_flag) \
     (hp_flag.is_inf_table && z64_file.inf_table[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
 
+bool is_valid_area_index(uint8_t area_index) {
+    for (int i = 0; i < world_map_area_count; i++) {
+        if (world_map_areas[i].index == area_index) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 uint8_t get_area_tokens(uint8_t area_index) {
-    uint8_t tokens = 0;
     world_map_area_entry_t area = world_map_areas[area_index];
     return get_tokens(area.gs_flags_index);
 }
@@ -232,11 +241,32 @@ uint8_t get_area_hps(uint8_t area_index) {
     world_map_area_entry_t area = world_map_areas[area_index];
     for (int i = 0; i < area.hp_flags_length; i++) {
         flag_info_t hp_flag = area.hp_flags[i];
-        if (HAS_CHEST(hp_flag) || HAS_COLLECT(hp_flag) || HAS_HIGH_SCORES(hp_flag) || HAS_EVENT_CHK_INF(hp_flag) || HAS_ITEM_GET_INF(hp_flag) || HAS_INF_TABLE(hp_flag))
+        if (HAS_CHEST(hp_flag) || HAS_COLLECT(hp_flag) || HAS_HIGH_SCORES(hp_flag) || HAS_EVENT_CHK_INF(hp_flag) || HAS_ITEM_GET_INF(hp_flag) || HAS_INF_TABLE(hp_flag)) {
             hps += 1;
+        }
     }
 
     return hps;
+}
+
+uint8_t get_area_item_count(uint8_t area_index, uint8_t item_index) {
+    if (!is_valid_area_index(area_index)) {
+        return 0xFF;
+    }
+
+    switch (item_index) {
+        case ACI_TOKEN: {
+            count = get_area_tokens(area_index);
+            break;
+        }
+        case ACI_HEART_PIECE: {
+            count = get_area_hps(area_index);
+            break;
+        }
+        default: {
+            return 0xFF;
+        }
+    }
 }
 
 void draw_world_map_info(z64_disp_buf_t* db) {
