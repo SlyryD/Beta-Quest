@@ -444,7 +444,7 @@ typedef struct
     };
   };
   char            unk_07_[0x0002];          /* 0x0072 */
-  int8_t          items[24];                /* 0x0074 */
+  uint8_t         items[24];                /* 0x0074 */
   int8_t          ammo[15];                 /* 0x008C */
   uint8_t         magic_beans_sold;         /* 0x009B */
   union
