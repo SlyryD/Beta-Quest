@@ -1,0 +1,125 @@
+#ifndef COUNTS_H
+#define COUNTS_H
+
+typedef enum {
+    SCENE_DEKU_TREE = 0x00,
+    SCENE_DODONGOS_CAVERN = 0x01,
+    SCENE_JABU_JABU = 0x02,
+    SCENE_FOREST_TEMPLE = 0x03,
+    SCENE_FIRE_TEMPLE = 0x04,
+    SCENE_WATER_TEMPLE = 0x05,
+    SCENE_SPIRIT_TEMPLE = 0x06,
+    SCENE_SHADOW_TEMPLE = 0x07,
+    SCENE_BOTTOM_OF_THE_WELL = 0x08,
+    SCENE_ICE_CAVERN = 0x09,
+    SCENE_GANONS_TOWER = 0x0A,
+    SCENE_GERUDO_TRAINING_GROUND = 0x0B,
+    SCENE_THIEVES_HIDEOUT = 0x0C,
+    SCENE_INSIDE_GANONS_CASTLE = 0x0D,
+    SCENE_GANONS_TOWER_COLLAPSE = 0x0E,
+    SCENE_GANONS_CASTLE_COLLAPSE = 0x0F,
+    SCENE_TREASURE_BOX_SHOP = 0x10,
+    SCENE_GOHMA = 0x11,
+    SCENE_KING_DODONGO = 0x12,
+    SCENE_BARINADE = 0x13,
+    SCENE_PHANTOM_GANON = 0x14,
+    SCENE_VOLVAGIA = 0x15,
+    SCENE_MORPHA = 0x16,
+    SCENE_TWINROVA = 0x17,
+    SCENE_BONGO_BONGO = 0x18,
+    SCENE_DOG_LADY_HOUSE = 0x35,
+    SCENE_IMPAS_HOUSE = 0x37,
+    SCENE_LAKESIDE_LABORATORY = 0x38,
+    SCENE_GROTTOS = 0x3E,
+    SCENE_REDEAD_GRAVE = 0x3F,
+    SCENE_SHOOTING_GALLERY = 0x42,
+    SCENE_DAMPES_GRAVE_WINDMILL = 0x48,
+    SCENE_FISHING_POND = 0x49,
+    SCENE_BOMBCHU_BOWLING_ALLEY = 0x4B,
+    SCENE_RANCH_HOUSE_SILO = 0x4C,
+    SCENE_HOUSE_OF_SKULLTULA = 0x50,
+    SCENE_KAKARIKO_VILLAGE = 0x52,
+    SCENE_GRAVEYARD = 0x53,
+    SCENE_ZORAS_RIVER = 0x54,
+    SCENE_KOKIRI_FOREST = 0x55,
+    SCENE_LAKE_HYLIA = 0x57,
+    SCENE_ZORAS_DOMAIN = 0x58,
+    SCENE_ZORAS_FOUNTAIN = 0x59,
+    SCENE_GERUDO_VALLEY = 0x5A,
+    SCENE_LOST_WOODS = 0x5B,
+    SCENE_DESERT_COLOSSUS = 0x5C,
+    SCENE_GERUDOS_FORTRESS = 0x5D,
+    SCENE_HAUNTED_WASTELAND = 0x5E,
+    SCENE_DEATH_MOUNTAIN_TRAIL = 0x60,
+    SCENE_DEATH_MOUNTAIN_CRATER = 0x61,
+    SCENE_GORON_CITY = 0x62
+} scene_t;
+
+typedef enum {
+    AREA_WASTELAND = 0x00,
+    AREA_FORTRESS = 0x01,
+    AREA_GERUDO_VALLEY = 0x02,
+    AREA_LAKE_HYLIA = 0x03,
+    AREA_LON_LON_RANCH = 0x04,
+    AREA_MARKET = 0x05,
+    AREA_HYRULE_FIELD = 0x06,
+    AREA_DEATH_MOUNTAIN = 0x07,
+    AREA_KAKARIKO = 0x08,
+    AREA_LOST_WOODS = 0x09,
+    AREA_KOKIRI_FOREST = 0x0A,
+    AREA_ZORA = 0x0B
+} area_t;
+
+typedef enum {
+    // Equipment
+    CI_SWORD = 0x00,
+    CI_SHIELD = 0x01,
+    CI_TUNIC = 0x02,
+    CI_BOOT = 0x03,
+    // Quest
+    CI_SONG = 0x10,
+    CI_MEDALLION = 0x11,
+    CI_STONE = 0x12,
+    CI_REWARD = 0x13,
+    // Dungeon
+    CI_BOSS_KEY = 0x20,
+    CI_COMPASS = 0x21,
+    CI_MAP = 0x22,
+    // Inventory
+    CI_ELEMENTAL_ARROW = 0x30,
+    CI_FAIRY_SPELL = 0x31,
+    CI_BOTTLE_SLOT = 0x32,
+    // Flags
+    CI_CARPENTER = 0x40,
+    // Items not present in menu (count stored in save context)
+    CI_BEAN = 0x50,
+    CI_TRAP = 0x51,
+    CI_GOLD_RUPEE = 0x52,
+    // Enemies
+    CI_IRON_KNUCKLE = 0x60,
+    CI_WHITE_WOLFOS = 0x61,
+    CI_LIZALFOS = 0x62,
+    CI_GIBDO = 0x63,
+    CI_TENTACLE = 0x64,
+    CI_STALFOS = 0x65,
+    CI_DEAD_HANDS = 0x66,
+    CI_FLARE_DANCER = 0x67
+} countable_item_t;
+
+typedef enum {
+    // Quest
+    DCI_TOKEN = 0x00,
+    DCI_HEART_PIECE = 0x01,
+    // Dungeon
+    DCI_SMALL_KEY = 0x10,
+} dungeon_countable_item_t;
+
+typedef enum {
+    // Quest
+    ACI_TOKEN = 0x00,
+    ACI_HEART_PIECE = 0x01,
+} area_countable_item_t;
+
+uint8_t get_tokens(uint8_t gs_flags_index);
+
+#endif

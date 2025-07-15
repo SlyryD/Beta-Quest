@@ -55,15 +55,15 @@ class AreaCountableItem(IntEnum):
 
 # Overworld areas
 class Area(IntEnum):
-    WASTELAND_AREA = 0x00
-    FORTRESS_AREA = 0x01
+    WASTELAND = 0x00
+    FORTRESS = 0x01
     GERUDO_VALLEY = 0x02
     LAKE_HYLIA = 0x03
     LON_LON_RANCH = 0x04
-    MARKET_AREA = 0x05
+    MARKET = 0x05
     HYRULE_FIELD = 0x06
     DEATH_MOUNTAIN = 0x07
-    KAKARIKO_AREA = 0x08
+    KAKARIKO = 0x08
     LOST_WOODS = 0x09
     KOKIRI_FOREST = 0x0A
-    ZORA_AREA = 0x0B
+    ZORA = 0x0B

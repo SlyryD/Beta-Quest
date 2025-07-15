@@ -1,21 +1,16 @@
 #include "dungeon_info.h"
 
+#include "bingo.h"
 #include "gfx.h"
 #include "text.h"
 #include "util.h"
-#include "world_map_info.h"
 #include "z64.h"
 
 #define PAUSE_ITEM 0
 
-#define HAS_ICE_CAVERN_HP \
-    ((z64_game.scene_index == ICE_CAVERN && z64_game.collect_flags & (1 << 0x01)) || z64_file.scene_flags[ICE_CAVERN].collect & (1 << 0x01))
-
-typedef struct
-{
+typedef struct {
     uint8_t index;
-    struct
-    {
+    struct {
         uint8_t has_keys : 1;
         uint8_t has_boss_key : 1;
         uint8_t has_card : 1;
@@ -26,29 +21,45 @@ typedef struct
 } dungeon_entry_t;
 
 dungeon_entry_t dungeons[] = {
-    {DEKU_TREE, 0, 0, 0, 1, 1, "Deku"},
-    {DODONGOS_CAVERN, 0, 0, 0, 1, 1, "Dodongo"},
-    {JABU_JABU, 0, 0, 0, 1, 1, "Jabu"},
+    {SCENE_DEKU_TREE, 0, 0, 0, 1, 1, "Deku"},
+    {SCENE_DODONGOS_CAVERN, 0, 0, 0, 1, 1, "Dodongo"},
+    {SCENE_JABU_JABU, 0, 0, 0, 1, 1, "Jabu"},
 
-    {FOREST_TEMPLE, 1, 1, 0, 1, 1, "Forest"},
-    {FIRE_TEMPLE, 1, 1, 0, 1, 1, "Fire"},
-    {WATER_TEMPLE, 1, 1, 0, 1, 1, "Water"},
-    {SHADOW_TEMPLE, 1, 1, 0, 1, 1, "Shadow"},
-    {SPIRIT_TEMPLE, 1, 1, 0, 1, 1, "Spirit"},
+    {SCENE_FOREST_TEMPLE, 1, 1, 0, 1, 1, "Forest"},
+    {SCENE_FIRE_TEMPLE, 1, 1, 0, 1, 1, "Fire"},
+    {SCENE_WATER_TEMPLE, 1, 1, 0, 1, 1, "Water"},
+    {SCENE_SHADOW_TEMPLE, 1, 1, 0, 1, 1, "Shadow"},
+    {SCENE_SPIRIT_TEMPLE, 1, 1, 0, 1, 1, "Spirit"},
 
-    {BOTTOM_OF_THE_WELL, 1, 0, 0, 1, 1, "BotW"},
-    {ICE_CAVERN, 0, 0, 0, 1, 1, "Ice"},
-    {THIEVES_HIDEOUT, 1, 0, 1, 0, 0, "Hideout"},
-    {GERUDO_TRAINING_GROUND, 1, 0, 0, 0, 0, "GTG"},
-    {INSIDE_GANONS_CASTLE, 1, 1, 0, 0, 0, "Ganon"},
+    {SCENE_BOTTOM_OF_THE_WELL, 1, 0, 0, 1, 1, "BotW"},
+    {SCENE_ICE_CAVERN, 0, 0, 0, 1, 1, "Ice"},
+    {SCENE_THIEVES_HIDEOUT, 1, 0, 1, 0, 0, "Hideout"},
+    {SCENE_GERUDO_TRAINING_GROUND, 1, 0, 0, 0, 0, "GTG"},
+    {SCENE_INSIDE_GANONS_CASTLE, 1, 1, 0, 0, 0, "Ganon"},
 };
 
 int dungeon_count = array_size(dungeons);
 
 extern uint32_t CFG_DUNGEON_INFO_ENABLE;
 
-void draw_dungeon_info(z64_disp_buf_t *db)
-{
+uint8_t get_dungeon_tokens(uint8_t dungeon_index) {
+    return get_tokens(dungeon_index);
+}
+
+uint8_t get_dungeon_hps(uint8_t dungeon_index) {
+    switch(dungeon_index) {
+        case SCENE_ICE_CAVERN: {
+            bool has_ice_cavern_hp = (z64_game.scene_index == SCENE_ICE_CAVERN && z64_game.collect_flags & (1 << 0x01))
+                || z64_file.scene_flags[SCENE_ICE_CAVERN].collect & (1 << 0x01);
+            return has_ice_cavern_hp ? 1 : 0;
+        }
+        default: {
+            return 0xFF;
+        }
+    }
+}
+
+void draw_dungeon_info(z64_disp_buf_t *db) {
     int draw = CFG_DUNGEON_INFO_ENABLE &&
                z64_game.pause_ctxt.state == 6 &&
                z64_game.pause_ctxt.screen_idx == PAUSE_ITEM &&
@@ -99,8 +110,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     // Draw dungeon names
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(d->name, left, top);
@@ -112,8 +122,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &quest_items_sprite, 11, 1);
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
         if (!d->has_tokens)
             continue;
@@ -127,13 +136,12 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     // Draw skull count
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
         if (!d->has_tokens)
             continue;
 
-        int8_t tokens = get_tokens(d->index);
+        uint8_t tokens = get_tokens(d->index);
 
         char count[2] = "0";
         count[0] += (tokens % 10);
@@ -147,8 +155,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &key_rupee_clock_sprite, 0, key_rupee_clock_sprite.tile_count);
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
         if (!d->has_keys)
             continue;
@@ -162,10 +169,9 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &quest_items_sprite, 13, 1);
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
-        if (d->index != ICE_CAVERN)
+        if (d->index != SCENE_ICE_CAVERN)
             continue;
 
         int top = start_top + ((icon_size + padding) * i);
@@ -177,8 +183,7 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     // Draw small key counts
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
         if (!d->has_keys)
             continue;
@@ -200,10 +205,9 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     // Draw hp counts
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
-        if (d->index != ICE_CAVERN)
+        if (d->index != SCENE_ICE_CAVERN)
             continue;
 
         int8_t hps = 0;
@@ -223,14 +227,12 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &quest_items_sprite, 14, 1);
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
         // Replace index 13 (Ganon's Castle) with 10 (Ganon's Tower)
         int index = d->index == 13 ? 10 : d->index;
 
-        if (d->has_boss_key && z64_file.dungeon_items[index].boss_key)
-        {
+        if (d->has_boss_key && z64_file.dungeon_items[index].boss_key) {
             int top = start_top + ((icon_size + padding) * i);
             sprite_draw(db, &quest_items_sprite, 0,
                         left, top, icon_size, icon_size);
@@ -241,11 +243,9 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &quest_items_sprite, 10, 1);
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
-        if (d->has_card && z64_file.gerudos_card)
-        {
+        if (d->has_card && z64_file.gerudos_card) {
             int top = start_top + ((icon_size + padding) * i);
             sprite_draw(db, &quest_items_sprite, 0,
                         left, top, icon_size, icon_size);
@@ -258,11 +258,9 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &quest_items_sprite, 16, 1);
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
-        if (d->has_map && z64_file.dungeon_items[d->index].map)
-        {
+        if (d->has_map && z64_file.dungeon_items[d->index].map) {
             int top = start_top + ((icon_size + padding) * i);
             sprite_draw(db, &quest_items_sprite, 0,
                         left, top, icon_size, icon_size);
@@ -275,11 +273,9 @@ void draw_dungeon_info(z64_disp_buf_t *db)
 
     sprite_load(db, &quest_items_sprite, 15, 1);
 
-    for (int i = 0; i < dungeon_count; i++)
-    {
+    for (int i = 0; i < dungeon_count; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
-        if (d->has_map && z64_file.dungeon_items[d->index].compass)
-        {
+        if (d->has_map && z64_file.dungeon_items[d->index].compass) {
             int top = start_top + ((icon_size + padding) * i);
             sprite_draw(db, &quest_items_sprite, 0,
                         left, top, icon_size, icon_size);

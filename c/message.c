@@ -1,8 +1,10 @@
 #include "message.h"
 #include "z64.h"
-#include "stdbool.h"
-#include "save.h"
+#include "bingo.h"
 #include "dungeon_info.h"
+#include "world_map_info.h"
+#include "save.h"
+#include "stdbool.h"
 
 // no support for kana since they're not part of the message charset
 char FILENAME_ENCODING[256] = {
@@ -80,6 +82,98 @@ void Message_AddFileName(MessageContext* msgCtx, void* pFont, uint32_t* pDecoded
     }
 }
 
+// Function that handles dungeon item counts
+bool decode_dungeon_item_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+    // Get the next character that tells us which dungeon
+    uint8_t dungeon = msgRaw[++(msgCtx->msgBufPos)];
+    // Get the next character that tells us which item
+    uint8_t item = msgRaw[++(msgCtx->msgBufPos)];
+
+    // Get the count from the save context
+    uint8_t count = 0xFF;
+    switch (item) {
+        case DCI_TOKEN: {
+            count = get_tokens(dungeon);
+            break;
+        }
+        case DCI_HEART_PIECE: {
+            if (dungeon != SCENE_ICE_CAVERN) {
+                break;
+            }
+
+            count = HAS_ICE_CAVERN_HP ? 1 : 0;
+            break;
+        }
+        case DCI_SMALL_KEY: {
+            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
+            break;
+        }
+    }
+
+    if (count == 0xFF) {
+        return false;
+    }
+
+    Message_AddInteger(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, count);
+    (*pDecodedBufPos)--;
+    return true;
+}
+
+// Function that handles item counts
+bool decode_item_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+    // Get the next character that tells us which item
+    uint8_t item = msgRaw[++(msgCtx->msgBufPos)];
+
+    // Get the count from the save context
+    uint8_t count = 0xFF;
+    switch (item) {
+        case CI_SWORD: {
+            count = get_tokens(dungeon);
+            break;
+        }
+        case CI_SHIELD: {
+            count = HAS_ICE_CAVERN_HP ? 1 : 0;
+            break;
+        }
+        case CI_TUNIC: {
+            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
+            break;
+        }
+        case CI_BOOT: {
+            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
+            break;
+        }
+        case CI_SONG: {
+            count = 0;
+            break;
+        }
+        case CI_MEDALLION: {
+            count = 0;
+            break;
+        }
+        case CI_STONE: {
+            count = 0;
+            break;
+        }
+        case CI_REWARD: {
+            count = 0;
+            break;
+        }
+        case CI_BOSS_KEY: {
+            count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
+            break;
+        }
+    }
+
+    if (count == 0xFF) {
+        return false;
+    }
+
+    Message_AddInteger(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, count);
+    (*pDecodedBufPos)--;
+    return true;
+}
+
 // Hack to add additional text control codes.
 // If additional codes need to be read after the primary code, increment msgCtx->msgBufPos and index msgRaw
 // To add a new control code:
@@ -94,119 +188,14 @@ bool Message_Decode_Additional_Control_Codes(uint8_t currChar, uint32_t* pDecode
     char* msgRaw = (char*) &(pFont->msgBuf); // Get a reference to the start of the raw message. Index using msgCtx->msgBufPos.
 
     switch (currChar) {
-        case 0xF0: {
-            // Silver rupee puzzle control code
-            // Get the next character which tells us which puzzle it's for
-            uint8_t puzzle = msgRaw[++(msgCtx->msgBufPos)];
-            uint8_t count = extended_savectx.silver_rupee_counts[puzzle];
-            Message_AddInteger(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, count);
-            (*pDecodedBufPos)--;
-            return true;
-        }
         case 0xF1: {
-            // Small key count
-            // Get the next character which tells us which dungeon it's for
-            uint8_t dungeon = msgRaw[++(msgCtx->msgBufPos)];
-            uint8_t count = z64_file.scene_flags[dungeon].unk_00_ >> 0x10;
-            Message_AddInteger(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, count);
-            (*pDecodedBufPos)--;
-            return true;
+            return decode_dungeon_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
         }
-        case 0xF2: {
-            // Outgoing item filename
-            Message_AddFileName(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, PLAYER_NAMES[PLAYER_NAME_ID]);
-            (*pDecodedBufPos)--;
-            return true;
+        case 0xF4: {
+            return decode_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
         }
-        case 0xF3: {
-            // Farore's Wind destination
-            switch (z64_file.respawn[RESPAWN_MODE_TOP].entranceIndex) {
-                case 0x000:
-                case 0x252: {
-                    // Deku Tree
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[0].name);
-                    break;
-                }
-                case 0x004:
-                case 0x0C5: {
-                    // DC
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[1].name);
-                    break;
-                }
-                case 0x028:
-                case 0x407: {
-                    // Jabu
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[2].name);
-                    break;
-                }
-                case 0x169:
-                case 0x24E: {
-                    // Forest Temple
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[3].name);
-                    break;
-                }
-                case 0x165:
-                case 0x175: {
-                    // Fire Temple
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[4].name);
-                    break;
-                }
-                case 0x010:
-                case 0x423: {
-                    // Water Temple
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[5].name);
-                    break;
-                }
-                case 0x037:
-                case 0x2B2: {
-                    // Shadow Temple
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[6].name);
-                    break;
-                }
-                case 0x082:
-                case 0x2F5:
-                case 0x3F0:
-                case 0x3F4: {
-                    // Spirit Temple
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[7].name);
-                    break;
-                }
-                case 0x098: {
-                    // BotW
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[8].name);
-                    break;
-                }
-                case 0x088: {
-                    // Ice
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[9].name);
-                    break;
-                }
-                case 0x008: {
-                    // GTG
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[11].name);
-                    break;
-                }
-                case 0x41B:
-                case 0x467:
-                case 0x534:
-                case 0x538:
-                case 0x53C:
-                case 0x540:
-                case 0x544:
-                case 0x548:
-                case 0x54C: {
-                    // Ganon
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, dungeons[12].name);
-                    break;
-                }
-                default: {
-                    // Vanilla text
-                    Message_AddString(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, "the Warp Point");
-                    break;
-                }
-            }
-            (*pDecodedBufPos)--;
-            return true;
+        case 0xF5: {
+            return decode_area_item_count(msgCtx, pFont, msgRaw, pDecodedBufPos, pCharTexIdx);
         }
         default: {
             return false;
@@ -244,7 +233,7 @@ void treasure_chest_game_message() {
 
 // Function to display custom textboxes ingame.
 void display_misc_messages() {
-    if (z64_MessageGetState(((uint8_t *)(&z64_game)) + 0x20D8) == 0) {
+    if (z64_MessageGetState(((uint8_t*) (&z64_game)) + 0x20D8) == 0) {
         // Each minigame warning message can only be triggered in their respective
         // scenes. Order doesn't matter.
         if (shooting_gallery_show_message == 1) {
