@@ -199,7 +199,7 @@ world_map_area_entry_t world_map_areas[] = {
     {AREA_ZORA, 17, {ZR_FROGS_IN_THE_RAIN, ZR_FROGS_OCARINA_GAME, ZR_NEAR_OPEN_GROTTO_FREESTANDING_HP, ZR_NEAR_DOMAIN_FREESTANDING_HP, ZD_CHEST, ZF_ICEBERG_FREESTANDING_HP, ZF_BOTTOM_FREESTANDING_HP}, 7, "Zora Area"},                                                                           // 8 tokens, 7 HPs
 };
 
-int world_map_area_count = array_size(world_map_areas);
+int world_map_areas_length = array_size(world_map_areas);
 
 extern uint32_t CFG_WORLD_MAP_INFO_ENABLE;
 
@@ -222,7 +222,7 @@ extern uint32_t CFG_WORLD_MAP_INFO_ENABLE;
     (hp_flag.is_inf_table && z64_file.inf_table[hp_flag.flag >> 4] & (1 << (hp_flag.flag & 0xF)))
 
 bool is_valid_area_index(uint8_t area_index) {
-    for (int i = 0; i < world_map_area_count; i++) {
+    for (int i = 0; i < world_map_areas_length; i++) {
         if (world_map_areas[i].index == area_index) {
             return true;
         }
@@ -293,7 +293,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
         (14 * font_sprite.tile_w) + // world map area names
         padding +
         (4 * (icon_size + padding)); // skull, skull count, hp, hp count
-    int bg_height = padding + (world_map_area_count * (icon_size + padding));
+    int bg_height = padding + (world_map_areas_length * (icon_size + padding));
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
 
@@ -320,7 +320,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
 
     // Draw area names
 
-    for (int i = 0; i < world_map_area_count; i++) {
+    for (int i = 0; i < world_map_areas_length; i++) {
         world_map_area_entry_t* w = &(world_map_areas[i]);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(w->name, left, top);
@@ -332,7 +332,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
 
     sprite_load(db, &quest_items_sprite, 11, 1);
 
-    for (int i = 0; i < world_map_area_count; i++) {
+    for (int i = 0; i < world_map_areas_length; i++) {
         int top = start_top + ((icon_size + padding) * i);
         sprite_draw(db, &quest_items_sprite, 0,
             left, top, icon_size, icon_size);
@@ -342,7 +342,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
 
     // Draw skull count
 
-    for (int i = 0; i < world_map_area_count; i++) {
+    for (int i = 0; i < world_map_areas_length; i++) {
         uint8_t tokens = get_area_tokens(i);
 
         char count[2] = "0";
@@ -357,7 +357,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
 
     sprite_load(db, &quest_items_sprite, 13, 1);
 
-    for (int i = 0; i < world_map_area_count; i++) {
+    for (int i = 0; i < world_map_areas_length; i++) {
         world_map_area_entry_t* w = &(world_map_areas[i]);
         if (w->hp_flags_length == 0)
             continue;
@@ -371,7 +371,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
 
     // Draw hp counts
 
-    for (int i = 0; i < world_map_area_count; i++) {
+    for (int i = 0; i < world_map_areas_length; i++) {
         world_map_area_entry_t* w = &(world_map_areas[i]);
         if (w->hp_flags_length == 0)
             continue;

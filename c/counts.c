@@ -1,5 +1,6 @@
 #include "counts.h"
 
+#include "util.h"
 #include "z64.h"
 
 uint32_t gGsFlagsMasks[] = { 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000 };
@@ -20,18 +21,19 @@ uint8_t get_tokens(uint8_t gs_flags_index) {
     return tokens;
 }
 
-uint8_t get_medallion_count() {
+uint8_t get_global_medallions() {
     return z64_file.light_medallion + z64_file.shadow_medallion + z64_file.spirit_medallion
            + z64_file.water_medallion + z64_file.fire_medallion + z64_file.forest_medallion;
 }
 
-uint8_t get_stone_count() {
+uint8_t get_global_stones() {
     return z64_file.kokiris_emerald + z64_file.gorons_ruby + z64_file.zoras_sapphire;
 }
 
-uint8_t get_dungeon_item_count(uint8_t mask) {
+uint8_t get_global_dungeon_items(uint8_t mask) {
     uint8_t count = 0;
-    for (int i = 0; i < 20; i++) {
+    int dungeon_items_length = array_size(z64_file.dungeon_items);
+    for (int i = 0; i < dungeon_items_length; i++) {
         if (z64_file.dungeon_items[i].items & mask) {
             count++;
         }
@@ -60,22 +62,22 @@ uint8_t get_global_count(uint8_t count_index) {
                    + z64_file.requiem_of_spirit + z64_file.nocturne_of_shadow + z64_file.prelude_of_light;
         }
         case GCOUNT_MEDALLION: {
-            return get_medallion_count();
+            return get_global_medallions();
         }
         case GCOUNT_STONE: {
-            return get_stone_count();
+            return get_global_stones();
         }
         case GCOUNT_REWARD: {
-            return get_medallion_count() + get_stone_count();
+            return get_global_medallions() + get_global_stones();
         }
         case GCOUNT_BOSS_KEY: {
-            return get_dungeon_item_count(0b001);
+            return get_global_dungeon_items(0b001);
         }
         case GCOUNT_COMPASS: {
-            return get_dungeon_item_count(0b010);
+            return get_global_dungeon_items(0b010);
         }
         case GCOUNT_MAP: {
-            return get_dungeon_item_count(0b100);
+            return get_global_dungeon_items(0b100);
         }
         case GCOUNT_ELEMENTAL_ARROW: {
             return z64_file.items[Z64_SLOT_FIRE_ARROW] == Z64_ITEM_FIRE_ARROW
@@ -94,17 +96,20 @@ uint8_t get_global_count(uint8_t count_index) {
                 + z64_file.items[Z64_SLOT_BOTTLE_4] != Z64_ITEM_NULL;
         }
         case GCOUNT_CARPENTER: {
-            return get_carpenter_count(GCOUNT_CARPENTER);
+            return z64_file.event_chk_inf[9] & 0x0001
+                + z64_file.event_chk_inf[9] & 0x0010
+                + z64_file.event_chk_inf[9] & 0x0100
+                + z64_file.event_chk_inf[9] & 0x1000;
         }
         case GCOUNT_BEAN: {
             return z64_file.magic_beans_sold;
         }
-        case GCOUNT_TRAP: {
-            return get_trap_count(GCOUNT_TRAP);
-        }
-        case GCOUNT_GOLD_RUPEE: {
-            return get_gold_rupee_count(GCOUNT_GOLD_RUPEE);
-        }
+        // case GCOUNT_TRAP: {
+        //     return get_trap_count();
+        // }
+        // case GCOUNT_GOLD_RUPEE: {
+        //     return get_gold_rupee_count();
+        // }
         // case GCOUNT_IRON_KNUCKLE: {
         //     return get_enemy_count(GCOUNT_IRON_KNUCKLE);
         // }
