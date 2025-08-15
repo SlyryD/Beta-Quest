@@ -39,91 +39,95 @@ uint8_t get_dungeon_item_count(uint8_t mask) {
     return count;
 }
 
-uint8_t get_item_count(uint8_t item_index) {
-    switch (item_index) {
-        case CI_SWORD: {
+uint8_t get_global_count(uint8_t count_index) {
+    switch (count_index) {
+        case GCOUNT_SWORD: {
             return z64_file.kokiri_sword + z64_file.master_sword + z64_file.giants_knife + z64_file.broken_giants_knife;
         }
-        case CI_SHIELD: {
+        case GCOUNT_SHIELD: {
             return z64_file.deku_shield + z64_file.hylian_shield + z64_file.mirror_shield;
         }
-        case CI_TUNIC: {
+        case GCOUNT_TUNIC: {
             return z64_file.kokiri_tunic + z64_file.goron_tunic + z64_file.zora_tunic;
         }
-        case CI_BOOT: {
+        case GCOUNT_BOOT: {
             return z64_file.kokiri_boots + z64_file.iron_boots + z64_file.hover_boots;
         }
-        case CI_SONG: {
+        case GCOUNT_SONG: {
             return z64_file.zeldas_lullaby + z64_file.eponas_song + z64_file.sarias_song
                    + z64_file.suns_song + z64_file.song_of_time + z64_file.song_of_storms
                    + z64_file.minuet_of_forest + z64_file.bolero_of_fire + z64_file.serenade_of_water
                    + z64_file.requiem_of_spirit + z64_file.nocturne_of_shadow + z64_file.prelude_of_light;
         }
-        case CI_MEDALLION: {
+        case GCOUNT_MEDALLION: {
             return get_medallion_count();
         }
-        case CI_STONE: {
+        case GCOUNT_STONE: {
             return get_stone_count();
         }
-        case CI_REWARD: {
+        case GCOUNT_REWARD: {
             return get_medallion_count() + get_stone_count();
         }
-        case CI_BOSS_KEY: {
+        case GCOUNT_BOSS_KEY: {
             return get_dungeon_item_count(0b001);
         }
-        case CI_COMPASS: {
+        case GCOUNT_COMPASS: {
             return get_dungeon_item_count(0b010);
         }
-        case CI_MAP: {
+        case GCOUNT_MAP: {
             return get_dungeon_item_count(0b100);
         }
-        case CI_ELEMENTAL_ARROW: {
-            return get_inventory_item_count(CI_ELEMENTAL_ARROW);
+        case GCOUNT_ELEMENTAL_ARROW: {
+            return z64_file.items[Z64_SLOT_FIRE_ARROW] == Z64_ITEM_FIRE_ARROW
+                + z64_file.items[Z64_SLOT_ICE_ARROW] == Z64_ITEM_ICE_ARROW
+                + z64_file.items[Z64_SLOT_LIGHT_ARROW] == Z64_ITEM_LIGHT_ARROW;
         }
-        case CI_FAIRY_SPELL: {
-            return get_inventory_item_count(CI_FAIRY_SPELL);
+        case GCOUNT_FAIRY_SPELL: {
+            return z64_file.items[Z64_SLOT_DINS_FIRE] == Z64_ITEM_DINS_FIRE
+                + z64_file.items[Z64_SLOT_FARORES_WIND] == Z64_ITEM_FARORES_WIND
+                + z64_file.items[Z64_SLOT_NAYRUS_LOVE] == Z64_ITEM_NAYRUS_LOVE;
         }
-        case CI_BOTTLE_SLOT: {
+        case GCOUNT_BOTTLE_SLOT: {
             return z64_file.items[Z64_SLOT_BOTTLE_1] != Z64_ITEM_NULL
                 + z64_file.items[Z64_SLOT_BOTTLE_2] != Z64_ITEM_NULL
                 + z64_file.items[Z64_SLOT_BOTTLE_3] != Z64_ITEM_NULL
                 + z64_file.items[Z64_SLOT_BOTTLE_4] != Z64_ITEM_NULL;
         }
-        case CI_CARPENTER: {
-            return get_carpenter_count(CI_CARPENTER);
+        case GCOUNT_CARPENTER: {
+            return get_carpenter_count(GCOUNT_CARPENTER);
         }
-        case CI_BEAN: {
+        case GCOUNT_BEAN: {
             return z64_file.magic_beans_sold;
         }
-        case CI_TRAP: {
-            return get_trap_count(CI_TRAP);
+        case GCOUNT_TRAP: {
+            return get_trap_count(GCOUNT_TRAP);
         }
-        case CI_GOLD_RUPEE: {
-            return get_gold_rupee_count(CI_GOLD_RUPEE);
+        case GCOUNT_GOLD_RUPEE: {
+            return get_gold_rupee_count(GCOUNT_GOLD_RUPEE);
         }
-        // case CI_IRON_KNUCKLE: {
-        //     return get_enemy_count(CI_IRON_KNUCKLE);
+        // case GCOUNT_IRON_KNUCKLE: {
+        //     return get_enemy_count(GCOUNT_IRON_KNUCKLE);
         // }
-        // case CI_WHITE_WOLFOS: {
-        //     return get_enemy_count(CI_WHITE_WOLFOS);
+        // case GCOUNT_WHITE_WOLFOS: {
+        //     return get_enemy_count(GCOUNT_WHITE_WOLFOS);
         // }
-        // case CI_LIZALFOS: {
-        //     return get_enemy_count(CI_LIZALFOS);
+        // case GCOUNT_LIZALFOS: {
+        //     return get_enemy_count(GCOUNT_LIZALFOS);
         // }
-        // case CI_GIBDO: {
-        //     return get_enemy_count(CI_GIBDO);
+        // case GCOUNT_GIBDO: {
+        //     return get_enemy_count(GCOUNT_GIBDO);
         // }
-        // case CI_TENTACLE: {
-        //     return get_enemy_count(CI_TENTACLE);
+        // case GCOUNT_TENTACLE: {
+        //     return get_enemy_count(GCOUNT_TENTACLE);
         // }
-        // case CI_STALFOS: {
-        //     return get_enemy_count(CI_STALFOS);
+        // case GCOUNT_STALFOS: {
+        //     return get_enemy_count(GCOUNT_STALFOS);
         // }
-        // case CI_DEAD_HANDS: {
-        //     return get_enemy_count(CI_DEAD_HANDS);
+        // case GCOUNT_DEAD_HANDS: {
+        //     return get_enemy_count(GCOUNT_DEAD_HANDS);
         // }
-        // case CI_FLARE_DANCER: {
-        //     return get_enemy_count(CI_FLARE_DANCER);
+        // case GCOUNT_FLARE_DANCER: {
+        //     return get_enemy_count(GCOUNT_FLARE_DANCER);
         // }
         default: {
             return 0xFF;

@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Optional, Any
 
 from Utils import find_last
-from scripts.Bingo import DungeonCountableItem
+from Counts import DungeonCount
 
 if TYPE_CHECKING:
     from Rom import Rom
@@ -60,14 +60,14 @@ CONTROL_CODES: dict[int, tuple[str, int, Callable[[Any], str]]] = {
     0x1E: ('high-score', 1, lambda d: '<high-score ' + "{:02x}".format(d) + '>' ),
     0x1F: ('time', 0, lambda _: '<current time>' ),
     # 0xF0: ('silver_rupee', 1, lambda d: '<silver rupee count ' + "{:02x}".format(d) + '>' ),
-    # dungeon_item_count format is \xF1\xXX\xYY where XX is the dungeon id and YY is the item id
-    0xF1: ('dungeon_item_count', 2, lambda d: '<dungeon item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
+    # dungeon_count format is \xF1\xXX\xYY where XX is the dungeon id and YY is the item id
+    0xF1: ('dungeon_count', 2, lambda d: '<dungeon count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
     # 0xF2: ('outgoing_item_filename', 0, lambda _: '<outgoing item filename>' ),
     # 0xF3: ('farores_wind_destination', 0, lambda _: '<farores_wind_destination>' ),
-    # area_item_count format is \xF4\xXX\xYY where XX is the area id and YY is the item id
-    0xF4: ('area_item_count', 2, lambda d: '<area item count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
-    # item_count format is \xF5\xXX where XX is the item id
-    0xF5: ('item_count', 1, lambda d: '<item count ' + "{:02x}".format(d) + '>' ),
+    # area_count format is \xF4\xXX\xYY where XX is the area id and YY is the item id
+    0xF4: ('area_count', 2, lambda d: '<area count ' + "{:02x}".format(d) + " {:02x}".format(d) + '>' ),
+    # global_count format is \xF5\xXX where XX is the item id
+    0xF5: ('global_count', 1, lambda d: '<global count ' + "{:02x}".format(d) + '>' ),
 }
 
 
@@ -373,7 +373,7 @@ for dungeon_name in dungeon_names:
 c = 0
 for dungeon_name in dungeon_names:
     if dungeon_name is not None:
-        KEYSANITY_MESSAGES.append((i, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for {dungeon_name}!\x01That's \x05\x41" + "\xF1" + c.to_bytes(1, 'big').decode() + DungeonCountableItem.SMALL_KEY.to_bytes(1, 'big').decode() + "\x05\x40 of them.\x09"))
+        KEYSANITY_MESSAGES.append((i, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for {dungeon_name}!\x01That's \x05\x41" + "\xF1" + c.to_bytes(1, 'big').decode() + DungeonCount.SMALL_KEY.to_bytes(1, 'big').decode() + "\x05\x40 of them.\x09"))
     i += 1
     c += 1
 for dungeon_name in dungeon_names:

@@ -3,7 +3,7 @@
 
 #include "z64.h"
 
-uint8_t get_area_item_count(uint8_t area_index, uint8_t item_index);
+uint8_t get_area_count(uint8_t area_index, uint8_t count_index);
 
 void draw_world_map_info(z64_disp_buf_t* db);
 

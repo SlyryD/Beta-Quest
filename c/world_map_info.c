@@ -249,17 +249,17 @@ uint8_t get_area_hps(uint8_t area_index) {
     return hps;
 }
 
-uint8_t get_area_item_count(uint8_t area_index, uint8_t item_index) {
+uint8_t get_area_count(uint8_t area_index, uint8_t count_index) {
     if (!is_valid_area_index(area_index)) {
         return 0xFF;
     }
 
-    switch (item_index) {
-        case ACI_TOKEN: {
+    switch (count_index) {
+        case ACOUNT_TOKEN: {
             count = get_area_tokens(area_index);
             break;
         }
-        case ACI_HEART_PIECE: {
+        case ACOUNT_HEART_PIECE: {
             count = get_area_hps(area_index);
             break;
         }

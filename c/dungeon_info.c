@@ -77,19 +77,19 @@ uint8_t get_dungeon_unused_small_keys(uint8_t dungeon_index) {
     return z64_file.dungeon_keys[dungeon_index];
 }
 
-uint8_t get_dungeon_item_count(uint8_t dungeon_index, uint8_t item_index) {
+uint8_t get_dungeon_count(uint8_t dungeon_index, uint8_t count_index) {
     if (!is_valid_dungeon_index(dungeon_index)) {
         return 0xFF;
     }
 
-    switch (item_index) {
-        case DCI_TOKEN: {
+    switch (count_index) {
+        case DCOUNT_TOKEN: {
             return get_dungeon_tokens(dungeon_index);
         }
-        case DCI_HEART_PIECE: {
+        case DCOUNT_HEART_PIECE: {
             return get_dungeon_hps(dungeon_index);
         }
-        case DCI_SMALL_KEY: {
+        case DCOUNT_SMALL_KEY: {
             return get_dungeon_small_keys(dungeon_index);
         }
         default: {

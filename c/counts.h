@@ -71,57 +71,57 @@ typedef enum {
 } area_t;
 
 typedef enum {
+    // Quest
+    DCOUNT_TOKEN = 0x00,
+    DCOUNT_HEART_PIECE = 0x01,
+    // Dungeon
+    DCOUNT_SMALL_KEY = 0x10,
+} dungeon_count_t;
+
+typedef enum {
+    // Quest
+    ACOUNT_TOKEN = 0x00,
+    ACOUNT_HEART_PIECE = 0x01,
+} area_count_t;
+
+typedef enum {
     // Equipment
-    CI_SWORD = 0x00,
-    CI_SHIELD = 0x01,
-    CI_TUNIC = 0x02,
-    CI_BOOT = 0x03,
+    GCOUNT_SWORD = 0x00,
+    GCOUNT_SHIELD = 0x01,
+    GCOUNT_TUNIC = 0x02,
+    GCOUNT_BOOT = 0x03,
     // Quest
-    CI_SONG = 0x10,
-    CI_MEDALLION = 0x11,
-    CI_STONE = 0x12,
-    CI_REWARD = 0x13,
+    GCOUNT_SONG = 0x10,
+    GCOUNT_MEDALLION = 0x11,
+    GCOUNT_STONE = 0x12,
+    GCOUNT_REWARD = 0x13,
     // Dungeon
-    CI_BOSS_KEY = 0x20,
-    CI_COMPASS = 0x21,
-    CI_MAP = 0x22,
+    GCOUNT_BOSS_KEY = 0x20,
+    GCOUNT_COMPASS = 0x21,
+    GCOUNT_MAP = 0x22,
     // Inventory
-    CI_ELEMENTAL_ARROW = 0x30,
-    CI_FAIRY_SPELL = 0x31,
-    CI_BOTTLE_SLOT = 0x32,
+    GCOUNT_ELEMENTAL_ARROW = 0x30,
+    GCOUNT_FAIRY_SPELL = 0x31,
+    GCOUNT_BOTTLE_SLOT = 0x32,
     // Flags
-    CI_CARPENTER = 0x40,
+    GCOUNT_CARPENTER = 0x40,
     // Items not present in menu (count stored in save context)
-    CI_BEAN = 0x50,
-    CI_TRAP = 0x51,
-    CI_GOLD_RUPEE = 0x52,
+    GCOUNT_BEAN = 0x50,
+    GCOUNT_TRAP = 0x51,
+    GCOUNT_GOLD_RUPEE = 0x52,
     // Enemies
-    CI_IRON_KNUCKLE = 0x60,
-    CI_WHITE_WOLFOS = 0x61,
-    CI_LIZALFOS = 0x62,
-    CI_GIBDO = 0x63,
-    CI_TENTACLE = 0x64,
-    CI_STALFOS = 0x65,
-    CI_DEAD_HANDS = 0x66,
-    CI_FLARE_DANCER = 0x67
-} countable_item_t;
-
-typedef enum {
-    // Quest
-    DCI_TOKEN = 0x00,
-    DCI_HEART_PIECE = 0x01,
-    // Dungeon
-    DCI_SMALL_KEY = 0x10,
-} dungeon_countable_item_t;
-
-typedef enum {
-    // Quest
-    ACI_TOKEN = 0x00,
-    ACI_HEART_PIECE = 0x01,
-} area_countable_item_t;
+    GCOUNT_IRON_KNUCKLE = 0x60,
+    GCOUNT_WHITE_WOLFOS = 0x61,
+    GCOUNT_LIZALFOS = 0x62,
+    GCOUNT_GIBDO = 0x63,
+    GCOUNT_TENTACLE = 0x64,
+    GCOUNT_STALFOS = 0x65,
+    GCOUNT_DEAD_HANDS = 0x66,
+    GCOUNT_FLARE_DANCER = 0x67
+} global_count_t;
 
 uint8_t get_tokens(uint8_t gs_flags_index);
 
-uint8_t get_item_count(uint8_t item_index);
+uint8_t get_global_count(uint8_t count_index);
 
 #endif
