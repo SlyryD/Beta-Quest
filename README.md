@@ -112,7 +112,7 @@ V2.2 Changes:
 
 * Added Master Quest dungeon option (`./scripts/build.py --compile-c --mq`)
 
-* Added bonko (Bonk One Hit KO) option (`./scripts/build.py --compile-c --bonko`)
+* Added Bonko (Bonk One Hit KO), disabled by default and configurable from the file-select options menu
 
 * Added small key total to dungeon info menu
 
