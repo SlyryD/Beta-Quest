@@ -596,7 +596,8 @@ typedef struct
   int16_t         minigame_state;           /* 0x1404 */
   char            unk_18_[0x0003];          /* 0x1406 */
   uint8_t         language;                 /* 0x1409 */
-  char            unk_19_[0x0002];          /* 0x140A */
+  uint8_t         sound_setting;            /* 0x140A */
+  char            unk_19_[0x0001];          /* 0x140B */
   uint8_t         z_targeting;              /* 0x140C */
   char            unk_1A_[0x0001];          /* 0x140D */
   uint16_t        disable_music_flag;       /* 0x140E */
@@ -616,7 +617,9 @@ typedef struct
     uint8_t       z_target_options;         /* 0x0001 */
     uint8_t       language_options;         /* 0x0002 */
     char          verification_string[9];   /* 0x0003 */
-    char          unk_00_[0x0014];          /* 0x000C */
+    uint8_t       bonko_options;            /* 0x000C */
+    uint8_t       bonko_options_magic;      /* 0x000D */
+    char          unk_00_[0x0012];          /* 0x000E */
     z64_file_t    primary_saves[3];         /* 0x0020 */
     z64_file_t    backup_saves[3];          /* 0x3D10 */
                                             /* 0x7A00 */

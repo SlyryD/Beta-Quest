@@ -251,6 +251,7 @@
 ;==============================================================================
 
 .include("title_screen.asm")
+.include("file_select.asm")
 
 
 ;==============================================================================
@@ -290,6 +291,7 @@ RANDO_CONTEXT:
 .include "dpad.asm"
 .include "initial_save.asm"
 .include "bonk.asm"
+.include "file_select_hooks.asm"
 
 .align 0x10
 .importobj "../build/bundle.o"

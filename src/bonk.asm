@@ -1,7 +1,7 @@
 CFG_DEADLY_BONKS:
     .word 0x00000000
 CFG_BONK_DAMAGE:
-    .halfword 0x0000
+    .halfword 0xFFFE
 .align 8
 
 
@@ -11,7 +11,10 @@ BONK_LAST_FRAME:
 
     ; displaced code
     or      a0, s0, $zero
-    jal     0x8039BD60  ; func_80838178, static location as part of player overlay
+    lui     t9, 0x8010
+    lw      t9, -0x1B48(t9)  ; gActorOverlayTable[ACTOR_PLAYER].loadedRamAddr
+    addiu   t9, t9, 0x7FB8   ; func_80838178 offset in the player overlay
+    jalr    t9
     nop
 
     ; Bonk damage enabled
@@ -135,9 +138,8 @@ APPLY_BONK_DAMAGE:
 
 KING_DODONGO_BONKS:
     ; One Bonk KO setting enabled
-    lh      t0, CFG_BONK_DAMAGE
-    addiu   t2, $zero, 0xFFFE
-    bne     t0, t2, @@return_bonk_kd
+    lw      t0, CFG_DEADLY_BONKS
+    beqz    t0, @@return_bonk_kd
     nop
 
     ; Set King Dodongo health to zero
