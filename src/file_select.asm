@@ -1,4 +1,4 @@
-; Load Bonko immediately after vanilla loads Sound and Z-targeting from SRAM.
+; Load custom options immediately after vanilla loads Sound and Z-targeting from SRAM.
 .headersize(0x800110A0 - 0x00A87000)
 .org 0x800912AC
     j       load_bonko_setting_hook
@@ -16,6 +16,12 @@
 .org 0x8080BCA0
     j       draw_file_select_options
     nop
+
+; Only pulse Z Targeting when the native selection is exactly 1. Vanilla
+; treats every nonzero value as Z Targeting, including our custom rows.
+.org 0x8080B45C
+    addiu   t9, t9, -1
+    bnez    t9, 0x8080B510
 
 ; This entry now references the external payload, so the overlay loader must
 ; not relocate it as an overlay-local address.

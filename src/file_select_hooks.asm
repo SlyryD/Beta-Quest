@@ -2,7 +2,7 @@ load_bonko_setting_hook:
     addiu   sp, sp, -0x18
     sw      ra, 0x10(sp)
 
-    jal     load_bonko_setting
+    jal     load_file_select_settings
     lw      a0, 0x00(s2)
 
     lw      ra, 0x10(sp)
