@@ -124,7 +124,7 @@ V2.3 Changes:
 
 * Restore light arrow cutscene BA with Better OoT version of the cutscenes
 
-* Added song cutscene speedups option (`./scripts/build.py --compile-c --song_speedup`)
+* Added song cutscene speedups, disabled by default and configurable from the file-select options menu
 
 * TODO: Count maps, compasses, equipment, etc.
 

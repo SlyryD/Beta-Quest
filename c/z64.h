@@ -619,7 +619,9 @@ typedef struct
     char          verification_string[9];   /* 0x0003 */
     uint8_t       bonko_options;            /* 0x000C */
     uint8_t       bonko_options_magic;      /* 0x000D */
-    char          unk_00_[0x0012];          /* 0x000E */
+    uint8_t       song_speedup_options;     /* 0x000E */
+    uint8_t       song_speedup_options_magic; /* 0x000F */
+    char          unk_00_[0x0010];          /* 0x0010 */
     z64_file_t    primary_saves[3];         /* 0x0020 */
     z64_file_t    backup_saves[3];          /* 0x3D10 */
                                             /* 0x7A00 */
@@ -1010,7 +1012,9 @@ typedef struct
 {
   z64_ctxt_t       common;                 /* 0x00000 */
   uint16_t         scene_index;            /* 0x000A4 */
-  char             unk_00_[0x001A];        /* 0x000A6 */
+  char             unk_00_[0x000A];        /* 0x000A6 */
+  void            *scene_segment;           /* 0x000B0 */
+  char             unk_00B4[0x000C];        /* 0x000B4 */
   uint32_t         screen_top;             /* 0x000C0 */
   uint32_t         screen_bottom;          /* 0x000C4 */
   uint32_t         screen_left;            /* 0x000C8 */

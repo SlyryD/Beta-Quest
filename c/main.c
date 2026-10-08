@@ -7,6 +7,7 @@
 #include "z64.h"
 #include "weather.h"
 #include "world_map_info.h"
+#include "song_speedup.h"
 
 void Gameplay_InitSkybox(z64_game_t* globalCtx, int16_t skyboxId);
 
@@ -17,6 +18,7 @@ void c_init() {
 }
 
 void before_game_state_update() {
+    apply_song_speedups(&z64_game);
     handle_dpad();
 }
 
@@ -29,8 +31,4 @@ void after_game_state_update() {
 void before_skybox_init(z64_game_t* game, int16_t skyboxId) {
     override_weather_state();
     Gameplay_InitSkybox(game, skyboxId);
-}
-
-void after_scene_init() {
-
 }
