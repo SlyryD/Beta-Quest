@@ -26,6 +26,46 @@
 .org 0x8009CDA0
 Gameplay_InitSkybox:
 
+; Runs after scene DMA and before scene commands are processed
+; Replaces:
+;   jal     Scene_ExecuteCommands
+.org 0x8009CEBC
+    jal     before_scene_commands
+
+; Runs after room DMA and before room commands are processed
+; Replaces:
+;   jal     Scene_ExecuteCommands
+.org 0x80080C00
+    jal     before_room_commands
+
+.org 0x800817A0
+Scene_ExecuteCommands:
+
+; Apply per-save MQ patches after loading the in-game minimap marker overlay.
+.org 0x80066E40
+    jal     load_mq_patched_overlay
+
+; Apply per-save MQ patches after loading the pause-screen floor-map overlay.
+.org 0x80099C8C
+    jal     load_mq_patched_overlay
+
+; Reserve space after scene files for appended MQ data.
+; Both scene-loading paths call the same allocator with the file size in a1.
+.org 0x8009CD10
+    jal     allocate_mq_scene_buffer
+
+.org 0x8009CD6C
+    jal     allocate_mq_scene_buffer
+
+; Reserve 0x400 bytes of MQ tail space for each of the two room-buffer ends.
+.org 0x800809A4
+    jal     adjust_mq_room_allocation_size
+
+; The second room buffer is anchored at the end of the allocation. Include its
+; MQ tail space when calculating the backward offset from that end.
+.org 0x80080ACC
+    jal     adjust_mq_room_buffer_stride
+
 ;==================================================================================================
 ; DPAD Display
 ;==================================================================================================

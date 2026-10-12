@@ -43,10 +43,13 @@
 # the floor map data is missing a vertex pointer that would point within kaleido_scope.
 # As such, if the file moves, the patch will break.
 
-from Utils import local_path
-from Rom import Rom
+import argparse
 import json
+import struct
 from struct import pack, unpack
+from pathlib import Path
+
+from Rom import Rom
 
 SCENE_TABLE = 0xB71440
 
@@ -415,24 +418,6 @@ class Room(object):
         return offset
 
 
-def patch_files(rom:Rom, mq_scenes:list):
-
-    data = get_json()
-    scenes = [Scene(x) for x in data]
-    for scene in scenes:
-        if scene.id in mq_scenes:
-            if scene.id == 9:
-                patch_ice_cavern_scene_header(rom)
-            scene.write_data(rom)
-
-
-
-def get_json():
-    with open(local_path('../resources/mqu.json'), 'r') as stream:
-        data = json.load(stream)
-    return data
-
-
 def convert_actor_data(str):
     spawn_args = str.split(" ")
     return [ int(x,16) for x in spawn_args ]
@@ -730,3 +715,241 @@ def add_relocations(rom, file, addresses):
     new_header_size = (cur + 4) - header
     rom.write_int32(cur, new_header_size)
     file.end += (new_header_size - header_size)
+
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+MQ_SCENES = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13}
+MQ_GLOBAL_FILES = (
+    (0xBB11E0, 0xBCDB70),
+    (0xBF40D0, 0xBFAC30),
+)
+MERGE_GAP = 8
+
+
+def read_file_range(file_data):
+    return int(file_data["Start"], 16), int(file_data["End"], 16)
+
+
+def restore_room_list(rom, scene, original_rooms):
+    cursor = scene.file.start
+    for _ in range(0x20):
+        command = rom.read_byte(cursor)
+        if command == 0x14:
+            return
+        if command == 0x04:
+            room_list = scene.file.start + rom.read_int24(cursor + 5)
+            for start, end in original_rooms:
+                rom.write_int32s(room_list, [start, end])
+                room_list += 8
+            return
+        cursor += 8
+    raise RuntimeError(f"Scene {scene.id} has no room-list command")
+
+
+def make_runs(original, modified):
+    changed = [
+        index
+        for index, value in enumerate(modified)
+        if index >= len(original) or original[index] != value
+    ]
+    if not changed:
+        return []
+
+    runs = []
+    start = changed[0]
+    end = start + 1
+    for index in changed[1:]:
+        if index - end <= MERGE_GAP:
+            end = index + 1
+        else:
+            runs.append((start, modified[start:end]))
+            start = index
+            end = index + 1
+    runs.append((start, modified[start:end]))
+    return runs
+
+
+def emit_files(
+    records,
+    global_records,
+    output_files,
+    output_globals,
+    output_runs,
+    output_data,
+    output_asm,
+):
+    data = bytearray()
+    rows = []
+    files = []
+    globals_ = []
+
+    def append_runs(runs):
+        first_run = len(rows)
+        for offset, run_data in runs:
+            data_offset = len(data)
+            data.extend(run_data)
+            rows.append((offset, data_offset, len(run_data)))
+        return first_run, len(rows) - first_run
+
+    for scene_id, room_id, runs in records:
+        first_run, run_count = append_runs(runs)
+        if run_count != 0:
+            files.append((scene_id, room_id, first_run, run_count))
+
+    for vrom_start, runs in global_records:
+        first_run, run_count = append_runs(runs)
+        if run_count != 0:
+            globals_.append((vrom_start, first_run, run_count))
+
+    file_data = b"".join(
+        struct.pack(">BbHI", scene_id, room_id, run_count, first_run)
+        for scene_id, room_id, first_run, run_count in files
+    )
+    global_data = b"".join(
+        struct.pack(">IIHH", vrom_start, first_run, run_count, 0)
+        for vrom_start, first_run, run_count in globals_
+    )
+    run_data = b"".join(
+        struct.pack(">IIHH", offset, data_offset, length, 0)
+        for offset, data_offset, length in rows
+    )
+    output_files.write_bytes(file_data)
+    output_globals.write_bytes(global_data)
+    output_runs.write_bytes(run_data)
+    output_data.write_bytes(data)
+
+    output_asm.write_text(
+        f""".align 4
+MQ_PATCH_FILE_COUNT:
+    .word {len(files)}
+
+MQ_PATCH_FILES:
+    .incbin("../resources/mq_patch_files.bin")
+
+MQ_PATCH_GLOBAL_COUNT:
+    .word {len(globals_)}
+
+MQ_PATCH_GLOBALS:
+    .incbin("../resources/mq_patch_globals.bin")
+
+MQ_PATCH_RUNS:
+    .incbin("../resources/mq_patch_runs.bin")
+
+MQ_PATCH_DATA:
+    .incbin("../resources/mq_patch_data.bin")
+
+.align 4
+"""
+    )
+    print(
+        f"Generated {len(files)} files, {len(globals_)} global files, "
+        f"{len(rows)} runs, "
+        f"and {len(data)} data bytes"
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--rom",
+        type=Path,
+        default=ROOT_DIR / "roms" / "port.z64",
+        help="Built non-MQ decompressed ROM used as the patch baseline",
+    )
+    parser.add_argument(
+        "--json",
+        type=Path,
+        default=ROOT_DIR / "resources" / "mqu.json",
+    )
+    parser.add_argument(
+        "--output-files",
+        type=Path,
+        default=ROOT_DIR / "resources" / "mq_patch_files.bin",
+    )
+    parser.add_argument(
+        "--output-globals",
+        type=Path,
+        default=ROOT_DIR / "resources" / "mq_patch_globals.bin",
+    )
+    parser.add_argument(
+        "--output-runs",
+        type=Path,
+        default=ROOT_DIR / "resources" / "mq_patch_runs.bin",
+    )
+    parser.add_argument(
+        "--output-data",
+        type=Path,
+        default=ROOT_DIR / "resources" / "mq_patch_data.bin",
+    )
+    parser.add_argument(
+        "--output-asm",
+        type=Path,
+        default=ROOT_DIR / "src" / "mq_data.asm",
+    )
+    args = parser.parse_args()
+
+    baseline = bytearray(args.rom.read_bytes())
+    rom = Rom()
+    rom.buffer = bytearray(baseline)
+    rom.changed_address = {}
+    rom.changed_dma = {}
+    rom.force_patch = []
+    rom.original = rom.copy()
+
+    source_scenes = json.loads(args.json.read_text())
+    scenes = [Scene(item) for item in source_scenes]
+    source_scenes_by_id = {item["Id"]: item for item in source_scenes}
+    records = []
+
+    for scene in scenes:
+        if scene.id not in MQ_SCENES:
+            continue
+
+        source_scene = source_scenes_by_id[scene.id]
+        scene_start, scene_end = read_file_range(source_scene["File"])
+        original_rooms = [
+            read_file_range(room["File"]) for room in source_scene["Rooms"]
+        ]
+
+        if scene.id == 9:
+            patch_ice_cavern_scene_header(rom)
+        scene.write_data(rom)
+        restore_room_list(rom, scene, original_rooms)
+
+        modified_scene = bytes(rom.buffer[scene.file.start:scene.file.end])
+        original_scene = bytes(baseline[scene_start:scene_end])
+        records.append(
+            (scene.id, -1, make_runs(original_scene, modified_scene))
+        )
+
+        for room, (room_start, room_end) in zip(scene.rooms, original_rooms):
+            modified_room = bytes(rom.buffer[room.file.start:room.file.end])
+            original_room = bytes(baseline[room_start:room_end])
+            records.append(
+                (scene.id, room.id, make_runs(original_room, modified_room))
+            )
+
+    global_records = [
+        (
+            vrom_start,
+            make_runs(
+                baseline[vrom_start:vrom_end],
+                rom.buffer[vrom_start:vrom_end],
+            ),
+        )
+        for vrom_start, vrom_end in MQ_GLOBAL_FILES
+    ]
+
+    emit_files(
+        records,
+        global_records,
+        args.output_files,
+        args.output_globals,
+        args.output_runs,
+        args.output_data,
+        args.output_asm,
+    )
+
+
+if __name__ == "__main__":
+    main()

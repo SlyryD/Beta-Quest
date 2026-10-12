@@ -401,7 +401,7 @@ typedef struct
   uint8_t         magic_capacity;           /* 0x003C */
   int8_t          double_defense;           /* 0x003D */
   int8_t          bgs_flag;                 /* 0x003E */
-  char            unk_05_;                  /* 0x003F */
+  uint8_t         master_quest;             /* 0x003F */
   int8_t          child_button_items[4];    /* 0x0040 */
   int8_t          child_c_button_slots[3];  /* 0x0044 */
   union
@@ -1013,8 +1013,8 @@ typedef struct
   z64_ctxt_t       common;                 /* 0x00000 */
   uint16_t         scene_index;            /* 0x000A4 */
   char             unk_00_[0x000A];        /* 0x000A6 */
-  void            *scene_segment;           /* 0x000B0 */
-  char             unk_00B4[0x000C];        /* 0x000B4 */
+  void            *scene_segment;          /* 0x000B0 */
+  char             unk_00B4[0x000C];       /* 0x000B4 */
   uint32_t         screen_top;             /* 0x000C0 */
   uint32_t         screen_bottom;          /* 0x000C4 */
   uint32_t         screen_left;            /* 0x000C8 */

@@ -1,10 +1,9 @@
 from Rom import Rom
 from Messages import read_messages, update_item_messages, repack_messages
-from MQ import patch_files
 from SaveContext import SaveContext
 
 
-def patch_rom(rom:Rom, options):
+def patch_rom(rom:Rom):
     # Force language to be English in the event a Japanese rom was submitted
     rom.write_byte(0x3E, 0x45)
 
@@ -406,23 +405,6 @@ def patch_rom(rom:Rom, options):
     save_context.write_bits(0x0EE8, 0x01) # "Entered Deku Tree"
     save_context.write_bits(0x0EEB, 0x01) # "Entered Dodongo's Cavern"
     save_context.write_bits(0x0EEB, 0x20) # "Entered Jabu-Jabu's Belly"
-
-    if options['mq_enabled']:
-        mq_scenes = [
-            0, # Deku Tree
-            1, # Dodongos Cavern
-            2, # Jabu Jabus Belly
-            3, # Forest Temple
-            4, # Fire Temple
-            5, # Water Temple
-            6, # Spirit Temple
-            7, # Shadow Temple
-            8, # Bottom of the Well
-            9, # Ice Cavern
-            11, # Gerudo Training Ground
-            13 # Ganons Castle
-        ]
-        patch_files(rom, mq_scenes)
 
     # Load Message and Shop Data
     messages = read_messages(rom)
