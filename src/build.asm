@@ -279,7 +279,7 @@ RAND_END:
 
 .headersize (0x80400000 - 0x03490000)
 .org 0x80400000
-.area 0x20000 //payload max memory
+.area 0x40000 //payload max memory
 PAYLOAD_START:
 .area 0x20, 0
 RANDO_CONTEXT:
@@ -288,6 +288,8 @@ RANDO_CONTEXT:
 .include "config.asm"
 .include "init.asm"
 .include "every_frame.asm"
+.include "mq.asm"
+.include "mq_data.asm"
 .include "dpad.asm"
 .include "initial_save.asm"
 .include "bonk.asm"

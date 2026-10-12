@@ -112,7 +112,7 @@ V2.2 Changes:
 
 * Added Master Quest dungeon option (`./scripts/build.py --compile-c --mq`)
 
-* Added Bonko (Bonk One Hit KO), disabled by default and configurable from the file-select options menu
+* Added bonko (Bonk One Hit KO) option (`./scripts/build.py --compile-c --bonko`)
 
 * Added small key total to dungeon info menu
 
@@ -120,11 +120,15 @@ V2.2 Changes:
 
 * Added more quality of life improvements from Better OoT
 
-V2.3 Changes:
+V3.0 Changes:
 
 * Restore light arrow cutscene BA with Better OoT version of the cutscenes
 
 * Added song cutscene speedups, disabled by default and configurable from the file-select options menu
+
+* Make bonko configurable from the file-select options menu (remove --bonko compilation flag)
+
+* Make MQ configurable from the file-select name entry menu (remove --mq compilation flag)
 
 * TODO: Count maps, compasses, equipment, etc.
 

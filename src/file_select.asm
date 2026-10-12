@@ -11,6 +11,40 @@
 .org 0x80812E74
     .word update_file_select_options
 
+; Add an MQ choice to the name-entry button row.
+.org 0x80812E64
+    .word update_mq_name_entry
+
+; Persist the per-file MQ setting after the retail new-save initialization.
+.org 0x808098E8
+    jal     create_file_with_mq_config
+
+; Draw the MQ creation button after the native name-entry controls.
+.org 0x80810630
+    jal     draw_file_select_mq
+
+; Draw per-file MQ markers after the native window contents on both the
+; configuration screens and the Open File confirmation screen.
+.org 0x8081040C
+    jal     draw_file_select_mq_markers
+
+.org 0x80811710
+    jal     draw_file_select_mq_markers
+
+; These entries now reference the external payload and must not be relocated
+; as overlay-local addresses.
+.org 0x80813618
+    .word 0
+
+.org 0x80813738
+    .word 0
+
+.org 0x8081360C
+    .word 0
+
+.org 0x80813664
+    .word 0
+
 ; Extend the native options draw wrapper. The hook resolves the overlay's
 ; runtime relocation before calling FileSelect_DrawOptionsImpl.
 .org 0x8080BCA0
