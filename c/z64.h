@@ -22,6 +22,7 @@
 #define Z64_SEG_CIMG          0x0F
 
 #define Z64_ETAB_LENGTH       0x0614
+#define FONT_CHAR_TEX_SIZE    0x0080
 
 typedef struct
 {
@@ -1007,6 +1008,26 @@ typedef struct
 typedef void (*z64_light_handler_t)(z64_gbi_lights_t*, z64_lightn_t*,
                                     z64_actor_t*);
 
+typedef struct
+{
+  uint32_t msg_offset;
+  uint32_t msg_length;
+  uint8_t  char_tex_buf[FONT_CHAR_TEX_SIZE * 120];
+  uint8_t  icon_buf[FONT_CHAR_TEX_SIZE];
+  uint8_t  font_buf[FONT_CHAR_TEX_SIZE * 320];
+  char     msg_buf[1280];
+} z64_font_t;
+
+typedef struct
+{
+  uint8_t    view[0x0128];
+  z64_font_t font;
+  char       unk_00_[0x0056];
+  uint8_t    msg_buf_decoded[200];
+  uint16_t   msg_buf_pos;
+  char       unk_01_[0x0044];
+} z64_message_ctxt_t;
+
 /* game context */
 typedef struct
 {
@@ -1074,13 +1095,9 @@ typedef struct
   char             unk_0E_[0x0010];        /* 0x01D58 */
   void            *cutscene_ptr;           /* 0x01D68 */
   int8_t           cutscene_state;         /* 0x01D6C */
-  char             unk_0F_[0xE66F];        /* 0x01D6D */
-  uint8_t          textbox_state_1;        /* 0x103DC */
-  char             unk_10_[0x00DF];        /* 0x103DD */
-  uint8_t          textbox_state_2;        /* 0x104BC */
-  char             unk_11_[0x0002];        /* 0x104BD */
-  uint8_t          textbox_state_3;        /* 0x104BF */
-  char             unk_12_[0x0272];        /* 0x104C0 */
+  char             unk_0F_[0x036B];        /* 0x01D6D */
+  z64_message_ctxt_t msg_ctxt;             /* 0x020D8 */
+  char             unk_12_[0x0246];        /* 0x104EC */
   struct {
     uint16_t       unk_00_;
     uint16_t       fadeout;
@@ -1307,6 +1324,7 @@ typedef struct
 #define z64_main_hook_addr                      0x800A0C3C
 #define z64_frame_input_call_addr               0x800A16AC
 #define z64_GetMatrixStackTop_addr              0x800AA78C
+#define z64_FontLoadChar_addr                   0x8005BCE4
 #define z64_DisplayTextbox_addr                 0x800DCE14
 #define gspF3DEX2_NoN_fifoTextStart             0x800E3F70
 #define z64_fog_state_addr                      0x800F1640
@@ -1371,6 +1389,8 @@ typedef void (*z64_Io_proc)               (uint32_t dev_addr, void *dram_addr,
 typedef void (*z64_SceneConfig_proc)      (z64_game_t *game);
 typedef void (*z64_DisplayTextbox_proc)   (z64_game_t *game, uint16_t text_id,
                                            int unknown_);
+typedef void (*z64_FontLoadChar_proc)     (z64_font_t *font, uint8_t character,
+                                           uint16_t code_point_index);
 typedef void (*z64_GiveItem_proc)         (z64_game_t *game, uint8_t item);
 
 typedef void(*z64_LinkDamage_proc)        (z64_game_t *ctxt, z64_link_t *link,
@@ -1426,6 +1446,7 @@ typedef float *(*z64_GetMatrixStackTop_proc)();
 #define z64_Io                  ((z64_Io_proc)        z64_Io_addr)
 #define z64_DisplayTextbox      ((z64_DisplayTextbox_proc)                    \
                                                       z64_DisplayTextbox_addr)
+#define z64_FontLoadChar        ((z64_FontLoadChar_proc)z64_FontLoadChar_addr)
 #define z64_GiveItem            ((z64_GiveItem_proc)  z64_GiveItem_addr)
 
 #define z64_LinkDamage          ((z64_LinkDamage_proc)z64_LinkDamage_addr)

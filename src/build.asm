@@ -38,6 +38,7 @@
 ;==============================================================================
 
 .include "boot.asm"
+.include "messages.asm"
 .include "hacks.asm"
 
 .headersize(0x800110A0 - 0xA87000)
