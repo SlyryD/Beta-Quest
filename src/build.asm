@@ -38,7 +38,6 @@
 ;==============================================================================
 
 .include "boot.asm"
-.include "messages.asm"
 .include "hacks.asm"
 
 .headersize(0x800110A0 - 0xA87000)
@@ -295,6 +294,7 @@ RANDO_CONTEXT:
 .include "initial_save.asm"
 .include "bonk.asm"
 .include "file_select_hooks.asm"
+.include "messages.asm"
 
 .align 0x10
 .importobj "../build/bundle.o"

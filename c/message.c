@@ -90,6 +90,10 @@ bool decode_dungeon_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uin
     // Get the next character that tells us which item
     uint8_t count_index = msgRaw[++(msgCtx->msgBufPos)];
 
+    if (dungeon_index == 0xFF) {
+        dungeon_index = z64_file.minimap_index;
+    }
+
     // Get the count from the save context
     uint8_t count = get_dungeon_count(dungeon_index, count_index);
     if (count == 0xFF) {
