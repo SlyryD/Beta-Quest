@@ -1,5 +1,6 @@
 #include "message.h"
 #include "z64.h"
+#include "count_tracker.h"
 #include "counts.h"
 #include "dungeon_info.h"
 #include "world_map_info.h"
@@ -30,12 +31,12 @@ extern uint8_t PLAYER_NAMES[256][8];
 extern uint8_t PLAYER_NAME_ID;
 
 // Helper function for adding characters to the decoded message buffer
-void Message_AddCharacter(MessageContext* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, uint8_t charToAdd) {
+void Message_AddCharacter(z64_message_ctxt_t* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, uint8_t charToAdd) {
     uint32_t decodedBufPosVal = *pDecodedBufPos;
     uint32_t charTexIdx = *pCharTexIdx;
-    msgCtx->msgBufDecoded[decodedBufPosVal++] = charToAdd; // Add the character to the output buffer, increment the output position
+    msgCtx->msg_buf_decoded[decodedBufPosVal++] = charToAdd; // Add the character to the output buffer, increment the output position
     if (charToAdd != ' ') { // Only load the character texture if it's not a space.
-        Font_LoadChar(pFont, charToAdd - ' ', charTexIdx); // Load the character texture
+        z64_FontLoadChar(pFont, charToAdd - ' ', charTexIdx); // Load the character texture
         charTexIdx += 0x80; // Increment the texture pointer
     }
 
@@ -45,7 +46,7 @@ void Message_AddCharacter(MessageContext* msgCtx, void* pFont, uint32_t* pDecode
 }
 
 // Helper function for adding integer numbers to the decoded message buffer
-void Message_AddInteger(MessageContext* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, uint32_t numToAdd) {
+void Message_AddInteger(z64_message_ctxt_t* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, uint32_t numToAdd) {
     uint8_t digits[10];
     uint8_t i = 0;
     // Extract each digit. They are added, in reverse order, to digits[]
@@ -63,7 +64,7 @@ void Message_AddInteger(MessageContext* msgCtx, void* pFont, uint32_t* pDecodedB
 }
 
 // Helper function for adding simple strings to the decoded message buffer. Does not support additional control codes.
-void Message_AddString(MessageContext* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, char* stringToAdd) {
+void Message_AddString(z64_message_ctxt_t* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, char* stringToAdd) {
     while (*stringToAdd != 0) {
         Message_AddCharacter(msgCtx, pFont, pDecodedBufPos, pCharTexIdx, *stringToAdd);
         stringToAdd++;
@@ -71,7 +72,7 @@ void Message_AddString(MessageContext* msgCtx, void* pFont, uint32_t* pDecodedBu
 }
 
 // Helper function for adding a filename to the decoded message buffer. Filenames use a different character set from other text.
-void Message_AddFileName(MessageContext* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, uint8_t* filenameToAdd) {
+void Message_AddFileName(z64_message_ctxt_t* msgCtx, void* pFont, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx, uint8_t* filenameToAdd) {
     int end = 8;
     while (filenameToAdd[end - 1] == 0xDF) {
         // trim trailing space
@@ -83,12 +84,12 @@ void Message_AddFileName(MessageContext* msgCtx, void* pFont, uint32_t* pDecoded
 }
 
 // Function that handles dungeon counts
-bool decode_dungeon_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+bool decode_dungeon_count(z64_message_ctxt_t* msgCtx, z64_font_t* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
     // Get the next character that tells us which dungeon
-    uint8_t dungeon_index = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t dungeon_index = msgRaw[++(msgCtx->msg_buf_pos)];
 
     // Get the next character that tells us which item
-    uint8_t count_index = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t count_index = msgRaw[++(msgCtx->msg_buf_pos)];
 
     if (dungeon_index == 0xFF) {
         dungeon_index = z64_file.minimap_index;
@@ -106,12 +107,12 @@ bool decode_dungeon_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uin
 }
 
 // Function that handles area counts
-bool decode_area_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+bool decode_area_count(z64_message_ctxt_t* msgCtx, z64_font_t* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
     // Get the next character that tells us which area
-    uint8_t area_index = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t area_index = msgRaw[++(msgCtx->msg_buf_pos)];
 
     // Get the next character that tells us which item
-    uint8_t count_index = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t count_index = msgRaw[++(msgCtx->msg_buf_pos)];
 
     // Get the count from the save context
     uint8_t count = get_area_count(area_index, count_index);
@@ -124,9 +125,11 @@ bool decode_area_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32
     return true;
 }
 
-bool decode_global_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
+bool decode_global_count(z64_message_ctxt_t* msgCtx, z64_font_t* pFont, char* msgRaw, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
     // Get the next character that tells us which item
-    uint8_t count_index = msgRaw[++(msgCtx->msgBufPos)];
+    uint8_t count_index = msgRaw[++(msgCtx->msg_buf_pos)];
+
+    count_tracker_update_chests();
 
     // Get the count from the save context
     uint8_t count = get_global_count(count_index);
@@ -148,9 +151,9 @@ bool decode_global_count(MessageContext* msgCtx, Font* pFont, char* msgRaw, uint
 //          Subtract 1 from* pDecodedBufPos
 //          Return true
 bool Message_Decode_Additional_Control_Codes(uint8_t currChar, uint32_t* pDecodedBufPos, uint32_t* pCharTexIdx) {
-    MessageContext* msgCtx = &(z64_game.msgContext);
-    Font* pFont = &(msgCtx->font); // Get a reference to the font.
-    char* msgRaw = (char*) &(pFont->msgBuf); // Get a reference to the start of the raw message. Index using msgCtx->msgBufPos.
+    z64_message_ctxt_t* msgCtx = &(z64_game.msg_ctxt);
+    z64_font_t* pFont = &(msgCtx->font); // Get a reference to the font.
+    char* msgRaw = (char*) &(pFont->msg_buf); // Get a reference to the start of the raw message. Index using msgCtx->msg_buf_pos.
 
     switch (currChar) {
         case 0xF1: {
@@ -173,11 +176,11 @@ uint8_t shooting_gallery_show_message = 0;
 void shooting_gallery_message() {
     // Child/Adult shooting galleries actor is the same, so the asm hook will work for both.
     // We only want the message for Adult.
-    if (!LINK_IS_ADULT) {
+    if (z64_file.link_age != 0) {
         return;
     }
     // Check if we have a bow.
-    if (z64_file.items[ITEM_BOW] != ITEM_NONE) {
+    if (z64_file.items[Z64_SLOT_BOW] != Z64_ITEM_NULL) {
         return;
     }
     // Check if the message was already displayed once.
@@ -198,7 +201,7 @@ void treasure_chest_game_message() {
 
 // Function to display custom textboxes ingame.
 void display_misc_messages() {
-    if (z64_MessageGetState(((uint8_t*) (&z64_game)) + 0x20D8) == 0) {
+    if (z64_game.msg_ctxt.msg_mode == 0) {
         // Each minigame warning message can only be triggered in their respective
         // scenes. Order doesn't matter.
         if (shooting_gallery_show_message == 1) {

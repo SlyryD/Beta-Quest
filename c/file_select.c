@@ -1,6 +1,7 @@
 #include "file_select.h"
 
 #include "gfx.h"
+#include "save.h"
 #include "text.h"
 
 #define FILE_SELECT_MAIN_TO_OPTIONS_MODE 36
@@ -178,6 +179,10 @@ void create_file_with_mq_config(z64_ctxt_t* menu, void* sram_context) {
     int16_t file_index;
 
     init_save(menu, sram_context);
+    count_save_initialize_file(
+        z64_file.file_index,
+        file_select->sram_buffer
+    );
     if (!create_mq_file) {
         return;
     }
@@ -308,6 +313,8 @@ static uint8_t* get_native_selected_setting() {
 }
 
 void load_file_select_settings(z64_sram_data_t* sram_buffer) {
+    count_save_cache_sram(sram_buffer);
+
     if (sram_buffer->bonko_options_magic != BONKO_OPTIONS_MAGIC) {
         sram_buffer->bonko_options = 0;
         sram_buffer->bonko_options_magic = BONKO_OPTIONS_MAGIC;

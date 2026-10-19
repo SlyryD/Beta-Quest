@@ -1,5 +1,7 @@
 #include "dungeon_info.h"
 
+#include <stdbool.h>
+
 #include "counts.h"
 #include "gfx.h"
 #include "text.h"
@@ -20,6 +22,11 @@ typedef struct {
     char name[10];
 } dungeon_entry_t;
 
+typedef struct {
+    uint8_t count;
+    char name[11];
+} global_count_entry_t;
+
 dungeon_entry_t dungeons[] = {
     {SCENE_DEKU_TREE, 0, 0, 0, 1, 1, "Deku"},
     {SCENE_DODONGOS_CAVERN, 0, 0, 0, 1, 1, "Dodongo"},
@@ -38,7 +45,23 @@ dungeon_entry_t dungeons[] = {
     {SCENE_INSIDE_GANONS_CASTLE, 1, 1, 0, 0, 0, "Ganon"},
 };
 
+static global_count_entry_t global_counts[] = {
+    {GCOUNT_BEANS_PLANTED, "Bean Patch"},
+    {GCOUNT_LIZALFOS, "Lizalfos"},
+    {GCOUNT_TENTACLE, "Tentacles"},
+    {GCOUNT_STALFOS, "Stalfos"},
+    {GCOUNT_FLARE_DANCER, "Flare Dans"},
+    {GCOUNT_TRAP, "Ice Traps"},
+    {GCOUNT_GIBDO, "Gibdos"},
+    {GCOUNT_IRON_KNUCKLE, "Iron Kns"},
+    {GCOUNT_DEAD_HANDS, "Dead Hands"},
+    {GCOUNT_WHITE_WOLFOS, "White Wfs"},
+    {GCOUNT_GOLD_RUPEE, "Gold Rups"},
+    {GCOUNT_SILVER_RUPEE_ROOMS, "Silver Rms"},
+};
+
 int dungeons_length = array_size(dungeons);
+static int global_counts_length = array_size(global_counts);
 
 extern uint32_t CFG_DUNGEON_INFO_ENABLE;
 
@@ -94,6 +117,22 @@ uint8_t get_dungeon_count(uint8_t dungeon_index, uint8_t count_index) {
     }
 }
 
+static void format_count(char count[4], uint8_t value) {
+    if (value >= 100) {
+        count[0] = '0' + value / 100;
+        count[1] = '0' + (value / 10) % 10;
+        count[2] = '0' + value % 10;
+        count[3] = '\0';
+    } else if (value >= 10) {
+        count[0] = '0' + value / 10;
+        count[1] = '0' + value % 10;
+        count[2] = '\0';
+    } else {
+        count[0] = '0' + value;
+        count[1] = '\0';
+    }
+}
+
 void draw_dungeon_info(z64_disp_buf_t *db) {
     int draw = CFG_DUNGEON_INFO_ENABLE &&
                z64_game.pause_ctxt.state == 6 &&
@@ -117,7 +156,11 @@ void draw_dungeon_info(z64_disp_buf_t *db) {
         padding +
         (8 * font_sprite.tile_w) + // dungeon names
         padding +
-        (8 * (icon_size + padding)); // skull, skull count, key, unused key count, total key count, bk, map, compass
+        (8 * (icon_size + padding)) + // skull, skull count, key, unused key count, total key count, bk, map, compass
+        (10 * font_sprite.tile_w) + // global count names
+        padding +
+        (3 * font_sprite.tile_w) + // global count values
+        padding;
     int bg_height = padding + (dungeons_length * (icon_size + padding));
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
@@ -167,19 +210,33 @@ void draw_dungeon_info(z64_disp_buf_t *db) {
                     left, top, icon_size, icon_size);
     }
 
-    left += icon_size + padding;
-
-    // Draw skull count
+    sprite_load(db, &items_sprite, 0x2A, 1);
 
     for (int i = 0; i < dungeons_length; i++) {
         dungeon_entry_t *d = &(dungeons[i]);
-        if (!d->has_tokens)
+        if (d->index != SCENE_THIEVES_HIDEOUT)
             continue;
 
-        uint8_t tokens = get_dungeon_tokens(d->index);
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &items_sprite, 0,
+                    left, top, icon_size, icon_size);
+    }
+
+    left += icon_size + padding;
+
+    // Draw skull and Hideout carpenter counts
+
+    for (int i = 0; i < dungeons_length; i++) {
+        dungeon_entry_t *d = &(dungeons[i]);
+        if (!d->has_tokens && d->index != SCENE_THIEVES_HIDEOUT)
+            continue;
+
+        uint8_t count_value = d->index == SCENE_THIEVES_HIDEOUT
+            ? get_global_count(GCOUNT_CARPENTER)
+            : get_dungeon_tokens(d->index);
 
         char count[2] = "0";
-        count[0] += (tokens % 10);
+        count[0] += (count_value % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }
@@ -317,6 +374,18 @@ void draw_dungeon_info(z64_disp_buf_t *db) {
     }
 
     left += icon_size + padding;
+
+    // Draw global counts
+
+    for (int i = 0; i < global_counts_length; i++) {
+        global_count_entry_t *entry = &global_counts[i];
+        char count[4];
+        int top = start_top + ((icon_size + padding) * i) + 1;
+
+        text_print(entry->name, left, top);
+        format_count(count, get_global_count(entry->count));
+        text_print(count, left + (10 * font_sprite.tile_w) + padding, top);
+    }
 
     // Finish
 

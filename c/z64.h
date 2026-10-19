@@ -777,8 +777,9 @@ struct z64_actor_s
   void           *damage_table;     /* 0x0098 */
   z64_xyzf_t      vel_2;            /* 0x009C */
   char            unk_0C_[0x0006];  /* 0x00A8 */
-  int16_t         health;           /* 0x00AE */
-  char            unk_0D_;          /* 0x00B0 */
+  uint8_t         mass;             /* 0x00AE */
+  uint8_t         health;           /* 0x00AF */
+  uint8_t         damage;           /* 0x00B0 */
   uint8_t         damage_effect;    /* 0x00B1 */
   char            unk_0E_[0x0002];  /* 0x00B2 */
   z64_rot_t       rot_2;            /* 0x00B4 */
@@ -1022,7 +1023,9 @@ typedef struct
 {
   uint8_t    view[0x0128];
   z64_font_t font;
-  char       unk_00_[0x0056];
+  char       unk_00_[0x0054];
+  uint8_t    msg_mode;
+  char       unk_E305;
   uint8_t    msg_buf_decoded[200];
   uint16_t   msg_buf_pos;
   char       unk_01_[0x0044];

@@ -1,29 +1,29 @@
 #ifndef SAVE_H
 #define SAVE_H
+#include <stddef.h>
+#include <stdint.h>
 #include <stdbool.h>
+
+#define COUNT_ENCOUNTER_CAPACITY 256
+#define COUNT_ENCOUNTER_BYTES (COUNT_ENCOUNTER_CAPACITY / 8)
 
 // Struct for storing additional data in SRAM. This has to always be a multiple of 2 bytes long supposedly.
 typedef struct {
-    uint8_t silver_rupee_counts[0x16];
-    bool collected_dungeon_rewards[8];
-    override_t incoming_queue[3];
-    uint8_t password[6];
-} extended_savecontext_static_t __attribute__ ((aligned (8)));
+    uint8_t silver_rupee_rooms_cleared;
+    uint8_t trap_count;
+    uint8_t gold_rupee_count;
+    uint8_t enemy_counts[8];
+    uint8_t pad;
+} extended_savecontext_static_t;
 
 
-typedef union {
-    uint32_t all;
-    struct {
-        uint16_t offset;
-        uint8_t type;
-        uint8_t value;
-    };
-} extended_initial_save_entry;
-
-
-extern extended_initial_save_entry EXTENDED_INITIAL_SAVE_DATA;
 extern extended_savecontext_static_t extended_savectx;
 
-void SsSram_ReadWrite_Safe(uint32_t addr, void* dramAddr, size_t size, uint32_t direction);
+void count_save_cache_sram(const void* sram_buffer);
+void count_save_load_file();
+void count_save_initialize_file(uint8_t file_index, void* sram_buffer);
+void count_save_write();
+bool count_encounter_is_complete(uint16_t encounter_id);
+void count_encounter_complete(uint16_t encounter_id);
 
 #endif

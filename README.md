@@ -10,6 +10,8 @@ Updated with some quality of life improvements mostly taken from OOT Rando.
 
 * Run `./scripts/build.py --compile-c` to generate port-comp.z64 within the roms folder
 
+* Run `make test` to validate the persistent count save records and runtime tracking transitions
+
 ## What is this?
 
 The Beta Quest mod is an entrance randomizer built from the NTSC 1.0 release.

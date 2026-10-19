@@ -1,6 +1,7 @@
 CC = mips64-gcc
 LD = mips64-ld
 OBJDUMP = mips64-objdump
+HOST_CC ?= gcc
 
 CFLAGS = -O1 -fno-reorder-blocks -march=vr4300 -mtune=vr4300 -mabi=32 -mno-gpopt -mdivide-breaks \
 	-mexplicit-relocs
@@ -14,7 +15,7 @@ vpath %.h c
 
 OBJECTS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(sort $(wildcard $(SRCDIR)/*.c)))
 
-.PHONY: all clean bundle symbols makesrc
+.PHONY: all clean bundle symbols makesrc test
 
 all: clean bundle symbols makesrc
 
@@ -45,3 +46,11 @@ makesrc:
 
 clean:
 	rm -f $(OBJDIR)/*.o
+
+test:
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/count_save_test.c -o $(OUTDIR)/count_save_test
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/count_tracker_test.c -o $(OUTDIR)/count_tracker_test
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/counts_test.c -o $(OUTDIR)/counts_test
+	$(OUTDIR)/count_save_test
+	$(OUTDIR)/count_tracker_test
+	$(OUTDIR)/counts_test

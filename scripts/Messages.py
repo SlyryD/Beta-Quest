@@ -63,7 +63,7 @@ CONTROL_CODES: dict[int, tuple[str, int, Callable[[Any], str]]] = {
     # dungeon_count format is \xF1\xXX\xYY where XX is the dungeon id and YY is the item id
     0xF1: ('dungeon_count', 2, lambda d: '<dungeon count ' + "{:02x}".format((d >> 8) & 0xFF) + " {:02x}".format(d & 0xFF) + '>' ),
     # 0xF2: ('outgoing_item_filename', 0, lambda _: '<outgoing item filename>' ),
-    # 0xF3: ('farores_wind_destination', 0, lambda _: '<farores_wind_destination>' ),
+    0xF3: ('farores_wind_destination', 0, lambda _: '<farores wind destination>' ),
     # area_count format is \xF4\xXX\xYY where XX is the area id and YY is the item id
     0xF4: ('area_count', 2, lambda d: '<area count ' + "{:02x}".format((d >> 8) & 0xFF) + " {:02x}".format(d & 0xFF) + '>' ),
     # global_count format is \xF5\xXX where XX is the item id
@@ -238,7 +238,7 @@ ITEM_MESSAGES: list[tuple[int, str]] = [
     (0x00E9, f"\x08Your defensive power has been \x01enhanced! Damage inflicted by \x01enemies will be \x05\x41reduced by half\x05\x40."),
     (0x00F0, f"\x08You got a \x05\x41Red Rupee\x05\x40!\x01That's \x05\x41twenty Rupees\x05\x40!"),
     (0x00F1, f"\x08You got a \x05\x45Purple Rupee\x05\x40!\x01That's \x05\x45fifty Rupees\x05\x40!"),
-    (0x00F2, f"\x08You got a \x05\x46Huge Rupee\x05\x40!\x01This Rupee is worth a whopping\x01\x05\x46two hundred Rupees\x05\x40!\x01That's \x05\x41\xD4\x05\x40 gold rupee chests!"),
+    (0x00F2, f"\x08You got a \x05\x46Huge Rupee\x05\x40!\x01This Rupee is worth a whopping\x01\x05\x46two hundred Rupees\x05\x40!\x01That's \x05\x41\xF5\x52\x05\x40 gold rupee chests!"),
     (0x00F4, f"\x08\x05\x44Loser!\x05\x40\x04\x08You found only \x05\x42one Rupee\x05\x40.\x01You are not very lucky."),
     (0x00F5, f"\x08\x05\x44Loser!\x05\x40\x04\x08You found \x05\x43five Rupees\x05\x40.\x01Even so, you are not very lucky."),
     (0x00F6, f"\x08\x05\x44Loser!\x05\x40\x04\x08You found \x05\x41twenty Rupees\x05\x40.\x01Your last selection was a mistake,\x01wasn't it! How frustrating!"),
@@ -249,7 +249,7 @@ ITEM_MESSAGES: list[tuple[int, str]] = [
     (0x00FD, f"\x08\x06\x49\x05\x41WINNER\x05\x40!\x04\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01You've completed another Heart\x01Container!"),
     (0x90FA, f"\x08\x06\x49\x05\x41WINNER\x05\x40!\x04\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01You are already at\x01maximum health."),
     #(0x6074, "\x08Oh, that's too bad.\x04\x08If you change your mind, please\x01come back again!\x04\x08The mark that will lead you to the\x01Spirit Temple is the \x05\x41flag on\x01the left \x05\x40outside the shop."),
-    (0x9002, f"\x08You are a \x05\x43FOOL\x05\x40!\x01That's \x05\x41\xFE\xE3\x40 traps!"),
+    (0x9002, f"\x08You are a \x05\x43FOOL\x05\x40!\x01That's \x05\x41\xF5\x51\x05\x40 traps!"),
     (0x9003, f"\x08You found a piece of the \x05\x41Triforce\x05\x40!"),
     (0x9019, f"\x08\x13\x09You found a \x05\x41Bombchu Bag\x05\x40!\x01It has some \x05\x41Bombchus\x05\x40 inside!\x01Find more in tall grass."),
     (0x901A, f"\x08You can't buy Bombchus without a\x01\x05\x41Bombchu Bag\x05\x40!"),
@@ -1035,8 +1035,8 @@ def read_fffc_message(rom: Rom) -> Message:
 # write the messages back
 def repack_messages(rom: Rom, messages: list[Message], permutation: Optional[list[int]] = None,
                     always_allow_skip: bool = True, speed_up_text: bool = True) -> None:
-    rom.update_dmadata_record_by_key(ENG_TEXT_START, ENG_TEXT_START, ENG_TEXT_START + ENG_TEXT_SIZE_LIMIT)
-    rom.update_dmadata_record_by_key(JPN_TEXT_START, JPN_TEXT_START, JPN_TEXT_START + JPN_TEXT_SIZE_LIMIT)
+    rom.update_dmadata_record(ENG_TEXT_START, ENG_TEXT_START, ENG_TEXT_START + ENG_TEXT_SIZE_LIMIT)
+    rom.update_dmadata_record(JPN_TEXT_START, JPN_TEXT_START, JPN_TEXT_START + JPN_TEXT_SIZE_LIMIT)
 
     if permutation is None:
         permutation = range(len(messages))

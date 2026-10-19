@@ -1,5 +1,7 @@
 #include "world_map_info.h"
 
+#include <stdbool.h>
+
 #include "counts.h"
 #include "gfx.h"
 #include "text.h"
@@ -256,12 +258,10 @@ uint8_t get_area_count(uint8_t area_index, uint8_t count_index) {
 
     switch (count_index) {
         case ACOUNT_TOKEN: {
-            count = get_area_tokens(area_index);
-            break;
+            return get_area_tokens(area_index);
         }
         case ACOUNT_HEART_PIECE: {
-            count = get_area_hps(area_index);
-            break;
+            return get_area_hps(area_index);
         }
         default: {
             return 0xFF;

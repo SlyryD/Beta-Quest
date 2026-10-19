@@ -15,6 +15,8 @@ sh		at, 0x0066(s0)
 @l_8004C050:
 jal		0x800905D4
 addiu	a0, a0, 0x1F74
+jal     count_save_write
+nop
 lw		ra, 0x001C(sp)
 sh		s1, 0x0066(s0)
 lw		s1, 0x0018(sp)

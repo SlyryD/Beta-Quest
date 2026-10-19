@@ -294,7 +294,10 @@ class SaveContext:
         extended_table_len = len(extended_table)
         if extended_table_len > 0x100:
             raise Exception("The Initial Extended Save Table has exceeded its maximum capacity: 0x%03X/0x100" % extended_table_len)
-        rom.write_bytes(rom.sym('EXTENDED_INITIAL_SAVE_DATA'), extended_table)
+        if extended_table_len > 4:
+            raise RuntimeError(
+                "Extended initial-save entries are unsupported by the Beta Quest SRAM record"
+            )
 
     def give_bottle(self, item: str, count: int) -> None:
         for bottle_id in range(4):
@@ -922,31 +925,19 @@ class SaveContext:
             },
 
             # begin extended save data items
-            'silver_rupee_counts' : {
-                'dc_staircase': Address(address=0x00, extended=True, size=1),
-                'ice_scythe': Address(extended=True, size=1),
-                'ice_block': Address(extended=True, size=1),
-                'botw_basement': Address(extended=True, size=1),
-                'shadow_scythe': Address(extended=True, size=1),
-                'shadow_blades': Address(extended=True, size=1),
-                'shadow_pit': Address(extended=True, size=1),
-                'shadow_spikes': Address(extended=True, size=1),
-                'gtg_slopes': Address(extended=True, size=1),
-                'gtg_lava': Address(extended=True, size=1),
-                'gtg_water': Address(extended=True, size=1),
-                'spirit_torches': Address(extended=True, size=1),
-                'spirit_boulders': Address(extended=True, size=1),
-                'spirit_lobby': Address(extended=True, size=1),
-                'spirit_sun': Address(extended=True, size=1),
-                'spirit_adult_climb': Address(extended=True, size=1),
-                'trials_spirit': Address(extended=True, size=1),
-                'trials_light': Address(extended=True, size=1),
-                'trials_fire': Address(extended=True, size=1),
-                'trials_shadow': Address(extended=True, size=1),
-                'trials_water': Address(extended=True, size=1),
-                'trials_forest': Address(extended=True, size=1),
+            'silver_rupee_rooms_cleared': Address(address=0x00, extended=True, size=1, max=0x16),
+            'counts' : {
+                'traps': Address(address=0x01, extended=True, size=1),
+                'gold_rupees': Address(address=0x02, extended=True, size=1),
+                'iron_knuckles': Address(address=0x03, extended=True, size=1),
+                'white_wolfos': Address(address=0x04, extended=True, size=1),
+                'lizalfos': Address(address=0x05, extended=True, size=1),
+                'gibdos': Address(address=0x06, extended=True, size=1),
+                'tentacles': Address(address=0x07, extended=True, size=1),
+                'stalfos': Address(address=0x08, extended=True, size=1),
+                'dead_hands': Address(address=0x09, extended=True, size=1),
+                'flare_dancers': Address(address=0x0A, extended=True, size=1),
             },
-            'password' : Address(extended=True, size=6),
 
         }
 

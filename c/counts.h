@@ -1,6 +1,8 @@
 #ifndef COUNTS_H
 #define COUNTS_H
 
+#include <stdint.h>
+
 typedef enum {
     SCENE_DEKU_TREE = 0x00,
     SCENE_DODONGOS_CAVERN = 0x01,
@@ -106,9 +108,10 @@ typedef enum {
     // Flags
     GCOUNT_CARPENTER = 0x40,
     // Items not present in menu (count stored in save context)
-    GCOUNT_BEAN = 0x50,
+    GCOUNT_BEANS_PLANTED = 0x50,
     GCOUNT_TRAP = 0x51,
     GCOUNT_GOLD_RUPEE = 0x52,
+    GCOUNT_SILVER_RUPEE_ROOMS = 0x53,
     // Enemies
     GCOUNT_IRON_KNUCKLE = 0x60,
     GCOUNT_WHITE_WOLFOS = 0x61,
@@ -121,6 +124,18 @@ typedef enum {
 } global_count_t;
 
 uint8_t get_tokens(uint8_t gs_flags_index);
+
+static inline uint8_t get_carpenters_freed(uint16_t event_flags) {
+    uint8_t count = 0;
+    uint16_t carpenter_flags = event_flags & 0x000F;
+
+    while (carpenter_flags) {
+        count += carpenter_flags & 1;
+        carpenter_flags >>= 1;
+    }
+
+    return count;
+}
 
 uint8_t get_global_count(uint8_t count_index);
 

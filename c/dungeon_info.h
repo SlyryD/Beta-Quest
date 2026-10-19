@@ -1,6 +1,8 @@
 #ifndef DUNGEON_INFO_H
 #define DUNGEON_INFO_H
 
+#include "z64.h"
+
 uint8_t get_dungeon_count(uint8_t dungeon_index, uint8_t count_index);
 
 void draw_dungeon_info(z64_disp_buf_t *db);

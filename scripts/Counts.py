@@ -55,9 +55,10 @@ class GlobalCount(IntEnum):
     # Flags
     CARPENTER = 0x40
     # Items not present in menu (count stored in save context)
-    BEAN = 0x50
+    BEANS_PLANTED = 0x50
     TRAP = 0x51
     GOLD_RUPEE = 0x52
+    SILVER_RUPEE_ROOMS = 0x53
     # Enemies
     IRON_KNUCKLE = 0x60
     WHITE_WOLFOS = 0x61

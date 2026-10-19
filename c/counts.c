@@ -1,10 +1,29 @@
 #include "counts.h"
 
+#include "save.h"
 #include "util.h"
 #include "z64.h"
 
 uint32_t gGsFlagsMasks[] = { 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000 };
 uint32_t gGsFlagsShifts[] = { 0, 8, 16, 24 };
+
+typedef struct {
+    uint8_t scene;
+    uint8_t switch_flag;
+} bean_flag_t;
+
+static bean_flag_t bean_flags[] = {
+    {SCENE_KOKIRI_FOREST, 0x09},
+    {SCENE_LOST_WOODS, 0x04},
+    {SCENE_LOST_WOODS, 0x12},
+    {SCENE_ZORAS_RIVER, 0x03},
+    {SCENE_GRAVEYARD, 0x03},
+    {SCENE_DEATH_MOUNTAIN_TRAIL, 0x06},
+    {SCENE_DEATH_MOUNTAIN_CRATER, 0x03},
+    {SCENE_LAKE_HYLIA, 0x01},
+    {SCENE_GERUDO_VALLEY, 0x03},
+    {SCENE_DESERT_COLOSSUS, 0x18},
+};
 
 // gs_flags at 8011B46C
 #define GET_GS_FLAGS(gs_flags_index) \
@@ -28,6 +47,22 @@ uint8_t get_global_medallions() {
 
 uint8_t get_global_stones() {
     return z64_file.kokiris_emerald + z64_file.gorons_ruby + z64_file.zoras_sapphire;
+}
+
+static uint8_t get_beans_planted() {
+    uint8_t count = 0;
+
+    for (int i = 0; i < array_size(bean_flags); i++) {
+        bean_flag_t* bean = &bean_flags[i];
+        uint32_t switches = z64_file.scene_flags[bean->scene].swch;
+
+        if (z64_game.scene_index == bean->scene) {
+            switches |= z64_game.swch_flags | z64_game.temp_swch_flags;
+        }
+        count += !!(switches & (1 << bean->switch_flag));
+    }
+
+    return count;
 }
 
 uint8_t get_global_dungeon_items(uint8_t mask) {
@@ -80,60 +115,46 @@ uint8_t get_global_count(uint8_t count_index) {
             return get_global_dungeon_items(0b100);
         }
         case GCOUNT_ELEMENTAL_ARROW: {
-            return z64_file.items[Z64_SLOT_FIRE_ARROW] == Z64_ITEM_FIRE_ARROW
-                + z64_file.items[Z64_SLOT_ICE_ARROW] == Z64_ITEM_ICE_ARROW
-                + z64_file.items[Z64_SLOT_LIGHT_ARROW] == Z64_ITEM_LIGHT_ARROW;
+            return (z64_file.items[Z64_SLOT_FIRE_ARROW] == Z64_ITEM_FIRE_ARROW)
+                + (z64_file.items[Z64_SLOT_ICE_ARROW] == Z64_ITEM_ICE_ARROW)
+                + (z64_file.items[Z64_SLOT_LIGHT_ARROW] == Z64_ITEM_LIGHT_ARROW);
         }
         case GCOUNT_FAIRY_SPELL: {
-            return z64_file.items[Z64_SLOT_DINS_FIRE] == Z64_ITEM_DINS_FIRE
-                + z64_file.items[Z64_SLOT_FARORES_WIND] == Z64_ITEM_FARORES_WIND
-                + z64_file.items[Z64_SLOT_NAYRUS_LOVE] == Z64_ITEM_NAYRUS_LOVE;
+            return (z64_file.items[Z64_SLOT_DINS_FIRE] == Z64_ITEM_DINS_FIRE)
+                + (z64_file.items[Z64_SLOT_FARORES_WIND] == Z64_ITEM_FARORES_WIND)
+                + (z64_file.items[Z64_SLOT_NAYRUS_LOVE] == Z64_ITEM_NAYRUS_LOVE);
         }
         case GCOUNT_BOTTLE_SLOT: {
-            return z64_file.items[Z64_SLOT_BOTTLE_1] != Z64_ITEM_NULL
-                + z64_file.items[Z64_SLOT_BOTTLE_2] != Z64_ITEM_NULL
-                + z64_file.items[Z64_SLOT_BOTTLE_3] != Z64_ITEM_NULL
-                + z64_file.items[Z64_SLOT_BOTTLE_4] != Z64_ITEM_NULL;
+            return (z64_file.items[Z64_SLOT_BOTTLE_1] != Z64_ITEM_NULL)
+                + (z64_file.items[Z64_SLOT_BOTTLE_2] != Z64_ITEM_NULL)
+                + (z64_file.items[Z64_SLOT_BOTTLE_3] != Z64_ITEM_NULL)
+                + (z64_file.items[Z64_SLOT_BOTTLE_4] != Z64_ITEM_NULL);
         }
         case GCOUNT_CARPENTER: {
-            return z64_file.event_chk_inf[9] & 0x0001
-                + z64_file.event_chk_inf[9] & 0x0010
-                + z64_file.event_chk_inf[9] & 0x0100
-                + z64_file.event_chk_inf[9] & 0x1000;
+            return get_carpenters_freed(z64_file.event_chk_inf[9]);
         }
-        case GCOUNT_BEAN: {
-            return z64_file.magic_beans_sold;
+        case GCOUNT_BEANS_PLANTED: {
+            return get_beans_planted();
         }
-        // case GCOUNT_TRAP: {
-        //     return get_trap_count();
-        // }
-        // case GCOUNT_GOLD_RUPEE: {
-        //     return get_gold_rupee_count();
-        // }
-        // case GCOUNT_IRON_KNUCKLE: {
-        //     return get_enemy_count(GCOUNT_IRON_KNUCKLE);
-        // }
-        // case GCOUNT_WHITE_WOLFOS: {
-        //     return get_enemy_count(GCOUNT_WHITE_WOLFOS);
-        // }
-        // case GCOUNT_LIZALFOS: {
-        //     return get_enemy_count(GCOUNT_LIZALFOS);
-        // }
-        // case GCOUNT_GIBDO: {
-        //     return get_enemy_count(GCOUNT_GIBDO);
-        // }
-        // case GCOUNT_TENTACLE: {
-        //     return get_enemy_count(GCOUNT_TENTACLE);
-        // }
-        // case GCOUNT_STALFOS: {
-        //     return get_enemy_count(GCOUNT_STALFOS);
-        // }
-        // case GCOUNT_DEAD_HANDS: {
-        //     return get_enemy_count(GCOUNT_DEAD_HANDS);
-        // }
-        // case GCOUNT_FLARE_DANCER: {
-        //     return get_enemy_count(GCOUNT_FLARE_DANCER);
-        // }
+        case GCOUNT_TRAP: {
+            return extended_savectx.trap_count;
+        }
+        case GCOUNT_GOLD_RUPEE: {
+            return extended_savectx.gold_rupee_count;
+        }
+        case GCOUNT_SILVER_RUPEE_ROOMS: {
+            return extended_savectx.silver_rupee_rooms_cleared;
+        }
+        case GCOUNT_IRON_KNUCKLE:
+        case GCOUNT_WHITE_WOLFOS:
+        case GCOUNT_LIZALFOS:
+        case GCOUNT_GIBDO:
+        case GCOUNT_TENTACLE:
+        case GCOUNT_STALFOS:
+        case GCOUNT_DEAD_HANDS:
+        case GCOUNT_FLARE_DANCER: {
+            return extended_savectx.enemy_counts[count_index - GCOUNT_IRON_KNUCKLE];
+        }
         default: {
             return 0xFF;
         }
