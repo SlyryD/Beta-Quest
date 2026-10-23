@@ -2,20 +2,19 @@
 #include "mq_data.h"
 
 #define MQ_SCENE_HEADROOM 0x200
+#define MQ_PATCH_RUN_LENGTH_BITS 12
+#define MQ_PATCH_RUN_LENGTH_MASK ((1 << MQ_PATCH_RUN_LENGTH_BITS) - 1)
 
 typedef void* (*game_state_alloc_func_t)(void* heap, uint32_t size);
-typedef void (*overlay_load_func_t)(
-    uint32_t vrom_start,
-    uint32_t vrom_end,
-    void* vram_start,
-    void* vram_end,
-    void* loaded_ram
-);
+typedef void (*overlay_load_func_t)(uint32_t vrom_start, uint32_t vrom_end, void* vram_start, void* vram_end,
+                                    void* loaded_ram);
 
-static game_state_alloc_func_t const game_state_alloc =
-    (game_state_alloc_func_t)0x800A01B8;
-static overlay_load_func_t const overlay_load =
-    (overlay_load_func_t)0x800CCBB8;
+static game_state_alloc_func_t const game_state_alloc = (game_state_alloc_func_t)0x800A01B8;
+static overlay_load_func_t const overlay_load = (overlay_load_func_t)0x800CCBB8;
+
+typedef char assert_mq_file_patch_size[sizeof(mq_file_patch_t) == 8 ? 1 : -1];
+typedef char assert_mq_global_patch_size[sizeof(mq_global_patch_t) == 12 ? 1 : -1];
+typedef char assert_mq_patch_run_size[sizeof(mq_patch_run_t) == 4 ? 1 : -1];
 
 uint32_t CFG_MASTER_QUEST;
 
@@ -24,21 +23,20 @@ static int mq_enabled() {
     return CFG_MASTER_QUEST;
 }
 
-static void apply_mq_runs(
-    uint32_t first_run,
-    uint16_t run_count,
-    uint8_t* segment
-) {
+static void apply_mq_runs(uint16_t first_run, uint16_t data_offset, uint16_t run_count, uint8_t* segment) {
     uint32_t i;
 
     for (i = 0; i < run_count; i++) {
         const mq_patch_run_t* run = &MQ_PATCH_RUNS[first_run + i];
-        const uint8_t* data = &MQ_PATCH_DATA[run->data_offset];
+        uint32_t offset = run->offset_and_length >> MQ_PATCH_RUN_LENGTH_BITS;
+        uint32_t length = run->offset_and_length & MQ_PATCH_RUN_LENGTH_MASK;
+        const uint8_t* data = &MQ_PATCH_DATA[data_offset];
         uint32_t j;
 
-        for (j = 0; j < run->length; j++) {
-            segment[run->offset + j] = data[j];
+        for (j = 0; j < length; j++) {
+            segment[offset + j] = data[j];
         }
+        data_offset += length;
     }
 }
 
@@ -49,11 +47,7 @@ void* allocate_mq_scene_buffer(void* heap, uint32_t size) {
     return game_state_alloc(heap, size);
 }
 
-static void apply_mq_patches(
-    uint8_t scene_id,
-    int8_t room_id,
-    uint8_t* segment
-) {
+static void apply_mq_patches(uint8_t scene_id, int8_t room_id, uint8_t* segment) {
     uint32_t i;
 
     if (!mq_enabled()) {
@@ -67,7 +61,7 @@ static void apply_mq_patches(
             continue;
         }
 
-        apply_mq_runs(file->first_run, file->run_count, segment);
+        apply_mq_runs(file->first_run, file->data_offset, file->run_count, segment);
         return;
     }
 }
@@ -81,13 +75,8 @@ void apply_mq_room_patches(z64_game_t* game, uint8_t* segment) {
     apply_mq_patches(game->scene_index, room_id, segment);
 }
 
-void load_mq_patched_overlay(
-    uint32_t vrom_start,
-    uint32_t vrom_end,
-    void* vram_start,
-    void* vram_end,
-    uint8_t* loaded_ram
-) {
+void load_mq_patched_overlay(uint32_t vrom_start, uint32_t vrom_end, void* vram_start, void* vram_end,
+                             uint8_t* loaded_ram) {
     uint32_t i;
 
     overlay_load(vrom_start, vrom_end, vram_start, vram_end, loaded_ram);
@@ -99,7 +88,7 @@ void load_mq_patched_overlay(
         const mq_global_patch_t* patch = &MQ_PATCH_GLOBALS[i];
 
         if (patch->vrom_start == vrom_start) {
-            apply_mq_runs(patch->first_run, patch->run_count, loaded_ram);
+            apply_mq_runs(patch->first_run, patch->data_offset, patch->run_count, loaded_ram);
             return;
         }
     }

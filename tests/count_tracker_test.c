@@ -76,22 +76,16 @@ static uint8_t test_completed_encounters[COUNT_ENCOUNTER_BYTES];
 
 bool count_encounter_is_complete(uint16_t encounter_id) {
     return encounter_id < COUNT_ENCOUNTER_CAPACITY &&
-        (test_completed_encounters[encounter_id >> 3] &
-         (1 << (encounter_id & 7)));
+           (test_completed_encounters[encounter_id >> 3] & (1 << (encounter_id & 7)));
 }
 
 void count_encounter_complete(uint16_t encounter_id) {
     if (encounter_id < COUNT_ENCOUNTER_CAPACITY) {
-        test_completed_encounters[encounter_id >> 3] |=
-            1 << (encounter_id & 7);
+        test_completed_encounters[encounter_id >> 3] |= 1 << (encounter_id & 7);
     }
 }
 
-static void reset_tracker(
-    int16_t scene,
-    int8_t room,
-    uint8_t master_quest
-) {
+static void reset_tracker(int16_t scene, int8_t room, uint8_t master_quest) {
     memset(&z64_game, 0, sizeof(z64_game));
     memset(&z64_link, 0, sizeof(z64_link));
     memset(&z64_file, 0, sizeof(z64_file));
@@ -108,19 +102,12 @@ static void reset_tracker(
     count_tracker_update();
 }
 
-static z64_actor_t make_actor(
-    int16_t actor_id,
-    int8_t room,
-    uint16_t variable,
-    int16_t x,
-    int16_t y,
-    int16_t z
-) {
+static z64_actor_t make_actor(int16_t actor_id, int8_t room, uint16_t variable, int16_t x, int16_t y, int16_t z) {
     z64_actor_t actor = {
         .actor_id = actor_id,
         .room_index = room,
         .variable = variable,
-        .pos_1 = {x, y, z},
+        .pos_1 = { x, y, z },
         .health = 1,
         .next = NULL,
     };
@@ -133,7 +120,7 @@ static void test_silver_room_transition_and_dedup() {
     count_tracker_update();
 
     assert(extended_savectx.silver_rupee_rooms_cleared == 1);
-    assert(count_encounter_is_complete(6));
+    assert(count_encounter_is_complete(4));
 
     count_tracker_update();
     assert(extended_savectx.silver_rupee_rooms_cleared == 1);
@@ -158,16 +145,45 @@ static void test_mq_silver_room_uses_mq_switch() {
     z64_game.swch_flags |= 1 << 17;
     count_tracker_update();
     assert(extended_savectx.silver_rupee_rooms_cleared == 1);
-    assert(count_encounter_is_complete(6));
+    assert(count_encounter_is_complete(3));
+}
+
+static void test_silver_room_sets_match_each_quest() {
+    for (uint8_t i = 0; i < ENEMY_ENCOUNTER_BASE; i++) {
+        count_encounter_complete(i);
+    }
+
+    z64_file.master_quest = 0;
+    assert(count_tracker_get_silver_rooms_cleared() == 16);
+    int room_count;
+    assert(get_silver_rooms(&room_count) == vanilla_silver_rooms);
+    assert(room_count == 16);
+    uint32_t ids_seen = 0;
+    for (uint8_t i = 0; i < room_count; i++) {
+        uint8_t id = vanilla_silver_rooms[i].id;
+        assert(id < ENEMY_ENCOUNTER_BASE);
+        assert(!(ids_seen & (1u << id)));
+        ids_seen |= 1u << id;
+    }
+    assert(ids_seen == 0xFFFF);
+
+    z64_file.master_quest = 1;
+    assert(count_tracker_get_silver_rooms_cleared() == 13);
+    assert(get_silver_rooms(&room_count) == mq_silver_rooms);
+    assert(room_count == 13);
+    ids_seen = 0;
+    for (uint8_t i = 0; i < room_count; i++) {
+        uint8_t id = mq_silver_rooms[i].id;
+        assert(id < ENEMY_ENCOUNTER_BASE);
+        assert(!(ids_seen & (1u << id)));
+        ids_seen |= 1u << id;
+    }
+    assert(ids_seen == 0x1FFF);
 }
 
 static void test_clear_room_enemies_commit_together() {
-    z64_actor_t first = make_actor(
-        ACTOR_EN_IK, 4, 0xFF02, -291, 520, 37
-    );
-    z64_actor_t second = make_actor(
-        ACTOR_EN_IK, 4, 0xFF03, -290, 520, -32
-    );
+    z64_actor_t first = make_actor(ACTOR_EN_IK, 4, 0xFF02, -291, 520, 37);
+    z64_actor_t second = make_actor(ACTOR_EN_IK, 4, 0xFF03, -290, 520, -32);
     first.next = &second;
 
     reset_tracker(SCENE_GANONS_TOWER, 4, 0);
@@ -176,22 +192,20 @@ static void test_clear_room_enemies_commit_together() {
     second.health = 0;
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_IRON_KNUCKLE] == 0);
+    assert(count_tracker_get_enemy_count(ENEMY_IRON_KNUCKLE) == 2);
 
     z64_game.clear_flags |= 1 << 4;
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_IRON_KNUCKLE] == 2);
+    assert(count_tracker_get_enemy_count(ENEMY_IRON_KNUCKLE) == 2);
 
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_IRON_KNUCKLE] == 2);
 }
 
 static void test_ganons_tower_stalfos_wait_for_their_room_clear() {
-    z64_actor_t first = make_actor(
-        ACTOR_EN_TEST, 2, 0x0001, -183, 260, -12
-    );
-    z64_actor_t second = make_actor(
-        ACTOR_EN_TEST, 2, 0x0000, 161, 260, -7
-    );
+    z64_actor_t first = make_actor(ACTOR_EN_TEST, 2, 0x0001, -183, 260, -12);
+    z64_actor_t second = make_actor(ACTOR_EN_TEST, 2, 0x0000, 161, 260, -7);
     first.next = &second;
 
     reset_tracker(SCENE_GANONS_TOWER, 2, 0);
@@ -201,28 +215,31 @@ static void test_ganons_tower_stalfos_wait_for_their_room_clear() {
     second.health = 0;
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_STALFOS] == 0);
+    assert(count_tracker_get_enemy_count(ENEMY_STALFOS) == 2);
 
     z64_game.temp_clear_flags |= 1 << 2;
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_STALFOS] == 2);
+    assert(count_tracker_get_enemy_count(ENEMY_STALFOS) == 2);
 
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_STALFOS] == 2);
 }
 
 static void test_abandoned_clear_room_does_not_count() {
-    z64_actor_t stalfos = make_actor(
-        ACTOR_EN_TEST, 6, 0xFFFF, 273, 467, -3378
-    );
+    z64_actor_t stalfos = make_actor(ACTOR_EN_TEST, 6, 0xFFFF, 273, 467, -3378);
 
     reset_tracker(SCENE_FOREST_TEMPLE, 6, 0);
     z64_game.actor_list[ACTORTYPE_ENEMY].first = &stalfos;
     stalfos.health = 0;
     count_tracker_update();
+    assert(extended_savectx.enemy_counts[ENEMY_STALFOS] == 0);
+    assert(count_tracker_get_enemy_count(ENEMY_STALFOS) == 1);
 
     z64_game.actor_list[ACTORTYPE_ENEMY].first = NULL;
     z64_game.room_index = 7;
     count_tracker_update();
+    assert(count_tracker_get_enemy_count(ENEMY_STALFOS) == 0);
     z64_game.room_index = 6;
     count_tracker_update();
     z64_game.clear_flags |= 1 << 6;
@@ -232,30 +249,30 @@ static void test_abandoned_clear_room_does_not_count() {
 }
 
 static void test_iron_knuckle_waits_for_room_clear() {
-    z64_actor_t iron_knuckle = make_actor(
-        ACTOR_EN_IK, 10, 1, -1250, 1003, 1476
-    );
+    z64_actor_t iron_knuckle = make_actor(ACTOR_EN_IK, 10, 1, -1250, 1003, 1476);
 
     reset_tracker(SCENE_SPIRIT_TEMPLE, 10, 0);
     z64_game.actor_list[ACTORTYPE_ENEMY].first = &iron_knuckle;
     iron_knuckle.health = 0;
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_IRON_KNUCKLE] == 0);
+    assert(count_tracker_get_enemy_count(ENEMY_IRON_KNUCKLE) == 1);
 
     z64_game.swch_flags |= 1 << 25;
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_IRON_KNUCKLE] == 0);
+    assert(count_tracker_get_enemy_count(ENEMY_IRON_KNUCKLE) == 1);
 
     z64_game.clear_flags |= 1 << 10;
     count_tracker_update();
     assert(extended_savectx.enemy_counts[ENEMY_IRON_KNUCKLE] == 1);
+    assert(count_tracker_get_enemy_count(ENEMY_IRON_KNUCKLE) == 1);
 }
 
 static void test_nabooru_iron_knuckle_uses_clear_flags() {
     for (uint8_t master_quest = 0; master_quest <= 1; master_quest++) {
         reset_tracker(0x17, 1, master_quest);
-        z64_file.scene_flags[SCENE_TWINROVA].clear |=
-            NABOORU_KNUCKLE_CLEAR_FLAG;
+        z64_file.scene_flags[SCENE_TWINROVA].clear |= NABOORU_KNUCKLE_CLEAR_FLAG;
 
         count_tracker_update();
         count_tracker_update();
@@ -280,10 +297,44 @@ static void test_nabooru_iron_knuckle_uses_clear_flags() {
     }
 }
 
+static void test_cutscene_map_iron_knuckles_are_counted() {
+    z64_actor_t first = make_actor(ACTOR_EN_IK, 0, 0xFF03, -173, 0, 100);
+    z64_actor_t second = make_actor(ACTOR_EN_IK, 0, 0xFF03, 173, 0, 100);
+    z64_actor_t third = make_actor(ACTOR_EN_IK, 0, 0xFF02, 0, 0, -200);
+    first.next = &second;
+    second.next = &third;
+
+    for (uint8_t master_quest = 0; master_quest <= 1; master_quest++) {
+        reset_tracker(SCENE_CUTSCENE_MAP, 0, master_quest);
+        z64_game.actor_list[ACTORTYPE_ENEMY].first = &first;
+        first.health = 0;
+        second.health = 0;
+        third.health = 0;
+
+        count_tracker_update();
+        count_tracker_update();
+
+        assert(extended_savectx.enemy_counts[ENEMY_IRON_KNUCKLE] == 3);
+    }
+}
+
+static void test_enemy_encounters_are_grouped_with_monotonic_ids() {
+    for (uint8_t master_quest = 0; master_quest <= 1; master_quest++) {
+        int count;
+        z64_file.master_quest = master_quest;
+        enemy_encounter_t* encounters = get_enemy_encounters(&count);
+
+        for (int i = 0; i < count; i++) {
+            assert(encounters[i].id == ENEMY_ENCOUNTER_BASE + i);
+            if (i > 0) {
+                assert(encounters[i - 1].type <= encounters[i].type);
+            }
+        }
+    }
+}
+
 static void test_chest_counts_once_and_excludes_minigame() {
-    z64_actor_t trap = make_actor(
-        ACTOR_EN_BOX, 0, (GI_ICE_TRAP << 5) | 2, 0, 0, 0
-    );
+    z64_actor_t trap = make_actor(ACTOR_EN_BOX, 0, (GI_ICE_TRAP << 5) | 2, 0, 0, 0);
 
     reset_tracker(SCENE_KOKIRI_FOREST, 0, 0);
     z64_game.actor_list[ACTORTYPE_CHEST].first = &trap;
@@ -300,9 +351,7 @@ static void test_chest_counts_once_and_excludes_minigame() {
     count_tracker_update_chests();
     assert(extended_savectx.trap_count == 1);
 
-    z64_actor_t gold = make_actor(
-        ACTOR_EN_BOX, 0, (GI_RUPEE_GOLD << 5) | 3, 0, 0, 0
-    );
+    z64_actor_t gold = make_actor(ACTOR_EN_BOX, 0, (GI_RUPEE_GOLD << 5) | 3, 0, 0, 0);
     reset_tracker(SCENE_TREASURE_BOX_SHOP, 0, 0);
     z64_game.actor_list[ACTORTYPE_CHEST].first = &gold;
     z64_link.incoming_item_actor = &gold;
@@ -314,11 +363,14 @@ static void test_chest_counts_once_and_excludes_minigame() {
 int main() {
     test_silver_room_transition_and_dedup();
     test_mq_silver_room_uses_mq_switch();
+    test_silver_room_sets_match_each_quest();
     test_clear_room_enemies_commit_together();
     test_ganons_tower_stalfos_wait_for_their_room_clear();
     test_abandoned_clear_room_does_not_count();
     test_iron_knuckle_waits_for_room_clear();
     test_nabooru_iron_knuckle_uses_clear_flags();
+    test_cutscene_map_iron_knuckles_are_counted();
+    test_enemy_encounters_are_grouped_with_monotonic_ids();
     test_chest_counts_once_and_excludes_minigame();
     return 0;
 }

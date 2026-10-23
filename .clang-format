@@ -1,0 +1,16 @@
+BasedOnStyle: Microsoft
+AlignEscapedNewlines: Left
+IndentWidth: 4
+ContinuationIndentWidth: 4
+UseTab: Never
+BreakBeforeBraces: Attach
+InsertBraces: true
+IndentCaseLabels: true
+PointerAlignment: Left
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInContainerLiterals: true
+Cpp11BracedListStyle: false
+ColumnLimit: 120
+LineEnding: LF

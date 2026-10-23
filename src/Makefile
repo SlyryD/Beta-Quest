@@ -10,8 +10,8 @@ makeall: rand.z64 loader.z64
 rand.z64: rand.o
 	$(LD) -T rand.ld -o ${output_dir}/$@ ${output_dir}/$?
 
-rand.o: rand.sx
-	$(CC) -c $(CFLAGS) $? -o ${output_dir}/$@
+rand.o: rand.sx entrance_randomizer.h entrances.inc mips_reg.h
+	$(CC) -c $(CFLAGS) $< -o ${output_dir}/$@
 
 loader.z64: loader.o
 	$(LD) -T loader.ld -o ${output_dir}/$@ ${output_dir}/$?

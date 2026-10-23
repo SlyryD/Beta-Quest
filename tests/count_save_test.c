@@ -13,12 +13,7 @@ typedef struct {
 static test_file_t z64_file;
 static uint8_t test_sram[0x8000];
 
-void count_save_test_sram_read_write(
-    uint32_t address,
-    void* dram_address,
-    size_t size,
-    uint32_t direction
-) {
+void count_save_test_sram_read_write(uint32_t address, void* dram_address, size_t size, uint32_t direction) {
     size_t offset = address - 0x08000000;
 
     assert(direction == 1);
@@ -38,10 +33,7 @@ static void reset_test_state(uint8_t file_index, uint16_t checksum) {
 }
 
 static count_save_record_t* primary_record(uint8_t file_index) {
-    return (count_save_record_t*)(
-        test_sram + SRAM_EXTENSION_START +
-        file_index * SRAM_EXTENSION_RECORD_SIZE
-    );
+    return (count_save_record_t*)(test_sram + SRAM_EXTENSION_START + file_index * SRAM_EXTENSION_RECORD_SIZE);
 }
 
 static count_save_record_t* backup_record(uint8_t file_index) {
@@ -62,11 +54,7 @@ static void test_initialize_and_round_trip() {
     count_encounter_complete(73);
     count_save_write();
 
-    assert(memcmp(
-        primary_record(1),
-        backup_record(1),
-        sizeof(count_save_record_t)
-    ) == 0);
+    assert(memcmp(primary_record(1), backup_record(1), sizeof(count_save_record_t)) == 0);
 
     clear_working_record();
     count_save_cache_sram(test_sram);
@@ -120,9 +108,27 @@ static void test_unsaved_changes_roll_back() {
 }
 
 static void test_encounter_bounds() {
+    count_encounter_complete(COUNT_ENCOUNTER_CAPACITY - 1);
+    assert(count_encounter_is_complete(COUNT_ENCOUNTER_CAPACITY - 1));
+
     assert(!count_encounter_is_complete(COUNT_ENCOUNTER_CAPACITY));
     count_encounter_complete(COUNT_ENCOUNTER_CAPACITY);
     assert(!count_encounter_is_complete(COUNT_ENCOUNTER_CAPACITY));
+}
+
+static void test_previous_version_is_rejected() {
+    reset_test_state(0, 0xABCD);
+    count_save_initialize_file(0, test_sram);
+    primary_record(0)->version = COUNT_SAVE_VERSION - 1;
+    backup_record(0)->version = COUNT_SAVE_VERSION - 1;
+
+    extended_savectx.trap_count = 99;
+    count_encounter_complete(12);
+    count_save_cache_sram(test_sram);
+    count_save_load_file();
+
+    assert(extended_savectx.trap_count == 0);
+    assert(!count_encounter_is_complete(12));
 }
 
 static void test_file_copy_and_recreate() {
@@ -155,6 +161,7 @@ int main() {
     test_invalid_records_clear_state();
     test_unsaved_changes_roll_back();
     test_encounter_bounds();
+    test_previous_version_is_rejected();
     test_file_copy_and_recreate();
     return 0;
 }

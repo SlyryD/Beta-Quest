@@ -1,10 +1,10 @@
 #ifndef SAVE_H
 #define SAVE_H
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
-#define COUNT_ENCOUNTER_CAPACITY 256
+#define COUNT_ENCOUNTER_CAPACITY 128
 #define COUNT_ENCOUNTER_BYTES (COUNT_ENCOUNTER_CAPACITY / 8)
 
 // Struct for storing additional data in SRAM. This has to always be a multiple of 2 bytes long supposedly.
@@ -15,7 +15,6 @@ typedef struct {
     uint8_t enemy_counts[8];
     uint8_t pad;
 } extended_savecontext_static_t;
-
 
 extern extended_savecontext_static_t extended_savectx;
 

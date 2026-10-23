@@ -619,9 +619,9 @@ typedef struct
     uint8_t       language_options;         /* 0x0002 */
     char          verification_string[9];   /* 0x0003 */
     uint8_t       bonko_options;            /* 0x000C */
-    uint8_t       bonko_options_magic;      /* 0x000D */
+    uint8_t       bonko_options_version;    /* 0x000D */
     uint8_t       song_speedup_options;     /* 0x000E */
-    uint8_t       song_speedup_options_magic; /* 0x000F */
+    uint8_t       song_speedup_options_version; /* 0x000F */
     char          unk_00_[0x0010];          /* 0x0010 */
     z64_file_t    primary_saves[3];         /* 0x0020 */
     z64_file_t    backup_saves[3];          /* 0x3D10 */

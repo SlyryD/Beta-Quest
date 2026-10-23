@@ -723,7 +723,11 @@ MQ_GLOBAL_FILES = (
     (0xBB11E0, 0xBCDB70),
     (0xBF40D0, 0xBFAC30),
 )
-MERGE_GAP = 8
+RUN_LENGTH_BITS = 12
+MAX_RUN_OFFSET = (1 << (32 - RUN_LENGTH_BITS)) - 1
+MAX_RUN_LENGTH = (1 << RUN_LENGTH_BITS) - 1
+MAX_UINT16 = (1 << 16) - 1
+MERGE_GAP = 4
 
 
 def read_file_range(file_data):
@@ -785,33 +789,59 @@ def emit_files(
 
     def append_runs(runs):
         first_run = len(rows)
+        data_offset = len(data)
         for offset, run_data in runs:
-            data_offset = len(data)
+            if offset > MAX_RUN_OFFSET:
+                raise RuntimeError(f"MQ patch run offset 0x{offset:X} exceeds packed format")
+            if len(run_data) > MAX_RUN_LENGTH:
+                raise RuntimeError(
+                    f"MQ patch run length 0x{len(run_data):X} exceeds packed format"
+                )
             data.extend(run_data)
-            rows.append((offset, data_offset, len(run_data)))
-        return first_run, len(rows) - first_run
+            rows.append((offset, len(run_data)))
+        run_count = len(rows) - first_run
+        if first_run > MAX_UINT16 or data_offset > MAX_UINT16 or run_count > MAX_UINT16:
+            raise RuntimeError("MQ patch table exceeds 16-bit metadata")
+        return first_run, data_offset, run_count
 
     for scene_id, room_id, runs in records:
-        first_run, run_count = append_runs(runs)
+        first_run, data_offset, run_count = append_runs(runs)
         if run_count != 0:
-            files.append((scene_id, room_id, first_run, run_count))
+            files.append((scene_id, room_id, first_run, data_offset, run_count))
 
     for vrom_start, runs in global_records:
-        first_run, run_count = append_runs(runs)
+        first_run, data_offset, run_count = append_runs(runs)
         if run_count != 0:
-            globals_.append((vrom_start, first_run, run_count))
+            globals_.append((vrom_start, first_run, data_offset, run_count))
+
+    if len(data) > MAX_UINT16 + 1:
+        raise RuntimeError("MQ patch data exceeds 16-bit offsets")
 
     file_data = b"".join(
-        struct.pack(">BbHI", scene_id, room_id, run_count, first_run)
-        for scene_id, room_id, first_run, run_count in files
+        struct.pack(
+            ">HHHBb",
+            first_run,
+            data_offset,
+            run_count,
+            scene_id,
+            room_id,
+        )
+        for scene_id, room_id, first_run, data_offset, run_count in files
     )
     global_data = b"".join(
-        struct.pack(">IIHH", vrom_start, first_run, run_count, 0)
-        for vrom_start, first_run, run_count in globals_
+        struct.pack(
+            ">IHHHH",
+            vrom_start,
+            first_run,
+            data_offset,
+            run_count,
+            0,
+        )
+        for vrom_start, first_run, data_offset, run_count in globals_
     )
     run_data = b"".join(
-        struct.pack(">IIHH", offset, data_offset, length, 0)
-        for offset, data_offset, length in rows
+        struct.pack(">I", (offset << RUN_LENGTH_BITS) | length)
+        for offset, length in rows
     )
     output_files.write_bytes(file_data)
     output_globals.write_bytes(global_data)

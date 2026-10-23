@@ -4,22 +4,21 @@
 #include "z64.h"
 
 typedef struct {
+    uint16_t first_run;
+    uint16_t data_offset;
+    uint16_t run_count;
     uint8_t scene_id;
     int8_t room_id;
-    uint16_t run_count;
-    uint32_t first_run;
 } mq_file_patch_t;
 
 typedef struct {
-    uint32_t offset;
-    uint32_t data_offset;
-    uint16_t length;
-    uint16_t reserved;
+    uint32_t offset_and_length;
 } mq_patch_run_t;
 
 typedef struct {
     uint32_t vrom_start;
-    uint32_t first_run;
+    uint16_t first_run;
+    uint16_t data_offset;
     uint16_t run_count;
     uint16_t reserved;
 } mq_global_patch_t;

@@ -3,6 +3,6 @@
 
 #include "z64.h"
 
-void draw_entrance_info(z64_disp_buf_t *db);
+void draw_entrance_info(z64_disp_buf_t* db);
 
 #endif
