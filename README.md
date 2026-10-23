@@ -124,14 +124,39 @@ V2.2 Changes:
 
 V3.0 Changes:
 
-* Restore light arrow cutscene BA with Better OoT version of the cutscenes
+* Restored Light Arrow cutscene BA
 
-* Added song cutscene speedups, disabled by default and configurable from the file-select options menu
+* Added Master Quest dungeons as a per-file option selected while entering a file name
 
-* Make bonko configurable from the file-select options menu (remove --bonko compilation flag)
+* Added ROM-wide options to the file-select Options menu, shared across all files and disabled by default:
 
-* Make MQ configurable from the file-select name entry menu (remove --mq compilation flag)
+  * Bonko (Bonk One Hit KO)
 
-* TODO: Count maps, compasses, equipment, etc.
+  * Song cutscene speedups
 
-* TODO: Fix up in-game spoiler log??
+* Item get messages report totals for:
+
+  * Swords, shields, tunics, boots, songs, Spiritual Stones, medallions, and dungeon rewards
+
+  * Boss Keys, compasses, maps, elemental arrows, Great Fairy spells, and occupied bottle slots
+
+* Updated pause-menu totals to include:
+
+  * Freed carpenters
+
+  * Planted Magic Beans, triggered Ice Traps, collected Gold Rupees, and completed Silver Rupee rooms
+
+  * Defeated Iron Knuckles, White Wolfos, Lizalfos/Dinolfos, Gibdos, Morpha tentacles, Stalfos,
+    Dead Hands, and Flare Dancers
+
+* Enemy defeat totals update after each kill and roll back if a multi-enemy room is left uncleared
+
+* Reworked the in-game entrance spoiler shown for file names beginning with `SL`:
+
+  * Added compact five-entry pages with shortened entrance names
+
+  * Added source-sorted and destination-sorted views for visited entrances or the full spoiler
+
+  * Added wraparound scrolling without empty pages
+
+  * Tracks visited entrances, including generic and Fairy Fountain grottos
