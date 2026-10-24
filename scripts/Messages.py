@@ -902,10 +902,10 @@ class ShopItem:
 
 
 # reads each of the shop items
-def read_shop_items(rom: Rom, shop_table_address: int) -> list[ShopItem]:
+def read_shop_items(rom: Rom, shop_table_address: int, count: int = 100) -> list[ShopItem]:
     shop_items = []
 
-    for index in range(0, 100):
+    for index in range(0, count):
         shop_items.append(ShopItem(rom, shop_table_address, index))
 
     return shop_items
@@ -961,10 +961,20 @@ def move_shop_item_messages(messages: list[Message], shop_items: Iterable[ShopIt
             message.id |= 0x8000
     # update them in the shop item list
     for shop in shop_items:
+        if shop.index in SHOP_ITEM_EXCEPTIONS:
+            continue
         if is_in_item_range(shop.description_message):
             shop.description_message |= 0x8000
         if is_in_item_range(shop.purchase_message):
             shop.purchase_message |= 0x8000
+
+    message_ids = {message.id for message in messages}
+    for shop in shop_items:
+        if shop.index in SHOP_ITEM_EXCEPTIONS:
+            continue
+        for message_id in (shop.description_message, shop.purchase_message):
+            if message_id not in message_ids:
+                raise ValueError(f"shop item {shop.index:#04x} references missing message {message_id:#06x}")
 
 
 # reduce item message sizes and add new item messages

@@ -51,6 +51,8 @@ test:
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/count_save_test.c c/memory.c -o $(OUTDIR)/count_save_test
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/memory_test.c c/memory.c -o $(OUTDIR)/memory_test
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/count_tracker_test.c -o $(OUTDIR)/count_tracker_test
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/counts_test.c -o $(OUTDIR)/counts_test
 	$(OUTDIR)/count_save_test
 	$(OUTDIR)/memory_test
 	$(OUTDIR)/count_tracker_test
+	$(OUTDIR)/counts_test

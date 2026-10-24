@@ -24,10 +24,13 @@
 #define FILE_SELECT_NAME_ENTRY_TO_MAIN_MODE 35
 #define BONKO_OPTIONS_VERSION 1
 #define SONG_SPEEDUP_OPTIONS_VERSION 1
+#define FILE_SELECT_CURSOR_SFX 0x4839
+#define FILE_SELECT_DECIDE_SFX 0x483B
 
 typedef void (*sram_write_header_func_t)(void*);
 typedef void (*sram_file_func_t)(void*);
 typedef void (*audio_set_output_func_t)(int8_t);
+typedef void (*play_sfx_func_t)(uint16_t, z64_xyzf_t*, int8_t, float*, float*, int8_t*);
 typedef void (*draw_options_func_t)(z64_ctxt_t*);
 typedef void (*file_select_func_t)(z64_ctxt_t*);
 
@@ -76,10 +79,12 @@ typedef struct {
 static sram_write_header_func_t const write_sram_header = (sram_write_header_func_t)0x800911C0;
 static sram_file_func_t const write_save = (sram_file_func_t)0x800905D4;
 static audio_set_output_func_t const set_audio_output = (audio_set_output_func_t)0x800C7420;
+static play_sfx_func_t const play_sfx = (play_sfx_func_t)0x800C806C;
 static uint8_t selected_setting;
 static uint8_t custom_options_alpha;
 static uint8_t create_mq_file;
 static uint8_t create_mq_alpha;
+static char const option_labels[2][4] = { "OFF", "ON" };
 
 typedef char assert_bonko_option_offset[__builtin_offsetof(z64_sram_data_t, bonko_options) == 0x0C ? 1 : -1];
 typedef char
@@ -255,9 +260,15 @@ static uint8_t* get_native_selected_setting() {
     return (uint8_t*)(overlay_base + FILE_SELECT_SELECTED_SETTING_OFFSET);
 }
 
-void load_file_select_settings(z64_sram_data_t* sram_buffer) {
-    count_save_cache_sram(sram_buffer);
+static void play_file_select_sfx(uint16_t sfx) {
+    play_sfx(sfx, (z64_xyzf_t*)0x80104394, 4, (float*)0x801043A0, (float*)0x801043A0, (int8_t*)0x801043A8);
+}
 
+static const char* get_option_label(uint8_t enabled) {
+    return option_labels[enabled != 0];
+}
+
+static void normalize_file_select_settings(z64_sram_data_t* sram_buffer) {
     if (sram_buffer->bonko_options_version != BONKO_OPTIONS_VERSION) {
         sram_buffer->bonko_options = 0;
         sram_buffer->bonko_options_version = BONKO_OPTIONS_VERSION;
@@ -275,6 +286,11 @@ void load_file_select_settings(z64_sram_data_t* sram_buffer) {
     CFG_SONG_SPEEDUPS = sram_buffer->song_speedup_options;
 }
 
+void load_file_select_settings(z64_sram_data_t* sram_buffer) {
+    count_save_cache_sram(sram_buffer);
+    normalize_file_select_settings(sram_buffer);
+}
+
 void update_file_select_options(z64_ctxt_t* menu) {
     z64_input_t* input = &menu->input[0];
     file_select_t* file_select = (file_select_t*)menu;
@@ -283,11 +299,11 @@ void update_file_select_options(z64_ctxt_t* menu) {
     int16_t adjusted_y = file_select->stick_y;
 
     if (bonko_option != NULL) {
-        CFG_DEADLY_BONKS = *bonko_option;
-        CFG_SONG_SPEEDUPS = file_select->sram_buffer->song_speedup_options;
+        normalize_file_select_settings(file_select->sram_buffer);
     }
 
     if (input->pad_pressed.b) {
+        play_file_select_sfx(FILE_SELECT_DECIDE_SFX);
         file_select->config_mode = 39;
         file_select->sram_buffer->sound_options = z64_file.sound_setting;
         file_select->sram_buffer->z_target_options = z64_file.z_targeting;
@@ -297,6 +313,7 @@ void update_file_select_options(z64_ctxt_t* menu) {
     }
 
     if (adjusted_x < -30 || adjusted_x > 30) {
+        play_file_select_sfx(FILE_SELECT_CURSOR_SFX);
         if (selected_setting == 0) {
             if (adjusted_x < -30) {
                 z64_file.sound_setting = z64_file.sound_setting == 0 ? 3 : z64_file.sound_setting - 1;
@@ -315,13 +332,16 @@ void update_file_select_options(z64_ctxt_t* menu) {
     }
 
     if (adjusted_y < -30) {
+        play_file_select_sfx(FILE_SELECT_CURSOR_SFX);
         selected_setting++;
         if (selected_setting == FILE_SELECT_SETTING_COUNT) {
             selected_setting = 0;
         }
     } else if (adjusted_y > 30) {
+        play_file_select_sfx(FILE_SELECT_CURSOR_SFX);
         selected_setting = selected_setting == 0 ? FILE_SELECT_SETTING_COUNT - 1 : selected_setting - 1;
     } else if (input->pad_pressed.a) {
+        play_file_select_sfx(FILE_SELECT_DECIDE_SFX);
         selected_setting++;
         if (selected_setting == FILE_SELECT_SETTING_COUNT) {
             selected_setting = 0;
@@ -368,12 +388,12 @@ void draw_file_select_options(z64_ctxt_t* menu) {
         text_print(">", 160, 138);
     }
     text_print("SONG SKIPS:", 168, 138);
-    text_print(file_select->sram_buffer->song_speedup_options == 0 ? "OFF" : "ON", 264, 138);
+    text_print(get_option_label(file_select->sram_buffer->song_speedup_options), 264, 138);
     if (selected_setting == FILE_SELECT_BONKO_SETTING) {
         text_print(">", 184, 156);
     }
     text_print("BONKO:", 192, 156);
-    text_print(*bonko_option == 0 ? "OFF" : "ON", 264, 156);
+    text_print(get_option_label(*bonko_option), 264, 156);
     text_flush(db);
 
     gDPPipeSync(db->p++);
