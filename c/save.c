@@ -5,6 +5,9 @@
 
 #define SRAM_BASE 0x08000000
 #define SRAM_SIZE 0x8000
+#define SRAM_FILE_SIZE 0x1450
+#define SRAM_PRIMARY_FILES_START 0x20
+#define SRAM_BACKUP_FILES_START 0x3D10
 #define SRAM_EXTENSION_START 0x7A00
 #define SRAM_EXTENSION_RECORD_SIZE 0x30
 #define SRAM_EXTENSION_RECORD_COUNT 6
@@ -152,11 +155,32 @@ void count_save_initialize_file(uint8_t file_index, void* sram_buffer) {
                 sizeof(*primary_record));
     memory_copy((uint8_t*)sram_buffer + SRAM_EXTENSION_START + (file_index + 3) * SRAM_EXTENSION_RECORD_SIZE,
                 backup_record, sizeof(*backup_record));
+}
 
-    sram_read_write(SRAM_BASE + SRAM_EXTENSION_START + file_index * SRAM_EXTENSION_RECORD_SIZE, primary_record,
-                    sizeof(*primary_record), OS_WRITE);
-    sram_read_write(SRAM_BASE + SRAM_EXTENSION_START + (file_index + 3) * SRAM_EXTENSION_RECORD_SIZE, backup_record,
-                    sizeof(*backup_record), OS_WRITE);
+void count_save_write_new_file(uint32_t address, void* sram_buffer, size_t size, uint32_t direction) {
+    uint8_t file_index = z64_file.file_index;
+    size_t primary_offset;
+    size_t backup_offset;
+    size_t primary_count_offset;
+    size_t backup_count_offset;
+
+    if (address != SRAM_BASE || size != SRAM_SIZE || direction != OS_WRITE || file_index >= 3) {
+        sram_read_write(address, sram_buffer, size, direction);
+        return;
+    }
+
+    count_save_initialize_file(file_index, sram_buffer);
+    primary_offset = SRAM_PRIMARY_FILES_START + file_index * SRAM_FILE_SIZE;
+    backup_offset = SRAM_BACKUP_FILES_START + file_index * SRAM_FILE_SIZE;
+    primary_count_offset = SRAM_EXTENSION_START + file_index * SRAM_EXTENSION_RECORD_SIZE;
+    backup_count_offset = SRAM_EXTENSION_START + (file_index + 3) * SRAM_EXTENSION_RECORD_SIZE;
+
+    sram_read_write(SRAM_BASE + primary_offset, (uint8_t*)sram_buffer + primary_offset, SRAM_FILE_SIZE, OS_WRITE);
+    sram_read_write(SRAM_BASE + backup_offset, (uint8_t*)sram_buffer + backup_offset, SRAM_FILE_SIZE, OS_WRITE);
+    sram_read_write(SRAM_BASE + primary_count_offset, (uint8_t*)sram_buffer + primary_count_offset,
+                    SRAM_EXTENSION_RECORD_SIZE, OS_WRITE);
+    sram_read_write(SRAM_BASE + backup_count_offset, (uint8_t*)sram_buffer + backup_count_offset,
+                    SRAM_EXTENSION_RECORD_SIZE, OS_WRITE);
 }
 
 void count_save_write() {

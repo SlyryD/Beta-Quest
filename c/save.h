@@ -21,6 +21,7 @@ extern extended_savecontext_static_t extended_savectx;
 void count_save_cache_sram(const void* sram_buffer);
 void count_save_load_file();
 void count_save_initialize_file(uint8_t file_index, void* sram_buffer);
+void count_save_write_new_file(uint32_t address, void* sram_buffer, size_t size, uint32_t direction);
 void count_save_write();
 bool count_encounter_is_complete(uint16_t encounter_id);
 void count_encounter_complete(uint16_t encounter_id);

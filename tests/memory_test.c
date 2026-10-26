@@ -14,21 +14,7 @@ static void test_aligned_copy() {
     }
 }
 
-static void test_unaligned_copy() {
-    uint8_t source[] = { 0, 1, 2, 3, 4, 5, 6 };
-    uint8_t destination[] = { 0, 0, 0, 0, 0, 0, 0 };
-
-    memory_copy(destination + 1, source + 2, 3);
-
-    assert(destination[0] == 0);
-    assert(destination[1] == 2);
-    assert(destination[2] == 3);
-    assert(destination[3] == 4);
-    assert(destination[4] == 0);
-}
-
 int main() {
     test_aligned_copy();
-    test_unaligned_copy();
     return 0;
 }

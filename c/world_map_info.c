@@ -177,6 +177,52 @@ static bool is_valid_area_index(uint8_t area_index) {
     return area_index < world_map_areas_length && world_map_areas[area_index].index == area_index;
 }
 
+uint8_t get_current_area_index(void) {
+    switch (z64_game.scene_index) {
+        case SCENE_DESERT_COLOSSUS:
+        case SCENE_HAUNTED_WASTELAND:
+            return AREA_WASTELAND;
+        case SCENE_GERUDOS_FORTRESS:
+            return AREA_FORTRESS;
+        case SCENE_GERUDO_VALLEY:
+            return AREA_GERUDO_VALLEY;
+        case SCENE_LAKE_HYLIA:
+        case SCENE_LAKESIDE_LABORATORY:
+        case SCENE_FISHING_POND:
+            return AREA_LAKE_HYLIA;
+        case SCENE_RANCH_HOUSE_SILO:
+            return AREA_LON_LON_RANCH;
+        case SCENE_DOG_LADY_HOUSE:
+        case SCENE_SHOOTING_GALLERY:
+        case SCENE_BOMBCHU_BOWLING_ALLEY:
+        case SCENE_TREASURE_BOX_SHOP:
+            return AREA_MARKET;
+        case SCENE_GROTTOS:
+            return AREA_HYRULE_FIELD;
+        case SCENE_DEATH_MOUNTAIN_TRAIL:
+        case SCENE_DEATH_MOUNTAIN_CRATER:
+        case SCENE_GORON_CITY:
+            return AREA_DEATH_MOUNTAIN;
+        case SCENE_IMPAS_HOUSE:
+        case SCENE_REDEAD_GRAVE:
+        case SCENE_DAMPES_GRAVE_WINDMILL:
+        case SCENE_HOUSE_OF_SKULLTULA:
+        case SCENE_KAKARIKO_VILLAGE:
+        case SCENE_GRAVEYARD:
+            return AREA_KAKARIKO;
+        case SCENE_LOST_WOODS:
+            return AREA_LOST_WOODS;
+        case SCENE_KOKIRI_FOREST:
+            return AREA_KOKIRI_FOREST;
+        case SCENE_ZORAS_RIVER:
+        case SCENE_ZORAS_DOMAIN:
+        case SCENE_ZORAS_FOUNTAIN:
+            return AREA_ZORA;
+        default:
+            return 0xFF;
+    }
+}
+
 static uint8_t get_area_tokens(uint8_t area_index) {
     return get_tokens(world_map_areas[area_index].gs_flags_index);
 }

@@ -26,11 +26,9 @@ A much smaller subset of valid entrance ids are randomly given an id by picking 
 An even smaller subset of valid entrance ids are not randomized to make it possible to obtain certain items.
 
 ## Which version should I use?
-Due to issues with emulation, there are two different versions of the mod.
+V3.0 uses a single ROM for all supported platforms.
 
-"Fix" has a hack applied that is intended to eliminate the delay that occurs when pausing or getting game over in older emulators like Project 64 1.6. This will cause a trippy graphical glitch, but is otherwise harmless.
-
-"No Fix" does not have the above hack. This version is packed into the Wii wad.
+Enable `PJ64 1.X FIX` in the file-select Options menu when using older emulators such as Project64 1.6. This applies a hack intended to eliminate the delay that occurs when pausing or getting game over. It causes a trippy graphical glitch, but is otherwise harmless. Leave the setting disabled, which is the default, on Wii VC and modern emulators.
 
 ## Gamplay Changes
 
@@ -133,6 +131,10 @@ V3.0 Changes:
   * Bonko (Bonk One Hit KO)
 
   * Song cutscene speedups
+
+  * PJ64 1.x pause and game-over delay fix
+
+* Replaced the separate "Fix" and "No Fix" releases with a single ROM; use `PJ64 1.X FIX` in the file-select Options menu when running Project64 1.6 or other affected older emulators
 
 * Item get messages report totals for:
 

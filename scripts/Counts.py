@@ -16,6 +16,22 @@ class Area(IntEnum):
     ZORA = 0x0B
 
 
+class Dungeon(IntEnum):
+    DEKU_TREE = 0x00
+    DODONGOS_CAVERN = 0x01
+    JABU_JABUS_BELLY = 0x02
+    FOREST_TEMPLE = 0x03
+    FIRE_TEMPLE = 0x04
+    WATER_TEMPLE = 0x05
+    SPIRIT_TEMPLE = 0x06
+    SHADOW_TEMPLE = 0x07
+    BOTTOM_OF_THE_WELL = 0x08
+    ICE_CAVERN = 0x09
+    GERUDO_TRAINING_GROUND = 0x0B
+    THIEVES_HIDEOUT = 0x0C
+    GANONS_CASTLE = 0x0D
+
+
 # DungeonCounts are counted per dungeon
 class DungeonCount(IntEnum):
     # Quest
@@ -44,6 +60,7 @@ class GlobalCount(IntEnum):
     MEDALLION = 0x11
     STONE = 0x12
     REWARD = 0x13
+    TOKEN = 0x14
     # Dungeon
     BOSS_KEY = 0x20
     COMPASS = 0x21

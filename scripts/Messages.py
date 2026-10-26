@@ -1,11 +1,12 @@
 # text details: https://wiki.cloudmodding.com/oot/Text_Format
 
 from __future__ import annotations
-from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Optional, Any
+from collections.abc import Callable
+from enum import IntEnum
+from typing import TYPE_CHECKING, Literal, Optional, Any
 
 from Utils import find_last
-from Counts import DungeonCount
+from Counts import Area, AreaCount, Dungeon, DungeonCount, GlobalCount
 
 if TYPE_CHECKING:
     from Rom import Rom
@@ -25,7 +26,6 @@ ENG_TABLE_SIZE: int = CREDITS_TABLE_START - ENG_TABLE_START
 EXTENDED_TABLE_START: int = JPN_TABLE_START  # start writing entries to the jp table instead of english for more space
 EXTENDED_TABLE_SIZE: int = JPN_TABLE_SIZE + ENG_TABLE_SIZE  # 0x8360 bytes, 4204 entries
 
-EXTENDED_TEXT_START: int = JPN_TABLE_START  # start writing text to the jp table instead of english for more space
 EXTENDED_TEXT_SIZE_LIMIT: int = JPN_TEXT_SIZE_LIMIT + ENG_TEXT_SIZE_LIMIT  # 0x74000 bytes
 
 # name of type, followed by number of additional bytes to read, follwed by a function that prints the code
@@ -124,317 +124,586 @@ for char, byte in CHARACTER_MAP.items():
     SPECIAL_CHARACTERS.setdefault(byte, char)
     REVERSE_MAP[byte] = char
 
-# [0x0500,0x0560] (inclusive) are reserved for plandomakers
-GOSSIP_STONE_MESSAGES: list[int] = list(range(0x0401, 0x04FF))  # ids of the actual hints
-GOSSIP_STONE_MESSAGES += [0x2053, 0x2054]  # shared initial stone messages
-TEMPLE_HINTS_MESSAGES: list[int] = [0x7057, 0x707A]  # dungeon reward hints from the temple of time pedestal
-GS_TOKEN_MESSAGES: list[int] = [0x00B4, 0x00B5]  # Get Gold Skulltula Token messages
-ERROR_MESSAGE: int = 0x0001
-
 new_messages = [] # Used to keep track of new/updated messages to prevent duplicates. Clear it at the start of patches
 
+class MessageColor(IntEnum):
+    WHITE = 0x40
+    RED = 0x41
+    GREEN = 0x42
+    BLUE = 0x43
+    LIGHT_BLUE = 0x44
+    PINK = 0x45
+    YELLOW = 0x46
+    BLACK = 0x47
+
+
+def message_color(color: MessageColor) -> str:
+    return f"\x05{color:c}"
+
+
+TEXT_WHITE = message_color(MessageColor.WHITE)
+PLAYER_NAME = "\xF3"
+
+
+def colored(
+    text: str,
+    color: MessageColor,
+    reset: Literal[MessageColor.WHITE] | None = MessageColor.WHITE,
+) -> str:
+    reset_code = "" if reset is None else TEXT_WHITE
+    return f"{message_color(color)}{text}{reset_code}"
+
+
+def red(text: str, reset: Literal[MessageColor.WHITE] | None = MessageColor.WHITE) -> str:
+    return colored(text, MessageColor.RED, reset)
+
+
+def green(text: str, reset: Literal[MessageColor.WHITE] | None = MessageColor.WHITE) -> str:
+    return colored(text, MessageColor.GREEN, reset)
+
+
+def blue(text: str, reset: Literal[MessageColor.WHITE] | None = MessageColor.WHITE) -> str:
+    return colored(text, MessageColor.BLUE, reset)
+
+
+def light_blue(text: str, reset: Literal[MessageColor.WHITE] | None = MessageColor.WHITE) -> str:
+    return colored(text, MessageColor.LIGHT_BLUE, reset)
+
+
+def pink(text: str, reset: Literal[MessageColor.WHITE] | None = MessageColor.WHITE) -> str:
+    return colored(text, MessageColor.PINK, reset)
+
+
+def yellow(text: str, reset: Literal[MessageColor.WHITE] | None = MessageColor.WHITE) -> str:
+    return colored(text, MessageColor.YELLOW, reset)
+
+
+def dungeon_count(dungeon: Dungeon, count: DungeonCount) -> str:
+    return colored(f"\xF1{dungeon:c}{count:c}", MessageColor.RED)
+
+
+def area_count(area: Area, count: AreaCount) -> str:
+    return colored(f"\xF4{area:c}{count:c}", MessageColor.RED)
+
+
+def global_count(count: GlobalCount) -> str:
+    return colored(f"\xF5{count:c}", MessageColor.RED)
+
+
+AREA_MESSAGE_INFO: tuple[tuple[Area, str, MessageColor], ...] = (
+    (Area.WASTELAND, "Wasteland Area", MessageColor.YELLOW),
+    (Area.FORTRESS, "Fortress Area", MessageColor.YELLOW),
+    (Area.GERUDO_VALLEY, "Gerudo Valley", MessageColor.YELLOW),
+    (Area.LAKE_HYLIA, "Lake Hylia", MessageColor.BLUE),
+    (Area.LON_LON_RANCH, "Lon Lon Ranch", MessageColor.LIGHT_BLUE),
+    (Area.MARKET, "Market Area", MessageColor.LIGHT_BLUE),
+    (Area.HYRULE_FIELD, "Hyrule Field", MessageColor.LIGHT_BLUE),
+    (Area.DEATH_MOUNTAIN, "Death Mountain", MessageColor.RED),
+    (Area.KAKARIKO, "Kakariko Area", MessageColor.PINK),
+    (Area.LOST_WOODS, "Lost Woods", MessageColor.GREEN),
+    (Area.KOKIRI_FOREST, "Kokiri Forest", MessageColor.GREEN),
+    (Area.ZORA, "Zora Area", MessageColor.BLUE),
+)
+
+DUNGEON_TOKEN_MESSAGE_INFO: tuple[tuple[Dungeon, str, MessageColor], ...] = (
+    (Dungeon.DEKU_TREE, "Deku Tree", MessageColor.GREEN),
+    (Dungeon.DODONGOS_CAVERN, "Dodongo's Cavern", MessageColor.RED),
+    (Dungeon.JABU_JABUS_BELLY, "Jabu Jabu's Belly", MessageColor.BLUE),
+    (Dungeon.FOREST_TEMPLE, "Forest Temple", MessageColor.GREEN),
+    (Dungeon.FIRE_TEMPLE, "Fire Temple", MessageColor.RED),
+    (Dungeon.WATER_TEMPLE, "Water Temple", MessageColor.BLUE),
+    (Dungeon.SPIRIT_TEMPLE, "Spirit Temple", MessageColor.YELLOW),
+    (Dungeon.SHADOW_TEMPLE, "Shadow Temple", MessageColor.PINK),
+    (Dungeon.BOTTOM_OF_THE_WELL, "Bottom of the Well", MessageColor.PINK),
+    (Dungeon.ICE_CAVERN, "Ice Cavern", MessageColor.BLUE),
+)
+
 # messages for shorter item messages
-# ids are in the space freed up by move_shop_item_messages()
 ITEM_MESSAGES: list[tuple[int, str]] = [
-    (0x0001, f"\x08\x06\x30\x05\x41TEXT ID ERROR!\x05\x40"),
-    (0x9001, f"\x08\x13\x2DYou borrowed a \x05\x41Pocket Egg\x05\x40!\x01A Pocket Cucco will hatch from\x01it overnight. Be sure to give it\x01back."),
-    (0x0002, f"\x08\x13\x2FYou returned the Pocket Cucco\x01and got \x05\x41Cojiro\x05\x40 in return!\x01Unlike other Cuccos, Cojiro\x01rarely crows."),
-    (0x0003, f"\x08\x13\x30You got an \x05\x41Odd Mushroom\x05\x40!\x01It is sure to spoil quickly! Take\x01it to the Kakariko Potion Shop."),
-    (0x0004, f"\x08\x13\x31You received an \x05\x41Odd Potion\x05\x40!\x01It may be useful for something...\x01Hurry to the Lost Woods!"),
-    (0x0005, f"\x08\x13\x32You returned the Odd Potion \x01and got the \x05\x41Poacher's Saw\x05\x40!\x01The young punk guy must have\x01left this."),
-    (0x0007, f"\x08\x13\x48You got a \x01\x05\x41Deku Seeds Bullet Bag\x05\x40.\x01This bag can hold up to \x05\x4640\x05\x40\x01slingshot bullets."),
-    (0x0008, f"\x08\x13\x33You traded the Poacher's Saw \x01for a \x05\x41Broken Goron's Sword\x05\x40!\x01Visit Biggoron to get it repaired!"),
-    (0x0009, f"\x08\x13\x34You checked in the Broken \x01Goron's Sword and received a \x01\x05\x41Prescription\x05\x40!\x01Go see King Zora!"),
-    (0x000A, f"\x08\x13\x37The Biggoron's Sword...\x01You got a \x05\x41Claim Check \x05\x40for it!\x01You can't wait for the sword!"),
-    (0x000B, f"\x08\x13\x2EYou got a \x05\x41Pocket Cucco, \x05\x40one\x01of Anju's prized hens! It fits \x01in your pocket."),
-    (0x000C, f"\x08\x13\x3DYou got the \x05\x41Biggoron's Sword\x05\x40!\x01This blade was forged by a \x01master smith and won't break!\x01That's \x05\x41\xF5\x00\x05\x40 sword(s)!"),
-    (0x000D, f"\x08\x13\x35You used the Prescription and\x01received an \x05\x41Eyeball Frog\x05\x40!\x01Be quick and deliver it to Lake \x01Hylia!"),
-    (0x000E, f"\x08\x13\x36You traded the Eyeball Frog \x01for the \x05\x41World's Finest Eye Drops\x05\x40!\x01Hurry! Take them to Biggoron!"),
-    (0x0010, f"\x08\x13\x25You got a \x05\x41Skull Mask\x05\x40.\x01You feel like a monster while you\x01wear this mask!"),
-    (0x0011, f"\x08\x13\x26You got a \x05\x41Spooky Mask\x05\x40.\x01You can scare many people\x01with this mask!"),
-    (0x0012, f"\x08\x13\x24You got a \x05\x41Keaton Mask\x05\x40.\x01You'll be a popular guy with\x01this mask on!"),
-    (0x0013, f"\x08\x13\x27You got a \x05\x41Bunny Hood\x05\x40.\x01The hood's long ears are so\x01cute!"),
-    (0x0014, f"\x08\x13\x28You got a \x05\x41Goron Mask\x05\x40.\x01It will make your head look\x01big, though."),
-    (0x0015, f"\x08\x13\x29You got a \x05\x41Zora Mask\x05\x40.\x01With this mask, you can\x01become one of the Zoras!"),
-    (0x0016, f"\x08\x13\x2AYou got a \x05\x41Gerudo Mask\x05\x40.\x01This mask will make you look\x01like...a girl?"),
-    (0x0017, f"\x08\x13\x2BYou got a \x05\x41Mask of Truth\x05\x40.\x01Show it to many people!"),
-    (0x0030, f"\x08\x13\x06You found the \x05\x41Fairy Slingshot\x05\x40!"),
-    (0x0031, f"\x08\x13\x03You found the \x05\x41Fairy Bow\x05\x40!"),
-    (0x0035, f"\x08\x13\x0EYou found the \x05\x41Boomerang\x05\x40!"),
-    (0x0036, f"\x08\x13\x0AYou found the \x05\x41Hookshot\x05\x40!\x01It's a spring-loaded chain that\x01you can cast out to hook things."),
-    (0x0038, f"\x08\x13\x11You found the \x05\x41Megaton Hammer\x05\x40!\x01It's so heavy, you need to\x01use two hands to swing it!"),
-    (0x0039, f"\x08\x13\x0FYou found the \x05\x41Lens of Truth\x05\x40!\x01Mysterious things are hidden\x01everywhere!"),
-    (0x003A, f"\x08\x13\x08You found the \x05\x41Ocarina of Time\x05\x40!\x01It glows with a mystical light..."),
-    (0x003C, f"\x08\x13\x67You received the \x05\x41Fire\x01Medallion\x05\x40! Darunia awakens as a\x01Sage and adds his power to yours!\x01That's \x05\x41\xF5\x11\x05\x40 medallion(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x003D, f"\x08\x13\x68You received the \x05\x43Water\x01Medallion\x05\x40! Ruto awakens as a\x01Sage and adds her power to yours!\x01That's \x05\x41\xF5\x11\x05\x40 medallion(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x003E, f"\x08\x13\x66You received the \x05\x42Forest\x01Medallion\x05\x40! Saria awakens as a\x01Sage and adds her power to yours!\x01That's \x05\x41\xF5\x11\x05\x40 medallion(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x003F, f"\x08\x13\x69You received the \x05\x46Spirit\x01Medallion\x05\x40! Nabooru awakens as a\x01Sage and adds her power to yours!\x01That's \x05\x41\xF5\x11\x05\x40 medallion(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x0040, f"\x08\x13\x6BYou received the \x05\x44Light\x01Medallion\x05\x40! Rauru the Sage adds\x01his power to yours!\x01That's \x05\x41\xF5\x11\x05\x40 medallion(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x0041, f"\x08\x13\x6AYou received the \x05\x45Shadow\x01Medallion\x05\x40! Impa awakens as a\x01Sage and adds her power to yours!\x01That's \x05\x41\xF5\x11\x05\x40 medallion(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x0042, f"\x08\x13\x14You got an \x05\x41Empty Bottle\x05\x40!\x01You can put something in this\x01bottle."),
-    (0x0048, f"\x08\x13\x10You got a \x05\x41Magic Bean\x05\x40!\x01Find a suitable spot for a garden\x01and plant it.\x01That's \x05\x41\xF5\x50\x05\x40 magic bean(s)!"),
-    (0x9048, f"\x08\x13\x10You got a \x05\x41Pack of Magic Beans\x05\x40!\x01Find suitable spots for a garden\x01and plant them.\x01That's \x05\x41\xF5\x50\x05\x40 magic bean(s)!"),
-    (0x004A, f"\x08\x13\x07You received the \x05\x41Fairy Ocarina\x05\x40!\x01This is a memento from Saria."),
-    (0x004B, f"\x08\x13\x3DYou got the \x05\x42Giant's Knife\x05\x40!\x01Hold it with both hands to attack!\x01It's too long to use with a \x05\x44shield\x05\x40.\x01That's \x05\x41\xF5\x00\x05\x40 sword(s)!"),
-    (0x004E, f"\x08\x13\x40You found the \x05\x44Mirror Shield\x05\x40!\x01The shield's polished surface can\x01reflect light or energy.\x01That's \x05\x41\xF5\x01\x05\x40 shield(s)!"),
-    (0x004F, f"\x08\x13\x0BYou found the \x05\x41Longshot\x05\x40!\x01It's an upgraded Hookshot.\x01It extends \x05\x41twice\x05\x40 as far!"),
-    (0x0052, f"\x08You got a \x05\x42Magic Jar\x05\x40!\x01Your Magic Meter is filled!"),
-    (0x0053, f"\x08\x13\x45You got the \x05\x41Iron Boots\x05\x40!\x01So heavy, you can't run.\x01So heavy, you can't float.\x01That's \x05\x41\xF5\x03\x05\x40 boot(s)!"),
-    (0x0054, f"\x08\x13\x46You got the \x05\x41Hover Boots\x05\x40!\x01With these mysterious boots\x01you can hover above the ground.\x01That's \x05\x41\xF5\x03\x05\x40 boot(s)!"),
-    (0x0056, f"\x08\x13\x4BYou upgraded your quiver to a\x01\x05\x41Big Quiver\x05\x40!\x01Now you can carry more arrows-\x01\x05\x4640 \x05\x40in total!"),
-    (0x0057, f"\x08\x13\x4CYou upgraded your quiver to\x01the \x05\x41Biggest Quiver\x05\x40!\x01Now you can carry to a\x01maximum of \x05\x4650\x05\x40 arrows!"),
-    (0x0058, f"\x08\x13\x4DYou found a \x05\x41Bomb Bag\x05\x40!\x01You found \x05\x4120 Bombs\x05\x40 inside!"),
-    (0x0059, f"\x08\x13\x4EYou got a \x05\x41Big Bomb Bag\x05\x40!\x01Now you can carry more \x01Bombs, up to a maximum of \x05\x4630\x05\x40!"),
-    (0x005A, f"\x08\x13\x4FYou got the \x01\x05\x41Biggest Bomb Bag\x05\x40!\x01Now, you can carry up to \x01\x05\x4640\x05\x40 Bombs!"),
-    (0x005B, f"\x08\x13\x51You found the \x05\x43Silver Gauntlets\x05\x40!\x01You feel the power to lift\x01big things with it!"),
-    (0x005C, f"\x08\x13\x52You found the \x05\x43Golden Gauntlets\x05\x40!\x01You can feel even more power\x01coursing through your arms!"),
-    (0x005E, f"\x08\x13\x56You got an \x05\x43Adult's Wallet\x05\x40!\x01Now you can hold\x01up to \x05\x46200\x05\x40 \x05\x46Rupees\x05\x40."),
-    (0x005F, f"\x08\x13\x57You got a \x05\x43Giant's Wallet\x05\x40!\x01Now you can hold\x01up to \x05\x46500\x05\x40 \x05\x46Rupees\x05\x40."),
-    (0x0060, f"\x08\x13\x77You found a \x05\x41Small Key\x05\x40!\x01That's \x05\x41\xF1\xFF\x10\x05\x40 small key(s)\x01for this dungeon."),
-    (0x0066, f"\x08\x13\x76You found the \x05\x41Dungeon Map\x05\x40!\x01It's the map to this dungeon.\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x0067, f"\x08\x13\x75You found the \x05\x41Compass\x05\x40!\x01Now you can see many hidden\x01things in this dungeon!\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x0068, f"\x08\x13\x6FYou obtained the \x05\x41Stone of Agony\x05\x40!\x01If you equip a \x05\x44Rumble Pak\x05\x40, it\x01will react to nearby...secrets."),
-    (0x0069, f"\x08\x13\x23You received \x05\x41Zelda's Letter\x05\x40!\x01Wow! This letter has Princess\x01Zelda's autograph!"),
-    (0x006C, f"\x08\x13\x49Your \x05\x41Deku Seeds Bullet Bag \x01\x05\x40has become bigger!\x01This bag can hold \x05\x4650\x05\x41 \x05\x40bullets!"),
-    (0x006F, f"\x08You got a \x05\x42Green Rupee\x05\x40!\x01That's \x05\x42one Rupee\x05\x40!"),
-    (0x0070, f"\x08\x13\x04You got the \x05\x41Fire Arrow\x05\x40!\x01If you hit your target,\x01it will catch fire.\x01That's \x05\x41\xF5\x30\x05\x40 elemental arrow(s)!"),
-    (0x0071, f"\x08\x13\x0CYou got the \x05\x43Ice Arrow\x05\x40!\x01If you hit your target,\x01it will freeze.\x01That's \x05\x41\xF5\x30\x05\x40 elemental arrow(s)!"),
-    (0x0072, f"\x08\x13\x12You got the \x05\x44Light Arrow\x05\x40!\x01The light of justice\x01will smite evil!\x01That's \x05\x41\xF5\x30\x05\x40 elemental arrow(s)!"),
-    (0x0079, f"\x08\x13\x50You got the \x05\x41Goron's Bracelet\x05\x40!\x01Now you can pull up Bomb\x01Flowers."),
-    (0x007B, f"\x08\x13\x70You obtained the \x05\x41Gerudo's \x01Membership Card\x05\x40!\x01You can get into the Gerudo's\x01training ground."),
-    (0x0080, f"\x08\x13\x6CYou got the \x05\x42Kokiri's Emerald\x05\x40!\x01It's the Spiritual Stone of Forest,\x01passed down by the Great Deku Tree.\x01That's \x05\x41\xF5\x12\x05\x40 stone(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x0081, f"\x08\x13\x6DYou obtained the \x05\x41Goron's Ruby\x05\x40!\x01This is the Spiritual Stone of \x01Fire passed down by the Gorons!\x01That's \x05\x41\xF5\x12\x05\x40 stone(s) and \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x0082, f"\x08\x13\x6EYou obtained \x05\x43Zora's Sapphire\x05\x40!\x01It's the Spiritual Stone of Water,\x01passed down by the Zoras!\x01That's \x05\x41\xF5\x12\x05\x40 stone(s), \x05\x41\xF5\x13\x05\x40 reward(s)!"),
-    (0x0090, f"\x08\x13\x00Now you can pick up \x01many \x05\x41Deku Sticks\x05\x40!\x01You can carry up to \x05\x4620\x05\x40 of them!"),
-    (0x0091, f"\x08\x13\x00You can now pick up \x01even more \x05\x41Deku Sticks\x05\x40!\x01You can carry up to \x05\x4630\x05\x40 of them!"),
-    (0x0098, f"\x08\x13\x1AYou got \x05\x41Lon Lon Milk\x05\x40!\x01This milk is very nutritious!\x01There are two drinks in it."),
-    (0x0099, f"\x08\x13\x1BYou found \x05\x41Ruto's Letter\x05\x40 in a\x01bottle! Show it to King Zora.\x01That's \x05\x41\xF5\x32\x05\x40 bottle slot(s)!"),
-    (0x9099, f"\x08\x13\x1BYou found \x05\x41a letter in a bottle\x05\x40!\x01You remove the letter from the\x01bottle, freeing it for other uses.\x01That's \x05\x41\xF5\x32\x05\x40 bottle slot(s)!"),
-    (0x009A, f"\x08\x13\x21You got a \x05\x41Weird Egg\x05\x40!\x01Feels like there's something\x01moving inside!"),
-    (0x00A4, f"\x08\x13\x3BYou got the \x05\x42Kokiri Sword\x05\x40!\x01This is a hidden treasure of\x01the Kokiri.\x01That's \x05\x41\xF5\x00\x05\x40 sword(s)!"),
-    (0x00A7, f"\x08\x13\x01Now you can carry\x01many \x05\x41Deku Nuts\x05\x40!\x01You can hold up to \x05\x4630\x05\x40 nuts!"),
-    (0x00A8, f"\x08\x13\x01You can now carry even\x01more \x05\x41Deku Nuts\x05\x40! You can carry\x01up to \x05\x4640\x05\x41 \x05\x40nuts!"),
-    (0x00AD, f"\x08\x13\x05You got \x05\x41Din's Fire\x05\x40!\x01Its fireball engulfs everything!\x01That's \x05\x41\xF5\x31\x05\x40 fairy spell(s)!"),
-    (0x00AE, f"\x08\x13\x0DYou got \x05\x42Farore's Wind\x05\x40!\x01This is warp magic you can use!\x01That's \x05\x41\xF5\x31\x05\x40 fairy spell(s)!"),
-    (0x00AF, f"\x08\x13\x13You got \x05\x43Nayru's Love\x05\x40!\x01Cast this to create a powerful\x01protective barrier.\x01That's \x05\x41\xF5\x31\x05\x40 fairy spell(s)!"),
-    (0x00B4, f"\x08You got a \x05\x41Gold Skulltula Token\x05\x40!\x01That's \x05\x41\x19\x05\x40 token(s)!"),
-    (0x00B5, f"\x08You destroyed a \x05\x41Gold Skulltula\x05\x40.\x01You got a token proving you \x01destroyed it!"), #Unused
-    # TODO: Heart Pieces
-    (0x00C2, f"\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01Collect four pieces total to get\x01another Heart Container."),
-    (0x90C2, f"\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01You are already at\x01maximum health."),
-    (0x00C3, f"\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01So far, That's two \x01pieces."),
-    (0x00C4, f"\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01Now That's three \x01pieces!"),
-    (0x00C5, f"\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01You've completed another Heart\x01Container!"),
-    (0x00C6, f"\x08\x13\x72You got a \x05\x41Heart Container\x05\x40!\x01Your maximum life energy is \x01increased by one heart."),
-    (0x90C6, f"\x08\x13\x72You got a \x05\x41Heart Container\x05\x40!\x01You are already at\x01maximum health."),
-    (0x00C7, f"\x08\x13\x74You got the \x05\x41Boss Key\x05\x40!\x01Now you can get inside the \x01chamber where the Boss lurks.\x01That's \x05\x41\xF5\x20\x05\x40 boss key(s)!"),
-    (0x00CC, f"\x08You got a \x05\x43Blue Rupee\x05\x40!\x01That's \x05\x43five Rupees\x05\x40!"),
-    (0x00CD, f"\x08\x13\x53You got the \x05\x43Silver Scale\x05\x40!\x01You can dive deeper than you\x01could before."),
-    (0x00CE, f"\x08\x13\x54You got the \x05\x43Golden Scale\x05\x40!\x01Now you can dive much\x01deeper than you could before!"),
-    (0x00DD, f"\x08You mastered the secret sword\x01technique of the \x05\x41Spin Attack\x05\x40!"),
-    (0x00E4, f"\x08You can now use \x05\x42Magic\x05\x40!"),
-    (0x00E5, f"\x08Your \x05\x44defensive power\x05\x40 is enhanced!"),
-    (0x00E8, f"\x08Your magic power has been \x01enhanced! Now you have twice\x01as much \x05\x41Magic Power\x05\x40!"),
-    (0x00E9, f"\x08Your defensive power has been \x01enhanced! Damage inflicted by \x01enemies will be \x05\x41reduced by half\x05\x40."),
-    (0x00F0, f"\x08You got a \x05\x41Red Rupee\x05\x40!\x01That's \x05\x41twenty Rupees\x05\x40!"),
-    (0x00F1, f"\x08You got a \x05\x45Purple Rupee\x05\x40!\x01That's \x05\x45fifty Rupees\x05\x40!"),
-    (0x00F2, f"\x08You got a \x05\x46Huge Rupee\x05\x40!\x01This Rupee is worth a whopping\x01\x05\x46two hundred Rupees\x05\x40!\x01That's \x05\x41\xF5\x52\x05\x40 gold rupee chests!"),
-    (0x00F4, f"\x08\x05\x44Loser!\x05\x40\x04\x08You found only \x05\x42one Rupee\x05\x40.\x01You are not very lucky."),
-    (0x00F5, f"\x08\x05\x44Loser!\x05\x40\x04\x08You found \x05\x43five Rupees\x05\x40.\x01Even so, you are not very lucky."),
-    (0x00F6, f"\x08\x05\x44Loser!\x05\x40\x04\x08You found \x05\x41twenty Rupees\x05\x40.\x01Your last selection was a mistake,\x01wasn't it! How frustrating!"),
-    (0x00F7, f"\x08\x05\x41Winner!\x05\x40\x04\x08You found \x05\x46fifty Rupees\x05\x40.\x01You are a genuinely lucky guy!"),
-    (0x00FA, f"\x08\x06\x49\x05\x41WINNER\x05\x40!\x04\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01Collect four pieces total to get\x01another Heart Container."),
-    (0x00FB, f"\x08\x06\x49\x05\x41WINNER\x05\x40!\x04\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01So far, That's two \x01pieces."),
-    (0x00FC, f"\x08\x06\x49\x05\x41WINNER\x05\x40!\x04\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01Now That's three \x01pieces!"),
-    (0x00FD, f"\x08\x06\x49\x05\x41WINNER\x05\x40!\x04\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01You've completed another Heart\x01Container!"),
-    (0x90FA, f"\x08\x06\x49\x05\x41WINNER\x05\x40!\x04\x08\x13\x73You got a \x05\x41Piece of Heart\x05\x40!\x01You are already at\x01maximum health."),
-    #(0x6074, "\x08Oh, that's too bad.\x04\x08If you change your mind, please\x01come back again!\x04\x08The mark that will lead you to the\x01Spirit Temple is the \x05\x41flag on\x01the left \x05\x40outside the shop."),
-    (0x9002, f"\x08You are a \x05\x43FOOL\x05\x40!\x01That's \x05\x41\xF5\x51\x05\x40 traps!"),
-    (0x9003, f"\x08You found a piece of the \x05\x41Triforce\x05\x40!"),
-    (0x9019, f"\x08\x13\x09You found a \x05\x41Bombchu Bag\x05\x40!\x01It has some \x05\x41Bombchus\x05\x40 inside!\x01Find more in tall grass."),
-    (0x901A, f"\x08You can't buy Bombchus without a\x01\x05\x41Bombchu Bag\x05\x40!"),
-    (0x908C, f"\x08You got the\x01\x05\x41Ocarina A Button!\x05\x40\x01You can now play \x9F on the Ocarina!"),
-    (0x908D, f"\x08You got the\x01\x05\x41Ocarina C-up Button!\x05\x40\x01You can now play \xA5 on the Ocarina!"),
-    (0x908E, f"\x08You got the\x01\x05\x41Ocarina C-down Button!\x05\x40\x01You can now play \xA6 on the Ocarina!"),
-    (0x908F, f"\x08You got the\x01\x05\x41Ocarina C-left Button!\x05\x40\x01You can now play \xA7 on the Ocarina!"),
-    (0x9090, f"\x08You got the\x01\x05\x41Ocarina C-right Button!\x05\x40\x01You can now play \xA8 on the Ocarina!"),
-    (0x9091, f"\x08\x06\x28You have learned the\x01\x06\x2F\x05\x42Minuet of Forest\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x9092, f"\x08\x06\x28You have learned the\x01\x06\x37\x05\x41Bolero of Fire\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x9093, f"\x08\x06\x28You have learned the\x01\x06\x29\x05\x43Serenade of Water\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x9094, f"\x08\x06\x28You have learned the\x01\x06\x2D\x05\x46Requiem of Spirit\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x9095, f"\x08\x06\x28You have learned the\x01\x06\x28\x05\x45Nocturne of Shadow\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x9096, f"\x08\x06\x28You have learned the\x01\x06\x32\x05\x44Prelude of Light\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    # 0x9097 and 0x9098 unused
-    # 0x9099 used above
-    (0x909A, f"\x08\x06\x15You've learned \x05\x43Zelda's Lullaby\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x909B, f"\x08\x06\x11You've learned \x05\x41Epona's Song\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x909C, f"\x08\x06\x14You've learned \x05\x42Saria's Song\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x909D, f"\x08\x06\x0BYou've learned the \x05\x46Sun's Song\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x909E, f"\x08\x06\x05You've learned the \x05\x44Song of Time\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x909F, f"\x08You've learned the \x05\x45Song of Storms\x05\x40!\x01That's \x05\x41\xF5\x10\x05\x40 song(s)!"),
-    (0x90A0, f"\x08\x13\x15You got a \x05\x41Red Potion\x05\x40!\x01It will restore your health"),
-    (0x90A1, f"\x08\x13\x16You got a \x05\x42Green Potion\x05\x40!\x01It will restore your magic."),
-    (0x90A2, f"\x08\x13\x17You got a \x05\x43Blue Potion\x05\x40!\x01It will recover your health\x01and magic."),
-    (0x90A3, f"\x08\x13\x18You caught a \x05\x41Fairy\x05\x40 in a bottle!\x01It will revive you\x01the moment you run out of life \x01energy."),
-    (0x90A4, f"\x08\x13\x19You got a \x05\x41Fish\x05\x40!\x01It looks so fresh and\x01delicious!"),
-    (0x90A5, f"\x08\x13\x1CYou put a \x05\x44Blue Fire\x05\x40\x01into the bottle!\x01This is a cool flame you can\x01use on red ice."),
-    (0x90A6, f"\x08\x13\x1DYou put a \x05\x41Bug \x05\x40in the bottle!\x01This kind of bug prefers to\x01live in small holes in the ground."),
-    (0x90A7, f"\x08\x13\x1EYou put a \x05\x41Big Poe \x05\x40in a bottle!\x01Let's sell it at the \x05\x41Ghost Shop\x05\x40!\x01Something good might happen!"),
-    (0x90A8, f"\x08\x13\x20You caught a \x05\x41Poe \x05\x40in a bottle!\x01Something good might happen!"),
-    (0x90A9, f"\x08\x13\x02You got \x05\x41Bombs\x05\x40!\x01If you see something\x01suspicious, bomb it!"),
-    (0x90AA, f"\x08\x13\x01You got a \x05\x41Deku Nut\x05\x40!"),
-    (0x90AB, f"\x08\x13\x09You got \x05\x41Bombchus\x05\x40!"),
-    (0x90AC, f"\x08\x13\x00You got a \x05\x41Deku Stick\x05\x40!"),
-    (0x90AD, f"\x08\x13\x3EYou got a \x05\x44Deku Shield\x05\x40!\x01That's \x05\x41\xF5\x01\x05\x40 shield(s)!"),
-    (0x90AE, f"\x08\x13\x3FYou got a \x05\x44Hylian Shield\x05\x40!\x01That's \x05\x41\xF5\x01\x05\x40 shield(s)!"),
-    (0x90AF, f"\x08\x13\x42You got a \x05\x41Goron Tunic\x05\x40!\x01Going to a hot place? No worry!\x01That's \x05\x41\xF5\x02\x05\x40 tunic(s)!"),
-    (0x90B0, f"\x08\x13\x43You got a \x05\x43Zora Tunic\x05\x40!\x01Wear it, and you won't drown\x01underwater.\x01That's \x05\x41\xF5\x02\x05\x40 tunic(s)!"),
-    (0x90B1, f"\x08You got a \x05\x45Recovery Heart\x05\x40!\x01Your life energy is recovered!"),
-    (0x90B2, f"\x08You got a \x05\x46bundle of arrows\x05\x40!"),
-    (0x90B3, f"\x08\x13\x58You got \x05\x41Deku Seeds\x05\x40!\x01Use these as bullets\x01for your Slingshot."),
-    (0x90B4, f"\x08You found a \x05\x41fairy\x05\x40!\x01Your health has been restored!"),
-    (0x90B5, f"\x08You found \x05\x43literally nothing\x05\x40!"),
+    (
+        0x000C,
+        f"""\x13\x3DYou got the {red("Biggoron's Sword")}!\x01"""
+        f"""This blade was forged by a \x01"""
+        f"""master smith and won't break!\x01"""
+        f"""That's {global_count(GlobalCount.SWORD)} sword(s)!""",
+    ),
+    (
+        0x0030,
+        f"\x13\x06You found the {red('Fairy Slingshot')}!",
+    ),
+    (
+        0x0031,
+        f"\x13\x03You found the {red('Fairy Bow')}!",
+    ),
+    (
+        0x0035,
+        f"\x13\x0EYou found the {red('Boomerang')}!",
+    ),
+    (
+        0x0036,
+        f"\x13\x0AYou found the {red('Hookshot')}!\x01"
+        f"It's a spring-loaded chain that\x01"
+        f"you can cast out to hook things.",
+    ),
+    (
+        0x0039,
+        f"\x13\x0FYou found the {red('Lens of Truth')}!\x01"
+        f"Mysterious things are hidden\x01"
+        f"everywhere!",
+    ),
+    (
+        0x003C,
+        f"\x13\x67You received the {red('Fire', reset=None)}\x01"
+        f"{red('Medallion')}! Darunia awakens as a\x01"
+        f"Sage and adds his power to yours!\x01"
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+    ),
+    (
+        0x003D,
+        f"\x13\x68You received the {blue('Water', reset=None)}\x01"
+        f"{blue('Medallion')}! Ruto awakens as a\x01"
+        f"Sage and adds her power to yours!\x01"
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+    ),
+    (
+        0x003E,
+        f"\x13\x66You received the {green('Forest', reset=None)}\x01"
+        f"{green('Medallion')}! Saria awakens as a\x01"
+        f"Sage and adds her power to yours!\x01"
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+    ),
+    (
+        0x003F,
+        f"\x13\x69You received the {yellow('Spirit', reset=None)}\x01"
+        f"{yellow('Medallion')}! Nabooru awakens as a\x01"
+        f"Sage and adds her power to yours!\x01"
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+    ),
+    (
+        0x0040,
+        f"\x13\x6BYou received the {light_blue('Light', reset=None)}\x01"
+        f"{light_blue('Medallion')}! Rauru the Sage adds\x01"
+        f"his power to yours!\x01"
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+    ),
+    (
+        0x0041,
+        f"\x13\x6AYou received the {pink('Shadow', reset=None)}\x01"
+        f"{pink('Medallion')}! Impa awakens as a\x01"
+        f"Sage and adds her power to yours!\x01"
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+    ),
+    (
+        0x0048,
+        f"\x13\x10You got a {red('Magic Bean')}!\x01"
+        f"Find a suitable spot for a garden\x01"
+        f"and plant it.\x01"
+        f"That's {global_count(GlobalCount.BEANS_PLANTED)} magic bean(s)!",
+    ),
+    (
+        0x004A,
+        f"\x13\x07You received the {red('Fairy Ocarina')}!\x01"
+        f"This is a memento from Saria.",
+    ),
+    (
+        0x004B,
+        f"""\x13\x3DYou got the {green("Giant's Knife")}!\x01"""
+        f"""Hold it with both hands to attack!\x01"""
+        f"""It's too long to use with a {light_blue('shield')}.\x01"""
+        f"""That's {global_count(GlobalCount.SWORD)} sword(s)!""",
+    ),
+    (
+        0x004C,
+        f"\x13\x3EYou got a {light_blue('Deku Shield')}!\x01"
+        f"That's {global_count(GlobalCount.SHIELD)} shield(s)!",
+    ),
+    (
+        0x004D,
+        f"\x13\x3FYou got a {light_blue('Hylian Shield')}!\x01"
+        f"That's {global_count(GlobalCount.SHIELD)} shield(s)!",
+    ),
+    (
+        0x004E,
+        f"\x13\x40You found the {light_blue('Mirror Shield')}!\x01"
+        f"The shield's polished surface can\x01"
+        f"reflect light or energy.\x01"
+        f"That's {global_count(GlobalCount.SHIELD)} shield(s)!",
+    ),
+    (
+        0x0050,
+        f"\x13\x42You got a {red('Goron Tunic')}!\x01"
+        f"Going to a hot place? No worry!\x01"
+        f"That's {global_count(GlobalCount.TUNIC)} tunic(s)!",
+    ),
+    (
+        0x0051,
+        f"\x13\x43You got a {blue('Zora Tunic')}!\x01"
+        f"Wear it, and you won't drown\x01"
+        f"underwater.\x01"
+        f"That's {global_count(GlobalCount.TUNIC)} tunic(s)!",
+    ),
+    (
+        0x0053,
+        f"\x13\x45You got the {red('Iron Boots')}!\x01"
+        f"So heavy, you can't run.\x01"
+        f"So heavy, you can't float.\x01"
+        f"That's {global_count(GlobalCount.BOOT)} boot(s)!",
+    ),
+    (
+        0x0054,
+        f"\x13\x46You got the {red('Hover Boots')}!\x01"
+        f"With these mysterious boots\x01"
+        f"you can hover above the ground.\x01"
+        f"That's {global_count(GlobalCount.BOOT)} boot(s)!",
+    ),
+    (
+        0x0058,
+        f"\x13\x4DYou found a {red('Bomb Bag')}!\x01"
+        f"You found {red('20 Bombs')} inside!",
+    ),
+    (
+        0x005B,
+        f"\x13\x51You found the {blue('Silver Gauntlets')}!\x01"
+        f"You feel the power to lift\x01"
+        f"big things with it!",
+    ),
+    (
+        0x0066,
+        f"\x13\x76You found the {red('Dungeon Map')}!\x01"
+        f"It's the map to this dungeon.\x01"
+        f"That's {global_count(GlobalCount.MAP)} map(s)!",
+    ),
+    (
+        0x0067,
+        f"\x13\x75You found the {red('Compass')}!\x01"
+        f"Now you can see many hidden\x01"
+        f"things in this dungeon!\x01"
+        f"That's {global_count(GlobalCount.COMPASS)} compass(es)!",
+    ),
+    (
+        0x0069,
+        f"""\x13\x23You received {red("Zelda's Letter")}!\x01"""
+        f"""Wow! This letter has Princess\x01"""
+        f"""Zelda's autograph!""",
+    ),
+    (
+        0x0070,
+        f"\x13\x04"
+        f"You got the {red('Fire Arrow')}!\x01"
+        f"If you hit your target,\x01"
+        f"it will catch fire.\x01"
+        f"That's {global_count(GlobalCount.ELEMENTAL_ARROW)} elemental arrow(s)!",
+    ),
+    (
+        0x0071,
+        f"\x13\x0CYou got the {blue('Ice Arrow')}!\x01"
+        f"If you hit your target,\x01"
+        f"it will freeze.\x01"
+        f"That's {global_count(GlobalCount.ELEMENTAL_ARROW)} elemental arrow(s)!",
+    ),
+    (
+        0x0072,
+        f"\x13\x12You got the {light_blue('Light Arrow')}!\x01"
+        f"The light of justice\x01"
+        f"will smite evil!\x01"
+        f"That's {global_count(GlobalCount.ELEMENTAL_ARROW)} elemental arrow(s)!",
+    ),
+    (
+        0x0073,
+        f"\x06\x28You have learned the\x01"
+        f"\x06\x2F{green('Minuet of Forest')}!\x01"
+        f"\x06\x28That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x0074,
+        f"\x06\x28You have learned the\x01"
+        f"\x06\x37{red('Bolero of Fire')}!\x01"
+        f"\x06\x28That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x0075,
+        f"\x06\x28You have learned the\x01"
+        f"\x06\x29{blue('Serenade of Water')}!\x01"
+        f"\x06\x28That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x0076,
+        f"\x06\x28You have learned the\x01"
+        f"\x06\x2D{yellow('Requiem of Spirit')}!\x01"
+        f"\x06\x28That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x0077,
+        f"\x06\x28You have learned the\x01"
+        f"\x06\x28{pink('Nocturne of Shadow')}!\x01"
+        f"\x06\x28That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x0078,
+        f"\x06\x28You have learned the\x01"
+        f"\x06\x32{light_blue('Prelude of Light')}!\x01"
+        f"\x06\x28That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x0080,
+        f"""\x13\x6CYou got the {green("Kokiri's Emerald")}!\x01"""
+        f"""It's the Spiritual Stone of Forest,\x01"""
+        f"""passed down by the Great Deku Tree.\x01"""
+        f"""That's {global_count(GlobalCount.STONE)} stone(s), {global_count(GlobalCount.REWARD)} reward(s)!""",
+    ),
+    (
+        0x0081,
+        f"""\x13\x6DYou obtained the {red("Goron's Ruby")}!\x01"""
+        f"""This is the Spiritual Stone of \x01"""
+        f"""Fire passed down by the Gorons!\x01"""
+        f"""That's {global_count(GlobalCount.STONE)} stone(s) and {global_count(GlobalCount.REWARD)} reward(s)!""",
+    ),
+    (
+        0x0082,
+        f"""\x13\x6EYou obtained {blue("Zora's Sapphire")}!\x01"""
+        f"""It's the Spiritual Stone of Water,\x01"""
+        f"""passed down by the Zoras!\x01"""
+        f"""That's {global_count(GlobalCount.STONE)} stone(s), {global_count(GlobalCount.REWARD)} reward(s)!""",
+    ),
+    (
+        0x0098,
+        f"\x13\x1AYou got {red('Lon Lon Milk')}!\x01"
+        f"This milk is very nutritious!\x01"
+        f"There are two drinks in it.",
+    ),
+    (
+        0x0099,
+        f"\x13\x1BYou got an {red('Empty Bottle')}!\x01"
+        f"Put something inside... What?\x01"
+        f"Something's already inside!?\x01"
+        f"That's {global_count(GlobalCount.BOTTLE_SLOT)} bottle slot(s)!",
+    ),
+    (
+        0x009A,
+        f"\x13\x21You got a {red('Weird Egg')}!\x01"
+        f"Feels like there's something\x01"
+        f"moving inside!",
+    ),
+    (
+        0x00A4,
+        f"\x13\x3BYou got the {green('Kokiri Sword')}!\x01"
+        f"This is a hidden treasure of\x01"
+        f"the Kokiri.\x01"
+        f"That's {global_count(GlobalCount.SWORD)} sword(s)!",
+    ),
+    (
+        0x00AD,
+        f"""\x13\x05You got {red("Din's Fire")}!\x01"""
+        f"""Its fireball engulfs everything!\x01"""
+        f"""That's {global_count(GlobalCount.FAIRY_SPELL)} fairy spell(s)!""",
+    ),
+    (
+        0x00AE,
+        f"""\x13\x0DYou got {green("Farore's Wind")}!\x01"""
+        f"""This is warp magic you can use!\x01"""
+        f"""That's {global_count(GlobalCount.FAIRY_SPELL)} fairy spell(s)!""",
+    ),
+    (
+        0x00AF,
+        f"""\x13\x13You got {blue("Nayru's Love")}!\x01"""
+        f"""Cast this to create a powerful\x01"""
+        f"""protective barrier.\x01"""
+        f"""That's {global_count(GlobalCount.FAIRY_SPELL)} fairy spell(s)!""",
+    ),
+    (
+        0x00C7,
+        f"\x13\x74You got the {red('Boss Key')}!\x01"
+        f"Now you can get inside the \x01"
+        f"chamber where the Boss lurks.\x01"
+        f"That's {global_count(GlobalCount.BOSS_KEY)} boss key(s)!",
+    ),
+    (
+        0x00D1,
+        f"""\x06\x14You've learned {green("Saria's Song")}!\x01"""
+        f"""\x06\x14That's {global_count(GlobalCount.SONG)} song(s)!""",
+    ),
+    (
+        0x00D2,
+        f"""\x06\x11You've learned {red("Epona's Song")}!\x01"""
+        f"""\x06\x11That's {global_count(GlobalCount.SONG)} song(s)!""",
+    ),
+    (
+        0x00D3,
+        f"""\x06\x0BYou've learned the {yellow("Sun's Song")}!\x01"""
+        f"""\x06\x0BThat's {global_count(GlobalCount.SONG)} song(s)!""",
+    ),
+    (
+        0x00D4,
+        f"""\x06\x15You've learned {blue("Zelda's Lullaby")}!\x01"""
+        f"""\x06\x15That's {global_count(GlobalCount.SONG)} song(s)!""",
+    ),
+    (
+        0x00D5,
+        f"\x06\x05You've learned the {light_blue('Song of Time')}!\x01"
+        f"\x06\x05That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x00D6,
+        f"You've learned the {pink('Song of Storms')}!\x01"
+        f"That's {global_count(GlobalCount.SONG)} song(s)!",
+    ),
+    (
+        0x00DD,
+        f"You mastered the secret sword\x01"
+        f"technique of the {red('Spin Attack')}!",
+    ),
+    (
+        0x00F2,
+        f"You got a {yellow('Huge Rupee')}!\x01"
+        f"This Rupee is worth a whopping\x01"
+        f"{yellow('two hundred Rupees')}!\x01"
+        f"That's {global_count(GlobalCount.GOLD_RUPEE)} gold rupee chests!",
+    ),
 ]
 
-KEYSANITY_MESSAGES: list[tuple[int, str]] = [
-    (0x001C, f"\x13\x74\x08You got the \x05\x41Boss Key\x05\x40\x01for the \x05\x41Fire Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x20\x05\x40 boss key(s)!"),
-    (0x0006, f"\x13\x74\x08You got the \x05\x41Boss Key\x05\x40\x01for the \x05\x42Forest Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x20\x05\x40 boss key(s)!"),
-    (0x001D, f"\x13\x74\x08You got the \x05\x41Boss Key\x05\x40\x01for the \x05\x43Water Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x20\x05\x40 boss key(s)!"),
-    (0x001E, f"\x13\x74\x08You got the \x05\x41Boss Key\x05\x40\x01for the \x05\x46Spirit Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x20\x05\x40 boss key(s)!"),
-    (0x002A, f"\x13\x74\x08You got the \x05\x41Boss Key\x05\x40\x01for the \x05\x45Shadow Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x20\x05\x40 boss key(s)!"),
-    (0x0061, f"\x13\x74\x08You got the \x05\x41Boss Key\x05\x40\x01for \x05\x41Ganon's Castle\x05\x40!\x09\x01That's \x05\x41\xF5\x20\x05\x40 boss key(s)!"),
-    (0x0062, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x42Deku Tree\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x0063, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for \x05\x41Dodongo's Cavern\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x0064, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for \x05\x43Jabu Jabu's Belly\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x0065, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x42Forest Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x007C, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x41Fire Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x007D, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x43Water Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x007E, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x46Spirit Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x007F, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x45Shadow Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x0087, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x44Ice Cavern\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x0088, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x42Deku Tree\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x0089, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for \x05\x41Dodongo's Cavern\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x008A, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for \x05\x43Jabu Jabu's Belly\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x008B, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x42Forest Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x008C, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x41Fire Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x008E, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x43Water Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x008F, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x46Spirit Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x0092, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x44Ice Cavern\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    # TODO: Small Keys
-    (0x0093, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x42Forest Temple\x05\x40!\x09"),
-    (0x0094, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x41Fire Temple\x05\x40!\x09"),
-    (0x0095, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x43Water Temple\x05\x40!\x09"),
-    (0x009B, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x45Bottom of the Well\x05\x40!\x09"),
-    (0x009F, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x46Gerudo Training\x01Ground\x05\x40!\x09"),
-    (0x00A0, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x46Thieves' Hideout\x05\x40!\x09"),
-    (0x00A1, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for \x05\x41Ganon's Castle\x05\x40!\x09"),
-    (0x00A2, f"\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for the \x05\x45Bottom of the Well\x05\x40!\x09\x01That's \x05\x41\xF5\x21\x05\x40 compass(es)!"),
-    (0x00A3, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x45Shadow Temple\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    (0x00A5, f"\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for the \x05\x45Bottom of the Well\x05\x40!\x09\x01That's \x05\x41\xF5\x22\x05\x40 map(s)!"),
-    # TODO: Small Keys
-    (0x00A6, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x46Spirit Temple\x05\x40!\x09"),
-    (0x00A9, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x45Shadow Temple\x05\x40!\x09"),
-    (0x00F3, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for the \x05\x44Treasure Box Shop\x05\x40!\x09"),
-    # 0x9019 and 0x901A used above
-]
-
-dungeon_names = [
-    None, # Unused Deku Tree
-    None, # Unused Dodongos Cavern
-    None, # Unused Jabu
-    "the \x05\x42Forest Temple\x05\x40",
-    "the \x05\x41Fire Temple\x05\x40",
-    "the \x05\x43Water Temple\x05\x40",
-    "the \x05\x46Spirit Temple\x05\x40",
-    "the \x05\x45Shadow Temple\x05\x40",
-    "the \x05\x45Bottom of the Well\x05\x40",
-    None, # Unused Ice Cavern
-    None, # Unused Ganons Castle Tower
-    "the \x05\x46Gerudo Training\x01Ground\x05\x40",
-    "the \x05\x46Thieves' Hideout\x05\x40",
-    "\x05\x41Ganon's Castle\x05\x40",
-    None, # Unused Tower Collapse
-    None, # Unused Castle Collapse
-    "the \x05\x44Treasure Box Shop\x05\x40",
-]
-
-i = 0x9101
-# Add small key messages starting at 0x9101
-# These are grouped in dungeon order as follows:
-#       0x9101 - Small key messages for the first one collected
-#       0x9112 - Small key messages containing the count
-#       0x9123 - Small key messages for collecting more than enough
-
-for dungeon_name in dungeon_names:
-    if dungeon_name is not None:
-        KEYSANITY_MESSAGES.append((i, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for {dungeon_name}!\x01It's your \x05\x41first\x05\x40 one!\x09"))
-    i += 1
-c = 0
-for dungeon_name in dungeon_names:
-    if dungeon_name is not None:
-        KEYSANITY_MESSAGES.append((i, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for {dungeon_name}!\x01That's \x05\x41" + "\xF1" + c.to_bytes(1, 'big').decode() + DungeonCount.SMALL_KEY.to_bytes(1, 'big').decode() + "\x05\x40 of them.\x09"))
-    i += 1
-    c += 1
-for dungeon_name in dungeon_names:
-    if dungeon_name is not None:
-        KEYSANITY_MESSAGES.append((i, f"\x13\x77\x08You found a \x05\x41Small Key\x05\x40\x01for {dungeon_name}!\x01You already have enough keys.\x09"))
-    i += 1
-
-COLOR_MAP: dict[str, str] = {
-    'White':      '\x40',
-    'Red':        '\x41',
-    'Green':      '\x42',
-    'Blue':       '\x43',
-    'Light Blue': '\x44',
-    'Pink':       '\x45',
-    'Yellow':     '\x46',
-    'Black':      '\x47',
+DUNGEON_MESSAGE_LOCATIONS: dict[Dungeon, str] = {
+    Dungeon.DEKU_TREE: f"the {green('Deku Tree')}",
+    Dungeon.DODONGOS_CAVERN: red("Dodongo's Cavern"),
+    Dungeon.JABU_JABUS_BELLY: blue("Jabu Jabu's Belly"),
+    Dungeon.FOREST_TEMPLE: f"the {green('Forest Temple')}",
+    Dungeon.FIRE_TEMPLE: f"the {red('Fire Temple')}",
+    Dungeon.WATER_TEMPLE: f"the {blue('Water Temple')}",
+    Dungeon.SPIRIT_TEMPLE: f"the {yellow('Spirit Temple')}",
+    Dungeon.SHADOW_TEMPLE: f"the {pink('Shadow Temple')}",
+    Dungeon.BOTTOM_OF_THE_WELL: f"the {pink('Bottom of the Well')}",
+    Dungeon.ICE_CAVERN: f"the {light_blue('Ice Cavern')}",
+    Dungeon.GERUDO_TRAINING_GROUND: f"the {yellow('Gerudo Training', reset=None)}\x01{yellow('Ground')}",
+    Dungeon.THIEVES_HIDEOUT: "the " + yellow("Thieves' Hideout"),
+    Dungeon.GANONS_CASTLE: red("Ganon's Castle"),
 }
 
-MISC_MESSAGES: list[tuple[int, tuple[str | bytearray, int]]] = [
-    (0x0032, ("\x08\x13\x02You got \x05\x41Bombs\x05\x40!\x01If you see something\x01suspicious, bomb it!", 0x23)),
-    (0x0033, ("\x08\x13\x09You got \x05\x41Bombchus\x05\x40!", 0x23)),
-    (0x0034, ("\x08\x13\x01You got a \x05\x41Deku Nut\x05\x40!", 0x23)),
-    (0x0037, ("\x08\x13\x00You got a \x05\x41Deku Stick\x05\x40!", 0x23)),
-    (0x003B, ("\x08You cast Farore's Wind!\x01\x1C\x05\x42Return to \xF3\x01Dispel the Warp Point\x01Exit\x05\x40", 0x23)),
-    (0x0043, ("\x08\x13\x15You got a \x05\x41Red Potion\x05\x40!\x01It will restore your health", 0x23)),
-    (0x0044, ("\x08\x13\x16You got a \x05\x42Green Potion\x05\x40!\x01It will restore your magic.", 0x23)),
-    (0x0045, ("\x08\x13\x17You got a \x05\x43Blue Potion\x05\x40!\x01It will recover your health\x01and magic.", 0x23)),
-    (0x0046, ("\x08\x13\x18You caught a \x05\x41Fairy\x05\x40 in a bottle!\x01It will revive you\x01the moment you run out of life \x01energy.", 0x23)),
-    (0x0047, ("\x08\x13\x19You got a \x05\x41Fish\x05\x40!\x01It looks so fresh and\x01delicious!", 0x23)),
-    (0x004C, ("\x08\x13\x3EYou got a \x05\x44Deku Shield\x05\x40!\x01That's \x05\x41\xF5\x01\x05\x40 shield(s)!", 0x23)),
-    (0x004D, ("\x08\x13\x3FYou got a \x05\x44Hylian Shield\x05\x40!\x01That's \x05\x41\xF5\x01\x05\x40 shield(s)!", 0x23)),
-    (0x0050, ("\x08\x13\x42You got a \x05\x41Goron Tunic\x05\x40!\x01Going to a hot place? No worry!\x01That's \x05\x41\xF5\x02\x05\x40 tunic(s)!", 0x23)),
-    (0x0051, ("\x08\x13\x43You got a \x05\x43Zora Tunic\x05\x40!\x01Wear it, and you won't drown\x01underwater.\x01That's \x05\x41\xF5\x02\x05\x40 tunic(s)!", 0x23)),
-    (0x0055, ("\x08You got a \x05\x45Recovery Heart\x05\x40!\x01Your life energy is recovered!", 0x23)),
-    (0x005D, ("\x08\x13\x1CYou put a \x05\x44Blue Fire\x05\x40\x01into the bottle!\x01This is a cool flame you can\x01use on red ice.", 0x23)),
-    (0x007A, ("\x08\x13\x1DYou put a \x05\x41Bug \x05\x40in the bottle!\x01This kind of bug prefers to\x01live in small holes in the ground.", 0x23)),
-    (0x0097, ("\x08\x13\x20You caught a \x05\x41Poe \x05\x40in a bottle!\x01Something good might happen!", 0x23)),
-    (0x00DC, ("\x08\x13\x58You got \x05\x41Deku Seeds\x05\x40!\x01Use these as bullets\x01for your Slingshot.", 0x23)),
-    (0x00E6, ("\x08You got a \x05\x46bundle of arrows\x05\x40!", 0x23)),
-    (0x00F9, ("\x08\x13\x1EYou put a \x05\x41Big Poe \x05\x40in a bottle!\x01Let's sell it at the \x05\x41Ghost Shop\x05\x40!\x01Something good might happen!", 0x23)),
-    (0x507B, (bytearray(
-            b"\x08I tell you, I saw him!\x04"
-            b"\x08I saw the ghostly figure of Damp\x96\x01"
-            b"the gravekeeper sinking into\x01"
-            b"his grave. It looked like he was\x01"
-            b"holding some kind of \x05\x41treasure\x05\x40!\x02"
-            ), 0x00)),
-    (0x0422, ("They say that once \x05\x41Morpha's Curse\x05\x40\x01is lifted, striking \x05\x42this stone\x05\x40 can\x01shift the tides of \x05\x44Lake Hylia\x05\x40.\x02", 0x23)),
-    (0x401C, ("Please find my dear \05\x41Princess Ruto\x05\x40\x01immediately... Zora!\x12\x68\x7A", 0x03)),
-    (0x9100, ("I am out of goods now.\x01Sorry!\x04The mark that will lead you to\x01the Spirit Temple is the \x05\x41flag on\x01the left \x05\x40outside the shop.\x01Be seeing you!\x02", 0x00)),
-    (0x0451, ("\x12\x68\x7AMweep\x07\x04\x52", 0x23)),
-    (0x0452, ("\x12\x68\x7AMweep\x07\x04\x53", 0x23)),
-    (0x0453, ("\x12\x68\x7AMweep\x07\x04\x54", 0x23)),
-    (0x0454, ("\x12\x68\x7AMweep\x07\x04\x55", 0x23)),
-    (0x0455, ("\x12\x68\x7AMweep\x07\x04\x56", 0x23)),
-    (0x0456, ("\x12\x68\x7AMweep\x07\x04\x57", 0x23)),
-    (0x0457, ("\x12\x68\x7AMweep\x07\x04\x58", 0x23)),
-    (0x0458, ("\x12\x68\x7AMweep\x07\x04\x59", 0x23)),
-    (0x0459, ("\x12\x68\x7AMweep\x07\x04\x5A", 0x23)),
-    (0x045A, ("\x12\x68\x7AMweep\x07\x04\x5B", 0x23)),
-    (0x045B, ("\x12\x68\x7AMweep", 0x23)),
-    (0x6013, ("Hey, newcomer!\x04Want me to throw you in jail?\x01\x01\x1B\x05\x42No\x01Yes\x05\x40", 0x00)),
+BOSS_KEY_DUNGEONS: tuple[Dungeon, ...] = (
+    Dungeon.FOREST_TEMPLE,
+    Dungeon.FIRE_TEMPLE,
+    Dungeon.WATER_TEMPLE,
+    Dungeon.SPIRIT_TEMPLE,
+    Dungeon.SHADOW_TEMPLE,
+    Dungeon.GANONS_CASTLE,
+)
+
+COMPASS_DUNGEONS: tuple[Dungeon, ...] = (
+    Dungeon.DEKU_TREE,
+    Dungeon.DODONGOS_CAVERN,
+    Dungeon.JABU_JABUS_BELLY,
+    Dungeon.FOREST_TEMPLE,
+    Dungeon.FIRE_TEMPLE,
+    Dungeon.WATER_TEMPLE,
+    Dungeon.SPIRIT_TEMPLE,
+    Dungeon.SHADOW_TEMPLE,
+    Dungeon.BOTTOM_OF_THE_WELL,
+    Dungeon.ICE_CAVERN,
+)
+
+MAP_DUNGEONS: tuple[Dungeon, ...] = (
+    Dungeon.DEKU_TREE,
+    Dungeon.DODONGOS_CAVERN,
+    Dungeon.JABU_JABUS_BELLY,
+    Dungeon.FOREST_TEMPLE,
+    Dungeon.FIRE_TEMPLE,
+    Dungeon.WATER_TEMPLE,
+    Dungeon.SPIRIT_TEMPLE,
+    Dungeon.SHADOW_TEMPLE,
+    Dungeon.BOTTOM_OF_THE_WELL,
+    Dungeon.ICE_CAVERN,
+)
+
+SMALL_KEY_DUNGEONS: tuple[Dungeon, ...] = (
+    Dungeon.FOREST_TEMPLE,
+    Dungeon.FIRE_TEMPLE,
+    Dungeon.WATER_TEMPLE,
+    Dungeon.SPIRIT_TEMPLE,
+    Dungeon.SHADOW_TEMPLE,
+    Dungeon.BOTTOM_OF_THE_WELL,
+    Dungeon.GERUDO_TRAINING_GROUND,
+    Dungeon.THIEVES_HIDEOUT,
+    Dungeon.GANONS_CASTLE,
+)
+
+LOCATION_COUNT_MESSAGES: list[tuple[int, str]] = [
+    *[
+        (
+            0x9101 + dungeon,
+            f"You got a {red('Gold Skulltula Token')}!\x01"
+            f"That's {dungeon_count(dungeon, DungeonCount.TOKEN)} token(s)\x01"
+            f"for {colored(name, color)}.\x01"
+            f"That's {global_count(GlobalCount.TOKEN)} token(s) total!",
+        )
+        for dungeon, name, color in DUNGEON_TOKEN_MESSAGE_INFO
+    ],
+    *[
+        (
+            0x910B + area,
+            f"You got a {red('Gold Skulltula Token')}!\x01"
+            f"That's {area_count(area, AreaCount.TOKEN)} token(s)\x01"
+            f"for {colored(name, color)}.\x01"
+            f"That's {global_count(GlobalCount.TOKEN)} token(s) total!",
+        )
+        for area, name, color in AREA_MESSAGE_INFO
+    ],
+    *[
+        (
+            0x9117 + area,
+            f"\x13\x73You got a {red('Piece of Heart')}!\x01"
+            f"That's {area_count(area, AreaCount.HEART_PIECE)} heart piece(s)\x01"
+            f"for {colored(name, color)}.",
+        )
+        for area, name, color in AREA_MESSAGE_INFO
+    ],
+    (
+        0x9128,
+        f"\x06\x49{red('WINNER')}!\x04\x13\x73"
+        f"You got a {red('Piece of Heart')}!\x01"
+        f"That's {area_count(Area.MARKET, AreaCount.HEART_PIECE)} heart piece(s)\x01"
+        f"for {colored('Market Area', MessageColor.LIGHT_BLUE)}.",
+    ),
+    (
+        0x912F,
+        f"\x13\x73You got a {red('Piece of Heart')}!\x01"
+        f"That's {dungeon_count(Dungeon.ICE_CAVERN, DungeonCount.HEART_PIECE)} heart piece(s)\x01"
+        f"for {colored('Ice Cavern', MessageColor.BLUE)}.",
+    ),
+    *[
+        (
+            0x9200 + index,
+            f"\x13\x74You got the {red('Boss Key')}\x01"
+            f"for {DUNGEON_MESSAGE_LOCATIONS[dungeon]}!\x01"
+            f"That's {global_count(GlobalCount.BOSS_KEY)} boss key(s)!",
+        )
+        for index, dungeon in enumerate(BOSS_KEY_DUNGEONS)
+    ],
+    *[
+        (
+            0x9206 + index,
+            f"\x13\x75You found the {red('Compass')}\x01"
+            f"for {DUNGEON_MESSAGE_LOCATIONS[dungeon]}!\x01"
+            f"That's {global_count(GlobalCount.COMPASS)} compass(es)!",
+        )
+        for index, dungeon in enumerate(COMPASS_DUNGEONS)
+    ],
+    *[
+        (
+            0x9210 + index,
+            f"\x13\x76You found the {red('Dungeon Map')}\x01"
+            f"for {DUNGEON_MESSAGE_LOCATIONS[dungeon]}!\x01"
+            f"That's {global_count(GlobalCount.MAP)} map(s)!",
+        )
+        for index, dungeon in enumerate(MAP_DUNGEONS)
+    ],
+    *[
+        (
+            0x921A + index,
+            f"\x13\x77You found a {red('Small Key')}\x01"
+            f"for {DUNGEON_MESSAGE_LOCATIONS[dungeon]}!\x01"
+            f"That's {dungeon_count(dungeon, DungeonCount.SMALL_KEY)} small key(s)\x01"
+            f"for this dungeon.",
+        )
+        for index, dungeon in enumerate(SMALL_KEY_DUNGEONS)
+    ],
 ]
 
 
@@ -460,14 +729,14 @@ def encode_text_string(text: str) -> list[int]:
     it = iter(text)
     for ch in it:
         n = ord(ch)
-        mapped = CHARACTER_MAP.get(ch)
-        if mapped:
-            result.append(mapped)
-            continue
         if n in CONTROL_CODES:
             result.append(n)
             for _ in range(CONTROL_CODES[n][1]):
                 result.append(ord(next(it)))
+            continue
+        mapped = CHARACTER_MAP.get(ch)
+        if mapped:
+            result.append(mapped)
             continue
         if n in CHARACTER_MAP.values(): # Character has already been translated
             result.append(n)
@@ -518,22 +787,6 @@ class TextCode:
             return CONTROL_CODES[self.code][2](self.data)
         elif self.code in SPECIAL_CHARACTERS:
             return SPECIAL_CHARACTERS[self.code]
-        elif self.code >= 0x7F:
-            return '?'
-        else:
-            return chr(self.code)
-
-    def get_python_string(self) -> str:
-        if self.code in CONTROL_CODES:
-            ret = ''
-            data = self.data
-            for _ in range(0, CONTROL_CODES[self.code][1]):
-                ret = f'\\x{data & 0xFF:02X}{ret}'
-                data = data >> 8
-            ret = f'\\x{self.code:02X}{ret}'
-            return ret
-        elif self.code in SPECIAL_CHARACTERS:
-            return f'\\x{self.code:02X}'
         elif self.code >= 0x7F:
             return '?'
         else:
@@ -616,26 +869,6 @@ class Message:
         ]
         return ', '.join(meta_data) + '\n' + self.text
 
-    def get_python_string(self) -> str:
-        ret = ''
-        for code in self.text_codes:
-            ret = ret + code.get_python_string()
-        return ret
-
-    # check if this is an unused message that just contains it's own id as text
-    def is_id_message(self) -> bool:
-        if self.unpadded_length != 5 or self.id == 0xFFFC:
-            return False
-        for i in range(4):
-            code = self.text_codes[i].code
-            if not (
-                    code in range(ord('0'), ord('9')+1)
-                    or code in range(ord('A'), ord('F')+1)
-                    or code in range(ord('a'), ord('f')+1)
-            ):
-                return False
-        return True
-
     def parse_text(self) -> None:
         self.text_codes = parse_control_codes(self.raw_text)
 
@@ -665,9 +898,6 @@ class Message:
                 self.has_three_choice = True
         self.text = display_code_list(self.text_codes)
         self.unpadded_length = index
-
-    def is_basic(self) -> bool:
-        return not (self.has_goto or self.has_keep_open or self.has_event or self.has_fade or self.has_ocarina or self.has_two_choice or self.has_three_choice)
 
     # computes the size of a message, including padding
     def size(self) -> int:
@@ -807,16 +1037,6 @@ def update_message_by_id(messages: list[Message], id: int, text: bytearray | str
         add_message(messages, text, id, opts)
 
 
-# Gets the message by its ID. Returns None if the index does not exist
-def get_message_by_id(messages: list[Message], id: int) -> Optional[Message]:
-    # get the message index
-    index = next( (m.index for m in messages if m.id == id), -1)
-    if index >= 0:
-        return messages[index]
-    else:
-        return None
-
-
 # wrapper for updating the text of a message, given its index in the list
 def update_message_by_index(messages: list[Message], index: int, text: bytearray | str, opts: Optional[int] = None) -> None:
     if opts is None:
@@ -838,159 +1058,16 @@ def add_message(messages: list[Message], text: bytearray | str, id: int = 0, opt
     messages[-1].index = len(messages) - 1
 
 
-# holds a row in the shop item table (which contains pointers to the description and purchase messages)
-class ShopItem:
-    # read a single message
-    def __init__(self, rom: Rom, shop_table_address: int, index: int) -> None:
-        entry_offset = shop_table_address + 0x20 * index
-        entry = rom.read_bytes(entry_offset, 0x20)
-
-        self.index: int = index
-        self.object: int = bytes_to_int(entry[0x00:0x02])
-        self.model: int = bytes_to_int(entry[0x02:0x04])
-        self.func1: int = bytes_to_int(entry[0x04:0x08])
-        self.price: int = bytes_to_int(entry[0x08:0x0A])
-        self.pieces: int = bytes_to_int(entry[0x0A:0x0C])
-        self.description_message: int = bytes_to_int(entry[0x0C:0x0E])
-        self.purchase_message: int = bytes_to_int(entry[0x0E:0x10])
-        # 0x10-0x11 is always 0000 padded apparently
-        self.get_item_id: int = bytes_to_int(entry[0x12:0x14])
-        self.func2: int = bytes_to_int(entry[0x14:0x18])
-        self.func3: int = bytes_to_int(entry[0x18:0x1C])
-        self.func4: int = bytes_to_int(entry[0x1C:0x20])
-
-    def display(self) -> str:
-        meta_data = [
-            "#" + str(self.index),
-            "Item: 0x" + "{:04x}".format(self.get_item_id),
-            "Price: " + str(self.price),
-            "Amount: " + str(self.pieces),
-            "Object: 0x" + "{:04x}".format(self.object),
-            "Model: 0x" + "{:04x}".format(self.model),
-            "Description: 0x" + "{:04x}".format(self.description_message),
-            "Purchase: 0x" + "{:04x}".format(self.purchase_message),
-        ]
-        func_data = [
-            "func1: 0x" + "{:08x}".format(self.func1),
-            "func2: 0x" + "{:08x}".format(self.func2),
-            "func3: 0x" + "{:08x}".format(self.func3),
-            "func4: 0x" + "{:08x}".format(self.func4),
-        ]
-        return ', '.join(meta_data) + '\n' + ', '.join(func_data)
-
-    # write the shop item back
-    def write(self, rom: Rom, shop_table_address: int, index: int) -> None:
-        entry_offset = shop_table_address + 0x20 * index
-
-        data = []
-        data += int_to_bytes(self.object, 2)
-        data += int_to_bytes(self.model, 2)
-        data += int_to_bytes(self.func1, 4)
-        data += int_to_bytes(self.price, 2, signed=True)
-        data += int_to_bytes(self.pieces, 2)
-        data += int_to_bytes(self.description_message, 2)
-        data += int_to_bytes(self.purchase_message, 2)
-        data += [0x00, 0x00]
-        data += int_to_bytes(self.get_item_id, 2)
-        data += int_to_bytes(self.func2, 4)
-        data += int_to_bytes(self.func3, 4)
-        data += int_to_bytes(self.func4, 4)
-
-        rom.write_bytes(entry_offset, data)
-
-    __str__ = __repr__ = display
-
-
-# reads each of the shop items
-def read_shop_items(rom: Rom, shop_table_address: int, count: int = 100) -> list[ShopItem]:
-    shop_items = []
-
-    for index in range(0, count):
-        shop_items.append(ShopItem(rom, shop_table_address, index))
-
-    return shop_items
-
-
-# writes each of the shop item back into rom
-def write_shop_items(rom: Rom, shop_table_address: int, shop_items: Iterable[ShopItem]) -> None:
-    for s in shop_items:
-        s.write(rom, shop_table_address, s.index)
-
-
-# these are unused shop items, and contain text ids that are used elsewhere, and should not be moved
-SHOP_ITEM_EXCEPTIONS: list[int] = [0x0A, 0x0B, 0x11, 0x12, 0x13, 0x14, 0x29]
-
-
-# returns a set of all message ids used for shop items
-def get_shop_message_id_set(shop_items: Iterable[ShopItem]) -> set[int]:
-    ids = set()
-    for shop in shop_items:
-        if shop.index not in SHOP_ITEM_EXCEPTIONS:
-            ids.add(shop.description_message)
-            ids.add(shop.purchase_message)
-    return ids
-
-
-# remove all messages that easy to tell are unused to create space in the message index table
-def remove_unused_messages(messages: list[Message]) -> None:
-    messages[:] = [m for m in messages if not m.is_id_message()]
-    for index, m in enumerate(messages):
-        m.index = index
-
-
-# takes all messages used for shop items, and moves messages from the 00xx range into the unused 80xx range
-def move_shop_item_messages(messages: list[Message], shop_items: Iterable[ShopItem]) -> None:
-    # checks if a message id is in the item message range
-    def is_in_item_range(id: int) -> bool:
-        bytes = int_to_bytes(id, 2)
-        return bytes[0] == 0x00
-
-    # get the ids we want to move
-    ids = set( id for id in get_shop_message_id_set(shop_items) if is_in_item_range(id) )
-    # update them in the message list
-    for id in ids:
-        # should be a singleton list, but in case something funky is going on, handle it as a list regardless
-        relevant_messages = [message for message in messages if message.id == id]
-        if len(relevant_messages) >= 2:
-            raise(TypeError("duplicate id in move_shop_item_messages"))
-
-        for message in relevant_messages:
-            if message.id in new_messages: # Check if this was a message we've modified and update its ID in that table.
-                index = new_messages.index(message.id)
-                new_messages[index] |= 0x8000
-            message.id |= 0x8000
-    # update them in the shop item list
-    for shop in shop_items:
-        if shop.index in SHOP_ITEM_EXCEPTIONS:
-            continue
-        if is_in_item_range(shop.description_message):
-            shop.description_message |= 0x8000
-        if is_in_item_range(shop.purchase_message):
-            shop.purchase_message |= 0x8000
-
-    message_ids = {message.id for message in messages}
-    for shop in shop_items:
-        if shop.index in SHOP_ITEM_EXCEPTIONS:
-            continue
-        for message_id in (shop.description_message, shop.purchase_message):
-            if message_id not in message_ids:
-                raise ValueError(f"shop item {shop.index:#04x} references missing message {message_id:#06x}")
-
-
 # reduce item message sizes and add new item messages
-# make sure to call this AFTER move_shop_item_messages()
 def update_item_messages(messages: list[Message]) -> None:
-    new_item_messages = ITEM_MESSAGES + KEYSANITY_MESSAGES
-    for id, text in new_item_messages:
+    for id, text in ITEM_MESSAGES:
         update_message_by_id(messages, id, text, 0x23)
 
-    for id, (text, opt) in MISC_MESSAGES:
-        update_message_by_id(messages, id, text, opt)
-
+    for id, text in LOCATION_COUNT_MESSAGES:
+        update_message_by_id(messages, id, text, 0x23)
 
 # run all keysanity related patching to add messages for dungeon specific items
-def add_item_messages(messages: list[Message], shop_items: Iterable[ShopItem]) -> None:
-    move_shop_item_messages(messages, shop_items)
+def add_item_messages(messages: list[Message]) -> None:
     update_item_messages(messages)
 
 

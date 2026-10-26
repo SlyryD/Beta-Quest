@@ -26,6 +26,13 @@
 .org 0x8009CDA0
 Gameplay_InitSkybox:
 
+; Select the old-emulator pause workaround at runtime.
+; Replaces:
+;   jal     0x8009DD10
+; The delay slot still loads the vanilla height of 240 into a2.
+.org 0x8009C584
+    jal     set_pause_framebuffer_info
+
 ; Runs after scene DMA and before scene commands are processed
 ; Replaces:
 ;   jal     Scene_ExecuteCommands
@@ -65,6 +72,11 @@ Scene_ExecuteCommands:
 ; MQ tail space when calculating the backward offset from that end.
 .org 0x80080ACC
     jal     adjust_mq_room_buffer_stride
+
+; Write only the newly created file, its backup, and their count records instead
+; of synchronously rewriting all 32 KiB of SRAM.
+.org 0x80090D84
+    jal     count_save_write_new_file
 
 ;==================================================================================================
 ; DPAD Display

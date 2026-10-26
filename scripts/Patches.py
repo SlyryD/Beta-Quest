@@ -1,5 +1,5 @@
 from Rom import Rom
-from Messages import add_item_messages, read_messages, read_shop_items, repack_messages, write_shop_items
+from Messages import add_item_messages, read_messages, repack_messages
 from SaveContext import SaveContext
 
 
@@ -406,19 +406,15 @@ def patch_rom(rom:Rom):
     save_context.write_bits(0x0EEB, 0x01) # "Entered Dodongo's Cavern"
     save_context.write_bits(0x0EEB, 0x20) # "Entered Jabu-Jabu's Belly"
 
-    # Load Message and Shop Data
+    # Load Message Data
     messages = read_messages(rom)
-    shop_item_table = 0x00C004E0 + 0x1DEC
-    shop_items = read_shop_items(rom, shop_item_table, 50)
 
     # Set default targeting option to Hold
     rom.write_byte(0xB71E6D, 0x01)
 
-    # Preserve shop messages before reusing their original IDs for item messages.
-    add_item_messages(messages, shop_items)
+    add_item_messages(messages)
 
     repack_messages(rom, messages)
-    write_shop_items(rom, shop_item_table, shop_items)
 
     # actually write the save table to rom
     save_context.write_save_table(rom)

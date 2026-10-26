@@ -98,6 +98,7 @@ typedef enum {
     GCOUNT_MEDALLION = 0x11,
     GCOUNT_STONE = 0x12,
     GCOUNT_REWARD = 0x13,
+    GCOUNT_TOKEN = 0x14,
     // Dungeon
     GCOUNT_BOSS_KEY = 0x20,
     GCOUNT_COMPASS = 0x21,
@@ -125,19 +126,7 @@ typedef enum {
 } global_count_t;
 
 uint8_t get_tokens(uint8_t gs_flags_index);
-
-static inline uint8_t get_carpenters_freed(uint16_t event_flags) {
-    uint8_t count = 0;
-    uint16_t carpenter_flags = event_flags & 0x000F;
-
-    while (carpenter_flags) {
-        count += carpenter_flags & 1;
-        carpenter_flags >>= 1;
-    }
-
-    return count;
-}
-
+uint8_t get_carpenters_freed(uint16_t event_flags);
 uint8_t get_global_count(uint8_t count_index);
 
 #endif

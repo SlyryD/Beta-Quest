@@ -14,10 +14,18 @@ typedef struct {
 } bean_flag_t;
 
 static bean_flag_t bean_flags[] = {
-    { SCENE_KOKIRI_FOREST, 0x09 },         { SCENE_LOST_WOODS, 0x04 }, { SCENE_LOST_WOODS, 0x12 },
-    { SCENE_ZORAS_RIVER, 0x03 },           { SCENE_GRAVEYARD, 0x03 },  { SCENE_DEATH_MOUNTAIN_TRAIL, 0x06 },
-    { SCENE_DEATH_MOUNTAIN_CRATER, 0x03 }, { SCENE_LAKE_HYLIA, 0x01 }, { SCENE_GERUDO_VALLEY, 0x03 },
+    // clang-format off
+    { SCENE_KOKIRI_FOREST, 0x09 },
+    { SCENE_LOST_WOODS, 0x04 },
+    { SCENE_LOST_WOODS, 0x12 },
+    { SCENE_ZORAS_RIVER, 0x03 },
+    { SCENE_GRAVEYARD, 0x03 },
+    { SCENE_DEATH_MOUNTAIN_TRAIL, 0x06 },
+    { SCENE_DEATH_MOUNTAIN_CRATER, 0x03 },
+    { SCENE_LAKE_HYLIA, 0x01 },
+    { SCENE_GERUDO_VALLEY, 0x03 },
     { SCENE_DESERT_COLOSSUS, 0x18 },
+    // clang-format on
 };
 
 // gs_flags at 8011B46C
@@ -56,6 +64,18 @@ static uint8_t get_beans_planted() {
             switches |= z64_game.swch_flags | z64_game.temp_swch_flags;
         }
         count += !!(switches & (1 << bean->switch_flag));
+    }
+
+    return count;
+}
+
+uint8_t get_carpenters_freed(uint16_t event_flags) {
+    uint8_t count = 0;
+    uint16_t carpenter_flags = event_flags & 0x000F;
+
+    while (carpenter_flags) {
+        count += carpenter_flags & 1;
+        carpenter_flags >>= 1;
     }
 
     return count;
@@ -100,6 +120,9 @@ uint8_t get_global_count(uint8_t count_index) {
         }
         case GCOUNT_REWARD: {
             return get_global_medallions() + get_global_stones();
+        }
+        case GCOUNT_TOKEN: {
+            return z64_file.gs_tokens;
         }
         case GCOUNT_BOSS_KEY: {
             return get_global_dungeon_items(0b001);

@@ -58,6 +58,11 @@ static bool decode_area_count(z64_message_ctxt_t* msgCtx, z64_font_t* pFont, cha
                               uint32_t* pCharTexIdx) {
     uint8_t area_index = msgRaw[++(msgCtx->msg_buf_pos)];
     uint8_t count_index = msgRaw[++(msgCtx->msg_buf_pos)];
+
+    if (area_index == 0xFF) {
+        area_index = get_current_area_index();
+    }
+
     uint8_t count = get_area_count(area_index, count_index);
 
     if (count == 0xFF) {
