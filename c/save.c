@@ -26,7 +26,7 @@ typedef struct {
     uint16_t checksum;
     extended_savecontext_static_t counts;
     uint8_t completed_encounters[COUNT_ENCOUNTER_BYTES];
-    uint8_t pad[0x08];
+    uint64_t completed_objectives;
 } count_save_record_t;
 
 #ifdef COUNT_SAVE_TEST
@@ -38,6 +38,7 @@ static sram_read_write_func_t const sram_read_write = (sram_read_write_func_t)0x
 
 extended_savecontext_static_t extended_savectx;
 static uint8_t completed_encounters[COUNT_ENCOUNTER_BYTES];
+static uint64_t completed_objectives;
 static count_save_record_t cached_records[SRAM_EXTENSION_RECORD_COUNT];
 static int8_t loaded_file_index = -1;
 
@@ -52,6 +53,7 @@ typedef char assert_extended_enemy_counts_offset[__builtin_offsetof(extended_sav
                                                      : -1];
 typedef char assert_extended_savecontext_size[sizeof(extended_savecontext_static_t) == 0x0C ? 1 : -1];
 typedef char assert_count_save_record_size[sizeof(count_save_record_t) == SRAM_EXTENSION_RECORD_SIZE ? 1 : -1];
+typedef char assert_count_objective_capacity[OBJECTIVE_COUNT <= 64 ? 1 : -1];
 typedef char assert_sram_extension_bounds
     [SRAM_EXTENSION_START + SRAM_EXTENSION_RECORD_COUNT * SRAM_EXTENSION_RECORD_SIZE <= SRAM_SIZE ? 1 : -1];
 
@@ -90,17 +92,20 @@ static void make_record(count_save_record_t* record) {
     record->base_checksum = z64_file.checksum;
     memory_copy(&record->counts, &extended_savectx, sizeof(record->counts));
     memory_copy(record->completed_encounters, completed_encounters, sizeof(record->completed_encounters));
+    record->completed_objectives = completed_objectives;
     record->checksum = calculate_checksum(record);
 }
 
 static void load_record(const count_save_record_t* record) {
     memory_copy(&extended_savectx, &record->counts, sizeof(extended_savectx));
     memory_copy(completed_encounters, record->completed_encounters, sizeof(completed_encounters));
+    completed_objectives = record->completed_objectives;
 }
 
 static void clear_working_record() {
     clear_bytes(&extended_savectx, sizeof(extended_savectx));
     clear_bytes(completed_encounters, sizeof(completed_encounters));
+    completed_objectives = 0;
 }
 
 void count_save_cache_sram(const void* sram_buffer) {
@@ -213,5 +218,15 @@ bool count_encounter_is_complete(uint16_t encounter_id) {
 void count_encounter_complete(uint16_t encounter_id) {
     if (encounter_id < COUNT_ENCOUNTER_CAPACITY) {
         completed_encounters[encounter_id >> 3] |= 1 << (encounter_id & 7);
+    }
+}
+
+bool count_objective_is_complete(uint8_t objective_id) {
+    return objective_id < OBJECTIVE_COUNT && (completed_objectives & ((uint64_t)1 << objective_id));
+}
+
+void count_objective_complete(uint8_t objective_id) {
+    if (objective_id < OBJECTIVE_COUNT) {
+        completed_objectives |= (uint64_t)1 << objective_id;
     }
 }

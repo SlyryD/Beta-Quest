@@ -100,7 +100,8 @@ V2 Changes:
 
 V2.1 Changes:
 
-* Added dungeon info and world map info menus (hold A on the inventory or map pause screens)
+* Added pause information menus: hold A on the inventory screen for dungeons, A + D-Left for tracked
+  counts, or A + D-Right for overworld areas
 
 * Added fast chests
 
@@ -144,17 +145,48 @@ V3.0 Changes:
 
 * Updated pause-menu totals to include:
 
+  * Cleared dungeon bosses, defeated Ganondorf, and completed blue-warp dungeons
+
   * Freed carpenters
 
+  * Cleared Ganon's Castle trial beams
+
   * Planted Magic Beans, triggered Ice Traps, collected Gold Rupees, and completed Silver Rupee rooms
+
+  * Opened Mido's Green Rupee chest and the Haunted Wasteland Purple Rupee chest; the Counts menu shows these
+    beside the Gold Rupee and completed Silver Rupee room totals as colored rupee icons
 
   * Defeated Iron Knuckles, White Wolfos, Lizalfos/Dinolfos, Gibdos, Morpha tentacles, Stalfos,
     Dead Hands, and Flare Dancers
 
-* Enemy defeat totals update after each kill and roll back if a multi-enemy room is left uncleared
+* Expanded the inventory pause overlays:
+
+  * Hold A + D-Up for Dungeon Events, including dungeon-specific kills, boss doors, Spirit events,
+    Ganon trial beams and named trials, dungeon Skulltulas, and Sky Temple completion
+
+  * Counts now groups Stalfos, Gibdos, Iron Knuckles, Dead Hands, White Wolfos, and Skull Kids beside
+    icon-labeled Bean, Ice Trap, Gold/Silver Rupee, Cow, Heart, and soft-soil Skulltula totals
+
+  * Areas now exposes named rupee chests, the upper Fortress chest, named bean/Heart Piece goals,
+    Bombchu Bowling, Cow in House, and child/adult regional Skulltula subsets
+
+  * Bottom of the Well, Ice Cavern, Gerudo Fortress, and Gerudo Training Ground retain their original
+    no-completion-skull/no-blue-name behavior
+
+* Extended the existing fixed-size V3 count record through its reserved eight-byte tail. Existing V3
+  records remain valid, while new binary objectives and unique Cow milk awards persist across saves.
+
+* Seven approved Dungeon Events indicators remain intentionally incomplete until reliable objective-specific
+  Vanilla/Master Quest hooks are identified: Big Octo, the Spirit final platform, both Spirit rusty switches,
+  Dark Link, and the four Poe sisters. These indicators do not report success from broader dungeon-completion
+  proxies.
+
+* Enemy defeat totals, including Skull Kids, update after each kill and roll back if a multi-enemy room is left
+  uncleared
 
 * Reworked the in-game entrance spoiler shown for file names beginning with `SL`:
 
+  * Moved the spoiler menu to the world map pause screen
   * Added compact five-entry pages with shortened entrance names
 
   * Added source-sorted and destination-sorted views for visited entrances or the full spoiler

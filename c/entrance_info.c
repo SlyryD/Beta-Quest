@@ -19,7 +19,7 @@ typedef enum {
 #define NUM_LINES 5
 #define ENTRANCE_NAME_MAX_CHARS 35
 
-#define PAUSE_QUEST 2
+#define PAUSE_MAP 1
 
 #define GENERIC_GROTTO_ENTRANCE 0x003F
 #define FAIRY_GROTTO_ENTRANCE 0x036D
@@ -1106,7 +1106,7 @@ void draw_entrance_info(z64_disp_buf_t* db) {
         }
     }
 
-    int draw = z64_game.pause_ctxt.state == 6 && z64_game.pause_ctxt.screen_idx == PAUSE_QUEST &&
+    int draw = z64_game.pause_ctxt.state == 6 && z64_game.pause_ctxt.screen_idx == PAUSE_MAP &&
                !z64_game.pause_ctxt.changing && z64_ctxt.input[0].raw.pad.a && s_entrance_info_initialized;
     if (!draw) {
         s_scroll_idx = 0;

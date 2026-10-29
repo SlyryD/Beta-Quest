@@ -12,16 +12,24 @@
 #define ACTOR_EN_RD 0x0090
 #define ACTOR_EN_FD 0x0099
 #define ACTOR_EN_DH 0x00A4
+#define ACTOR_EN_COW 0x00D5
 #define ACTOR_EN_BA 0x00DE
 #define ACTOR_EN_IK 0x0113
+#define ACTOR_EN_SKJ 0x0115
 #define ACTOR_EN_WF 0x01AF
 #define GI_RUPEE_GOLD 0x56
 #define GI_ICE_TRAP 0x7C
+#define BOTTLE_SLOT_FIRST 18
+#define BOTTLE_SLOT_COUNT 4
+#define ITEM_MILK 0x1A
 #define ENBOX_GET_ITEM_ID(actor) (((actor)->variable >> 5) & 0x7F)
 #define ENBOX_GET_TREASURE_FLAG(actor) ((actor)->variable & 0x1F)
 #define ACTOR_CATEGORY_COUNT 12
 #define ROOM_CLEAR_FLAG_COUNT 32
+#define BOSS_ENCOUNTER_BASE 16
+#define DUNGEON_COMPLETION_BASE 24
 #define ENEMY_ENCOUNTER_BASE 32
+#define GANONDORF_ENCOUNTER_ID (COUNT_ENCOUNTER_CAPACITY - 1)
 #define NABOORU_KNUCKLE_CLEAR_FLAG (1 << 1)
 
 typedef enum {
@@ -33,6 +41,7 @@ typedef enum {
     ENEMY_STALFOS,
     ENEMY_DEAD_HAND,
     ENEMY_FLARE_DANCER,
+    ENEMY_SKULL_KID,
     ENEMY_TYPE_COUNT,
 } enemy_type_t;
 
@@ -45,6 +54,23 @@ typedef struct {
     int16_t y;
     int16_t z;
 } enemy_encounter_t;
+
+typedef struct {
+    uint8_t dungeon;
+    uint8_t boss_scene;
+    uint32_t clear_flag;
+} boss_entry_t;
+
+static const boss_entry_t bosses[] = {
+    { SCENE_DEKU_TREE, SCENE_GOHMA, 1 << 1 },
+    { SCENE_DODONGOS_CAVERN, SCENE_KING_DODONGO, 1 << 1 },
+    { SCENE_JABU_JABU, SCENE_BARINADE, 1 << 1 },
+    { SCENE_FOREST_TEMPLE, SCENE_PHANTOM_GANON, 1 << 1 },
+    { SCENE_FIRE_TEMPLE, SCENE_VOLVAGIA, 1 << 1 },
+    { SCENE_WATER_TEMPLE, SCENE_MORPHA, 1 << 1 },
+    { SCENE_SHADOW_TEMPLE, SCENE_BONGO_BONGO, 1 << 1 },
+    { SCENE_SPIRIT_TEMPLE, SCENE_TWINROVA, 1 << 1 },
+};
 
 #define ENCOUNTER(id, type, scene, room, x, y, z) \
     { ENEMY_ENCOUNTER_BASE + id, ENEMY_##type, SCENE_##scene, room, x, y, z }
@@ -91,6 +117,9 @@ static enemy_encounter_t vanilla_enemy_encounters[] = {
     ENCOUNTER(38, DEAD_HAND, BOTTOM_OF_THE_WELL, 4, 1281, -20, 211),
     ENCOUNTER(39, FLARE_DANCER, FIRE_TEMPLE, 3, -361, 80, -1300),
     ENCOUNTER(40, FLARE_DANCER, FIRE_TEMPLE, 24, -2928, 2920, 139),
+    ENCOUNTER(41, SKULL_KID, LOST_WOODS, 1, 1183, -72, 476),
+    ENCOUNTER(42, SKULL_KID, LOST_WOODS, 1, 1265, -94, 420),
+    ENCOUNTER(43, SKULL_KID, LOST_WOODS, 9, -1132, 80, -128),
 };
 
 static enemy_encounter_t mq_enemy_encounters[] = {
@@ -177,13 +206,19 @@ static enemy_encounter_t mq_enemy_encounters[] = {
     ENCOUNTER(80, DEAD_HAND, BOTTOM_OF_THE_WELL, 4, 1280, -16, 210),
     ENCOUNTER(81, FLARE_DANCER, FIRE_TEMPLE, 3, -361, 80, -1300),
     ENCOUNTER(82, FLARE_DANCER, FIRE_TEMPLE, 24, -2928, 2920, 139),
+    ENCOUNTER(83, SKULL_KID, LOST_WOODS, 1, 1183, -72, 476),
+    ENCOUNTER(84, SKULL_KID, LOST_WOODS, 1, 1265, -94, 420),
+    ENCOUNTER(85, SKULL_KID, LOST_WOODS, 9, -1132, 80, -128),
 };
 
 typedef char
-    assert_enemy_encounters_fit[ENEMY_ENCOUNTER_BASE + sizeof(mq_enemy_encounters) / sizeof(*mq_enemy_encounters) <=
-                                        COUNT_ENCOUNTER_CAPACITY
+    assert_enemy_encounters_fit    [ENEMY_ENCOUNTER_BASE + sizeof(mq_enemy_encounters) / sizeof(*mq_enemy_encounters) <= GANONDORF_ENCOUNTER_ID
                                     ? 1
                                     : -1];
+typedef char assert_boss_encounters_fit
+    [BOSS_ENCOUNTER_BASE + sizeof(bosses) / sizeof(*bosses) <= DUNGEON_COMPLETION_BASE ? 1 : -1];
+typedef char assert_dungeon_completions_fit
+    [DUNGEON_COMPLETION_BASE + sizeof(bosses) / sizeof(*bosses) <= ENEMY_ENCOUNTER_BASE ? 1 : -1];
 
 typedef struct {
     uint8_t id;
@@ -267,6 +302,8 @@ static int8_t previous_room = -1;
 static uint32_t previous_chest_flags;
 static uint8_t pending_enemy_encounters[COUNT_ENCOUNTER_BYTES];
 static uint8_t pending_enemy_switches[COUNT_ENCOUNTER_CAPACITY];
+static uint8_t previous_bottle_items[BOTTLE_SLOT_COUNT];
+static bool sky_temple_active;
 
 #ifndef COUNT_TRACKER_TEST
 typedef char assert_actor_health_offset[__builtin_offsetof(z64_actor_t, health) == 0xAF ? 1 : -1];
@@ -275,6 +312,12 @@ typedef char assert_actor_health_offset[__builtin_offsetof(z64_actor_t, health) 
 static void increment_saturating(uint8_t* count) {
     if (*count != UINT8_MAX) {
         (*count)++;
+    }
+}
+
+static void snapshot_bottle_items() {
+    for (uint8_t i = 0; i < BOTTLE_SLOT_COUNT; i++) {
+        previous_bottle_items[i] = z64_file.items[BOTTLE_SLOT_FIRST + i];
     }
 }
 
@@ -288,6 +331,85 @@ static uint32_t get_current_switch_flags() {
 
 static uint32_t get_current_clear_flags() {
     return z64_file.scene_flags[z64_game.scene_index].clear | z64_game.clear_flags | z64_game.temp_clear_flags;
+}
+
+static bool get_event_check(uint8_t flag) {
+    return z64_file.event_chk_inf[flag >> 4] & (1 << (flag & 0xF));
+}
+
+bool count_tracker_is_dungeon_completed(uint8_t dungeon_index) {
+    switch (dungeon_index) {
+        case SCENE_DEKU_TREE:
+            return get_event_check(0x09);
+        case SCENE_DODONGOS_CAVERN:
+            return get_event_check(0x25);
+        case SCENE_JABU_JABU:
+            return get_event_check(0x37);
+        case SCENE_FOREST_TEMPLE:
+            return get_event_check(0x48);
+        case SCENE_FIRE_TEMPLE:
+            return get_event_check(0x49);
+        case SCENE_WATER_TEMPLE:
+            return get_event_check(0x4A);
+        case SCENE_SHADOW_TEMPLE:
+            return count_encounter_is_complete(DUNGEON_COMPLETION_BASE + 6);
+        case SCENE_SPIRIT_TEMPLE:
+            return count_encounter_is_complete(DUNGEON_COMPLETION_BASE + 7);
+        default:
+            return false;
+    }
+}
+
+bool count_tracker_is_boss_cleared(uint8_t dungeon_index) {
+    for (uint8_t i = 0; i < sizeof(bosses) / sizeof(*bosses); i++) {
+        const boss_entry_t* boss = &bosses[i];
+        if (boss->dungeon != dungeon_index) {
+            continue;
+        }
+
+        if (count_encounter_is_complete(BOSS_ENCOUNTER_BASE + i) ||
+            count_tracker_is_dungeon_completed(dungeon_index)) {
+            return true;
+        }
+
+        return z64_game.scene_index == boss->boss_scene && (get_current_clear_flags() & boss->clear_flag);
+    }
+
+    if (dungeon_index == SCENE_INSIDE_GANONS_CASTLE) {
+        return count_encounter_is_complete(GANONDORF_ENCOUNTER_ID);
+    }
+
+    return false;
+}
+
+static void track_boss_clears(uint32_t clear_flags) {
+    for (uint8_t i = 0; i < sizeof(bosses) / sizeof(*bosses); i++) {
+        const boss_entry_t* boss = &bosses[i];
+        if (z64_game.scene_index == boss->boss_scene && (clear_flags & boss->clear_flag)) {
+            count_encounter_complete(BOSS_ENCOUNTER_BASE + i);
+        }
+
+        if (z64_game.scene_index == SCENE_GANONDORF && z64_game.scene_load_flag != 0) {
+            count_encounter_complete(GANONDORF_ENCOUNTER_ID);
+        }
+    }
+}
+
+static bool previous_spirit_medallion;
+static bool previous_shadow_medallion;
+
+static void track_spirit_and_shadow_completion(bool detect_changes) {
+    if (detect_changes && z64_game.scene_index == SCENE_TWINROVA && !previous_spirit_medallion &&
+        z64_file.spirit_medallion) {
+        count_encounter_complete(DUNGEON_COMPLETION_BASE + 7);
+    }
+    if (detect_changes && z64_game.scene_index == SCENE_BONGO_BONGO && !previous_shadow_medallion &&
+        z64_file.shadow_medallion) {
+        count_encounter_complete(DUNGEON_COMPLETION_BASE + 6);
+    }
+
+    previous_spirit_medallion = z64_file.spirit_medallion;
+    previous_shadow_medallion = z64_file.shadow_medallion;
 }
 
 static void track_opened_chests(uint32_t opened_flags) {
@@ -317,7 +439,18 @@ static void track_opened_chests(uint32_t opened_flags) {
             increment_saturating(&extended_savectx.trap_count);
         } else if (get_item_id == GI_RUPEE_GOLD) {
             increment_saturating(&extended_savectx.gold_rupee_count);
+            if (!z64_file.master_quest && z64_game.scene_index == SCENE_FIRE_TEMPLE) {
+                count_objective_complete(OBJECTIVE_FIRE_GOLD_RUPEE);
+            }
         }
+    }
+
+    if (z64_game.scene_index == SCENE_SPIRIT_TEMPLE && (opened_flags & 1)) {
+        count_objective_complete(OBJECTIVE_SPIRIT_BOMBCHU_CHEST);
+    }
+    if (sky_temple_active && opened_flags != 0) {
+        count_objective_complete(OBJECTIVE_SKY_TEMPLE);
+        sky_temple_active = false;
     }
 }
 
@@ -409,6 +542,8 @@ static int get_enemy_type(z64_actor_t* actor) {
             return ENEMY_DEAD_HAND;
         case ACTOR_EN_FD:
             return ENEMY_FLARE_DANCER;
+        case ACTOR_EN_SKJ:
+            return ENEMY_SKULL_KID;
         default:
             return -1;
     }
@@ -451,9 +586,69 @@ static void track_nabooru_iron_knuckle() {
 
             if (encounter->type == ENEMY_IRON_KNUCKLE && encounter->scene == SCENE_TWINROVA && encounter->room == 1) {
                 complete_enemy_encounter(encounter);
+                count_objective_complete(OBJECTIVE_NABOORU_KNUCKLE);
                 break;
             }
         }
+    }
+}
+
+static bool enemy_encounters_complete(const uint8_t* ids, uint8_t count) {
+    for (uint8_t i = 0; i < count; i++) {
+        if (!count_encounter_is_complete(ENEMY_ENCOUNTER_BASE + ids[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static void track_objective_progress() {
+    static const uint8_t vanilla_dodongo_lizalfos[] = { 11, 12, 13, 14 };
+    static const uint8_t mq_dodongo_lizalfos[] = { 17, 18, 19, 20 };
+    static const uint8_t vanilla_fire_flare_dancers[] = { 39, 40 };
+    static const uint8_t mq_fire_flare_dancers[] = { 81, 82 };
+    const uint8_t* dodongo_ids = z64_file.master_quest ? mq_dodongo_lizalfos : vanilla_dodongo_lizalfos;
+    const uint8_t* flare_ids = z64_file.master_quest ? mq_fire_flare_dancers : vanilla_fire_flare_dancers;
+
+    if (enemy_encounters_complete(dodongo_ids, 4)) {
+        count_objective_complete(OBJECTIVE_DODONGO_LIZALFOS);
+    }
+    if (enemy_encounters_complete(flare_ids, 2)) {
+        count_objective_complete(OBJECTIVE_FIRE_FLARE_DANCERS);
+    }
+    if (count_item_get_set(0x12)) {
+        count_objective_complete(OBJECTIVE_BOMBCHU_BOWLING);
+    }
+}
+
+static uint8_t get_cow_objective(z64_actor_t* cow) {
+    if (z64_game.scene_index == SCENE_LINKS_HOUSE) {
+        return OBJECTIVE_COW_0;
+    }
+
+    uint32_t hash = (uint16_t)z64_game.scene_index;
+    hash = hash * 31 + (uint8_t)cow->room_index;
+    hash = hash * 31 + (uint16_t)cow->pos_1.x;
+    hash = hash * 31 + (uint16_t)cow->pos_1.y;
+    hash = hash * 31 + (uint16_t)cow->pos_1.z;
+    return OBJECTIVE_COW_1 + hash % 15;
+}
+
+static void track_cow_milk_awards() {
+    z64_actor_t* cow = z64_link.incoming_item_actor;
+    bool received_milk = false;
+
+    for (uint8_t i = 0; i < BOTTLE_SLOT_COUNT; i++) {
+        uint8_t current = z64_file.items[BOTTLE_SLOT_FIRST + i];
+        if (previous_bottle_items[i] != ITEM_MILK && current == ITEM_MILK) {
+            received_milk = true;
+        }
+        previous_bottle_items[i] = current;
+    }
+
+    if (received_milk && cow != NULL && cow->actor_id == ACTOR_EN_COW) {
+        count_objective_complete(get_cow_objective(cow));
     }
 }
 
@@ -523,9 +718,19 @@ void count_tracker_update() {
     int8_t room = z64_game.room_index;
 
     if (scene != previous_scene || room != previous_room) {
+        sky_temple_active = z64_file.entrance_index == 0x00A0;
+        if (scene == SCENE_PHANTOM_GANON && previous_scene == SCENE_FOREST_TEMPLE) {
+            count_objective_complete(OBJECTIVE_FOREST_BOSS_DOOR);
+        }
+        if (scene == SCENE_GANONDORF &&
+            (previous_scene == SCENE_INSIDE_GANONS_CASTLE || previous_scene == SCENE_GANONS_TOWER)) {
+            count_objective_complete(OBJECTIVE_GANON_BOSS_DOOR);
+        }
         previous_scene = scene;
         previous_room = room;
         previous_chest_flags = get_current_chest_flags();
+        snapshot_bottle_items();
+        track_spirit_and_shadow_completion(false);
         for (int i = 0; i < COUNT_ENCOUNTER_BYTES; i++) {
             pending_enemy_encounters[i] = 0;
         }
@@ -539,5 +744,9 @@ void count_tracker_update() {
     track_silver_rooms(switches);
     track_enemy_deaths();
     track_nabooru_iron_knuckle();
+    track_boss_clears(clear);
+    track_spirit_and_shadow_completion(true);
     commit_pending_enemy_encounters(switches, clear);
+    track_objective_progress();
+    track_cow_milk_awards();
 }

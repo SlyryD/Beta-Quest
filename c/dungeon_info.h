@@ -6,5 +6,7 @@
 uint8_t get_dungeon_count(uint8_t dungeon_index, uint8_t count_index);
 
 void draw_dungeon_info(z64_disp_buf_t *db);
+void draw_dungeon_events_info(z64_disp_buf_t* db);
+void draw_counts_info(z64_disp_buf_t* db);
 
 #endif

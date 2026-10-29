@@ -84,6 +84,7 @@ static void test_initialize_and_round_trip() {
     extended_savectx.silver_rupee_rooms_cleared = 4;
     extended_savectx.enemy_counts[2] = 9;
     count_encounter_complete(73);
+    count_objective_complete(OBJECTIVE_SPIRIT_PLATFORM);
     count_save_write();
 
     assert(memcmp(primary_record(1), backup_record(1), sizeof(count_save_record_t)) == 0);
@@ -98,6 +99,7 @@ static void test_initialize_and_round_trip() {
     assert(extended_savectx.silver_rupee_rooms_cleared == 4);
     assert(extended_savectx.enemy_counts[2] == 9);
     assert(count_encounter_is_complete(73));
+    assert(count_objective_is_complete(OBJECTIVE_SPIRIT_PLATFORM));
 }
 
 static void test_backup_fallback() {
@@ -121,6 +123,7 @@ static void test_invalid_records_clear_state() {
     assert(extended_savectx.trap_count == 0);
     assert(!count_encounter_is_complete(12));
     assert(!count_encounter_is_complete(73));
+    assert(!count_objective_is_complete(OBJECTIVE_SPIRIT_PLATFORM));
 }
 
 static void test_unsaved_changes_roll_back() {
@@ -147,6 +150,15 @@ static void test_encounter_bounds() {
     assert(!count_encounter_is_complete(COUNT_ENCOUNTER_CAPACITY));
     count_encounter_complete(COUNT_ENCOUNTER_CAPACITY);
     assert(!count_encounter_is_complete(COUNT_ENCOUNTER_CAPACITY));
+}
+
+static void test_objective_bounds() {
+    count_objective_complete(OBJECTIVE_COUNT - 1);
+    assert(count_objective_is_complete(OBJECTIVE_COUNT - 1));
+
+    assert(!count_objective_is_complete(OBJECTIVE_COUNT));
+    count_objective_complete(OBJECTIVE_COUNT);
+    assert(!count_objective_is_complete(OBJECTIVE_COUNT));
 }
 
 static void test_previous_version_is_rejected() {
@@ -196,6 +208,7 @@ int main() {
     test_invalid_records_clear_state();
     test_unsaved_changes_roll_back();
     test_encounter_bounds();
+    test_objective_bounds();
     test_previous_version_is_rejected();
     test_file_copy_and_recreate();
     return 0;

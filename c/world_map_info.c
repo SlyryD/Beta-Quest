@@ -4,11 +4,12 @@
 
 #include "counts.h"
 #include "gfx.h"
+#include "save.h"
 #include "text.h"
 #include "util.h"
 #include "z64.h"
 
-#define PAUSE_MAP 1
+#define PAUSE_ITEM 0
 
 typedef enum {
     HS_HBA = 0x00, // horseback archery
@@ -257,10 +258,101 @@ uint8_t get_area_count(uint8_t area_index, uint8_t count_index) {
     }
 }
 
+static void format_area_count(char count[4], uint8_t value) {
+    if (value >= 100) {
+        count[0] = '0' + value / 100;
+        count[1] = '0' + (value / 10) % 10;
+        count[2] = '0' + value % 10;
+        count[3] = '\0';
+    } else if (value >= 10) {
+        count[0] = '0' + value / 10;
+        count[1] = '0' + value % 10;
+        count[2] = '\0';
+    } else {
+        count[0] = '0' + value;
+        count[1] = '\0';
+    }
+}
+
+static void draw_area_sprite(z64_disp_buf_t* db, sprite_t* sprite, int tile, int left, int top, bool complete,
+                             uint8_t red, uint8_t green, uint8_t blue) {
+    gDPPipeSync(db->p++);
+    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gDPSetPrimColor(db->p++, 0, 0, red, green, blue, complete ? 0xFF : 0x40);
+    sprite_load(db, sprite, tile, 1);
+    sprite_draw(db, sprite, 0, left, top, 14, 14);
+}
+
+static void draw_area_rupee(z64_disp_buf_t* db, int left, int top, bool complete, uint8_t red, uint8_t green,
+                            uint8_t blue) {
+    draw_area_sprite(db, &key_rupee_clock_sprite, 1, left, top, complete, red, green, blue);
+}
+
+static void draw_area_objectives(z64_disp_buf_t* db, int area_index, int left, int top) {
+    char count[4];
+
+    switch (area_index) {
+        case AREA_WASTELAND:
+            draw_area_rupee(db, left, top, get_global_count(GCOUNT_WASTELAND_PURPLE_RUPEE), 0xB0, 0x50, 0xE0);
+            break;
+        case AREA_FORTRESS:
+            draw_area_sprite(db, &map_chest_sprite, 0, left, top, count_scene_chest_opened(SCENE_GERUDOS_FORTRESS, 0),
+                             0xFF, 0xFF, 0xFF);
+            text_print("C+", left + 16, top);
+            draw_area_sprite(db, &quest_items_sprite, 13, left + 32, top,
+                             count_scene_collect_set(SCENE_GERUDOS_FORTRESS, 1), 0xFF, 0xFF, 0xFF);
+            break;
+        case AREA_GERUDO_VALLEY:
+            draw_area_sprite(db, &items_sprite, 0x10, left, top,
+                             count_scene_switch_set(SCENE_GERUDO_VALLEY, 0x03), 0xFF, 0xFF, 0xFF);
+            break;
+        case AREA_MARKET:
+            draw_area_sprite(db, &items_sprite, 0x09, left, top,
+                             count_objective_is_complete(OBJECTIVE_BOMBCHU_BOWLING), 0xFF, 0xFF, 0xFF);
+            text_print("Bowling", left + 16, top);
+            break;
+        case AREA_DEATH_MOUNTAIN: {
+            draw_area_sprite(db, &items_sprite, 0x10, left, top,
+                             count_scene_switch_set(SCENE_DEATH_MOUNTAIN_TRAIL, 0x06), 0xFF, 0xFF, 0xFF);
+            text_print("G+", left + 15, top);
+            draw_area_sprite(db, &quest_items_sprite, 13, left + 31, top,
+                             count_scene_collect_set(SCENE_GORON_CITY, 0x1F), 0xFF, 0xFF, 0xFF);
+            text_print("D+", left + 46, top);
+            draw_area_sprite(db, &quest_items_sprite, 13, left + 62, top, true, 0xFF, 0xFF, 0xFF);
+            uint8_t dmc_hps = count_scene_collect_set(SCENE_DEATH_MOUNTAIN_CRATER, 0x08) +
+                              count_scene_collect_set(SCENE_DEATH_MOUNTAIN_CRATER, 0x02);
+            format_area_count(count, dmc_hps);
+            text_print(count, left + 77, top);
+            text_print("C+", left + 85, top);
+            draw_area_sprite(db, &quest_items_sprite, 11, left + 101, top, true, 0xFF, 0xFF, 0xFF);
+            format_area_count(count, get_tokens_with_mask(15, 0x07));
+            text_print(count, left + 116, top);
+            break;
+        }
+        case AREA_KOKIRI_FOREST:
+            draw_area_rupee(db, left, top, get_global_count(GCOUNT_MIDOS_GREEN_RUPEE), 0x00, 0xC8, 0x40);
+            draw_area_sprite(db, &items_sprite, 0x1A, left + 18, top,
+                             count_objective_is_complete(OBJECTIVE_COW_0), 0xFF, 0xFF, 0xFF);
+            break;
+        case AREA_ZORA:
+            draw_area_sprite(db, &items_sprite, 0x35, left, top, count_event_check_set(0xD0), 0xFF, 0xFF, 0xFF);
+            text_print("C+", left + 16, top);
+            draw_area_sprite(db, &quest_items_sprite, 11, left + 32, top, true, 0xFF, 0xFF, 0xFF);
+            format_area_count(count, get_tokens_with_mask(17, 0x07));
+            text_print(count, left + 47, top);
+            text_print("A+", left + 55, top);
+            draw_area_sprite(db, &quest_items_sprite, 11, left + 71, top, true, 0xFF, 0xFF, 0xFF);
+            format_area_count(count, get_tokens_with_mask(17, 0xF8));
+            text_print(count, left + 86, top);
+            break;
+    }
+}
+
 void draw_world_map_info(z64_disp_buf_t* db) {
     int draw = CFG_WORLD_MAP_INFO_ENABLE && z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == PAUSE_MAP && !z64_game.pause_ctxt.changing &&
-               z64_ctxt.input[0].raw.pad.a;
+               z64_game.pause_ctxt.screen_idx == PAUSE_ITEM && !z64_game.pause_ctxt.changing &&
+               z64_ctxt.input[0].raw.pad.a && !z64_ctxt.input[0].raw.pad.dl &&
+               z64_ctxt.input[0].raw.pad.dr;
     if (!draw) {
         return;
     }
@@ -275,10 +367,9 @@ void draw_world_map_info(z64_disp_buf_t* db) {
 
     int icon_size = 16;
     int padding = 1;
-    int bg_width = padding + (14 * font_sprite.tile_w) +  // world map area names
-                   padding + (4 * (icon_size + padding)); // skull, skull count, hp, hp count
+    int bg_width = 312;
     int bg_height = padding + (world_map_areas_length * (icon_size + padding));
-    int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
+    int bg_left = 4;
     int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
 
     int left = bg_left + padding;
@@ -365,6 +456,11 @@ void draw_world_map_info(z64_disp_buf_t* db) {
     }
 
     left += icon_size + padding;
+
+    for (int i = 0; i < world_map_areas_length; i++) {
+        int top = start_top + ((icon_size + padding) * i);
+        draw_area_objectives(db, i, left, top);
+    }
 
     // Finish
 

@@ -30,6 +30,8 @@ void before_game_state_update() {
 void after_game_state_update() {
     count_tracker_update();
     draw_dungeon_info(&(z64_ctxt.gfx->overlay));
+    draw_dungeon_events_info(&(z64_ctxt.gfx->overlay));
+    draw_counts_info(&(z64_ctxt.gfx->overlay));
     draw_entrance_info(&(z64_ctxt.gfx->overlay));
     draw_world_map_info(&(z64_ctxt.gfx->overlay));
 }

@@ -1,6 +1,7 @@
 #ifndef COUNTS_H
 #define COUNTS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef enum {
@@ -29,6 +30,9 @@ typedef enum {
     SCENE_MORPHA = 0x16,
     SCENE_TWINROVA = 0x17,
     SCENE_BONGO_BONGO = 0x18,
+    SCENE_GANONDORF = 0x19,
+    SCENE_MIDOS_HOUSE = 0x28,
+    SCENE_LINKS_HOUSE = 0x34,
     SCENE_DOG_LADY_HOUSE = 0x35,
     SCENE_IMPAS_HOUSE = 0x37,
     SCENE_LAKESIDE_LABORATORY = 0x38,
@@ -114,6 +118,12 @@ typedef enum {
     GCOUNT_TRAP = 0x51,
     GCOUNT_GOLD_RUPEE = 0x52,
     GCOUNT_SILVER_RUPEE_ROOMS = 0x53,
+    GCOUNT_TRIAL_BEAMS = 0x54,
+    GCOUNT_MIDOS_GREEN_RUPEE = 0x55,
+    GCOUNT_WASTELAND_PURPLE_RUPEE = 0x56,
+    GCOUNT_COW = 0x57,
+    GCOUNT_HEART = 0x58,
+    GCOUNT_SOIL_SKULLTULA = 0x59,
     // Enemies
     GCOUNT_IRON_KNUCKLE = 0x60,
     GCOUNT_WHITE_WOLFOS = 0x61,
@@ -122,11 +132,21 @@ typedef enum {
     GCOUNT_TENTACLE = 0x64,
     GCOUNT_STALFOS = 0x65,
     GCOUNT_DEAD_HANDS = 0x66,
-    GCOUNT_FLARE_DANCER = 0x67
+    GCOUNT_FLARE_DANCER = 0x67,
+    GCOUNT_SKULL_KID = 0x68
 } global_count_t;
 
 uint8_t get_tokens(uint8_t gs_flags_index);
+uint8_t get_tokens_with_mask(uint8_t gs_flags_index, uint8_t mask);
 uint8_t get_carpenters_freed(uint16_t event_flags);
+uint8_t get_trial_beams_cleared(const uint16_t* event_chk_inf);
+bool get_trial_beam_cleared(uint8_t trial_index);
+bool count_scene_switch_set(uint8_t scene, uint8_t flag);
+bool count_scene_chest_opened(uint8_t scene, uint8_t flag);
+bool count_scene_collect_set(uint8_t scene, uint8_t flag);
+bool count_event_check_set(uint8_t flag);
+bool count_item_get_set(uint8_t flag);
+uint8_t count_completed_objectives(uint8_t first, uint8_t count);
 uint8_t get_global_count(uint8_t count_index);
 
 #endif

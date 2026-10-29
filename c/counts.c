@@ -34,8 +34,12 @@ static bean_flag_t bean_flags[] = {
      gGsFlagsShifts[(gs_flags_index) & 3])
 
 uint8_t get_tokens(uint8_t gs_flags_index) {
+    return get_tokens_with_mask(gs_flags_index, 0xFF);
+}
+
+uint8_t get_tokens_with_mask(uint8_t gs_flags_index, uint8_t mask) {
     uint8_t tokens = 0;
-    int32_t token_flags = GET_GS_FLAGS(gs_flags_index);
+    int32_t token_flags = GET_GS_FLAGS(gs_flags_index) & mask;
     while (token_flags) {
         tokens += token_flags & 1;
         token_flags >>= 1;
@@ -69,6 +73,54 @@ static uint8_t get_beans_planted() {
     return count;
 }
 
+bool count_scene_switch_set(uint8_t scene, uint8_t flag) {
+    uint32_t switches = z64_file.scene_flags[scene].swch;
+
+    if (z64_game.scene_index == scene) {
+        switches |= z64_game.swch_flags | z64_game.temp_swch_flags;
+    }
+
+    return switches & (1 << flag);
+}
+
+bool count_scene_chest_opened(uint8_t scene, uint8_t flag) {
+    uint32_t chest_flags = z64_file.scene_flags[scene].chest;
+
+    if (z64_game.scene_index == scene) {
+        chest_flags |= z64_game.chest_flags;
+    }
+
+    return !!(chest_flags & (1 << flag));
+}
+
+bool count_scene_collect_set(uint8_t scene, uint8_t flag) {
+    uint32_t collect_flags = z64_file.scene_flags[scene].collect;
+
+    if (z64_game.scene_index == scene) {
+        collect_flags |= z64_game.collect_flags | z64_game.temp_collect_flags;
+    }
+
+    return collect_flags & (1 << flag);
+}
+
+bool count_event_check_set(uint8_t flag) {
+    return z64_file.event_chk_inf[flag >> 4] & (1 << (flag & 0xF));
+}
+
+bool count_item_get_set(uint8_t flag) {
+    return z64_file.item_get_inf[flag >> 4] & (1 << (flag & 0xF));
+}
+
+uint8_t count_completed_objectives(uint8_t first, uint8_t count) {
+    uint8_t completed = 0;
+
+    for (uint8_t i = 0; i < count; i++) {
+        completed += count_objective_is_complete(first + i);
+    }
+
+    return completed;
+}
+
 uint8_t get_carpenters_freed(uint16_t event_flags) {
     uint8_t count = 0;
     uint16_t carpenter_flags = event_flags & 0x000F;
@@ -79,6 +131,24 @@ uint8_t get_carpenters_freed(uint16_t event_flags) {
     }
 
     return count;
+}
+
+uint8_t get_trial_beams_cleared(const uint16_t* event_chk_inf) {
+    static const uint8_t trial_flags[] = { 0xBC, 0xBF, 0xBE, 0xBD, 0xAD, 0xBB };
+    uint8_t count = 0;
+
+    for (int i = 0; i < array_size(trial_flags); i++) {
+        uint8_t flag = trial_flags[i];
+        count += !!(event_chk_inf[flag >> 4] & (1 << (flag & 0xF)));
+    }
+
+    return count;
+}
+
+bool get_trial_beam_cleared(uint8_t trial_index) {
+    static const uint8_t trial_flags[] = { 0xBC, 0xBF, 0xBE, 0xBD, 0xAD, 0xBB };
+
+    return trial_index < array_size(trial_flags) && count_event_check_set(trial_flags[trial_index]);
 }
 
 uint8_t get_global_dungeon_items(uint8_t mask) {
@@ -164,6 +234,36 @@ uint8_t get_global_count(uint8_t count_index) {
         case GCOUNT_SILVER_RUPEE_ROOMS: {
             return count_tracker_get_silver_rooms_cleared();
         }
+        case GCOUNT_TRIAL_BEAMS: {
+            return get_trial_beams_cleared(z64_file.event_chk_inf);
+        }
+        case GCOUNT_MIDOS_GREEN_RUPEE: {
+            return count_scene_chest_opened(SCENE_MIDOS_HOUSE, 0x02);
+        }
+        case GCOUNT_WASTELAND_PURPLE_RUPEE: {
+            return count_scene_chest_opened(SCENE_HAUNTED_WASTELAND, 0x00);
+        }
+        case GCOUNT_COW: {
+            return count_completed_objectives(OBJECTIVE_COW_0, 16);
+        }
+        case GCOUNT_HEART: {
+            return z64_file.energy_capacity / 0x10;
+        }
+        case GCOUNT_SOIL_SKULLTULA: {
+            static const struct {
+                uint8_t index;
+                uint8_t mask;
+            } soil_skulltulas[] = {
+                { 0x0C, 0x01 }, { 0x0D, 0x01 }, { 0x0D, 0x02 }, { 0x10, 0x01 }, { 0x0F, 0x02 },
+                { 0x0F, 0x01 }, { 0x12, 0x01 }, { 0x13, 0x01 }, { 0x15, 0x01 },
+            };
+            uint8_t count = 0;
+
+            for (int i = 0; i < array_size(soil_skulltulas); i++) {
+                count += get_tokens_with_mask(soil_skulltulas[i].index, soil_skulltulas[i].mask);
+            }
+            return count;
+        }
         case GCOUNT_IRON_KNUCKLE:
         case GCOUNT_WHITE_WOLFOS:
         case GCOUNT_LIZALFOS:
@@ -171,7 +271,8 @@ uint8_t get_global_count(uint8_t count_index) {
         case GCOUNT_TENTACLE:
         case GCOUNT_STALFOS:
         case GCOUNT_DEAD_HANDS:
-        case GCOUNT_FLARE_DANCER: {
+        case GCOUNT_FLARE_DANCER:
+        case GCOUNT_SKULL_KID: {
             return count_tracker_get_enemy_count(count_index - GCOUNT_IRON_KNUCKLE);
         }
         default: {
