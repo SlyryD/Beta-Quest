@@ -6,6 +6,7 @@
 void text_init();
 int text_print(const char* s, int left, int top);
 int text_print_blue(const char* s, int left, int top);
+int text_print_dim(const char* s, int left, int top);
 void text_flush(z64_disp_buf_t* db);
 
 #endif

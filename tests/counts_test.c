@@ -5,6 +5,15 @@
 
 int main() {
     uint16_t event_chk_inf[14] = { 0 };
+    uint8_t complete_counts[] = { 1, 3, 1, 9, 2 };
+    uint8_t incomplete_counts[] = { 1, 3, 0, 9, 2 };
+
+    assert(all_counts_nonzero(complete_counts, 5));
+    assert(!all_counts_nonzero(incomplete_counts, 5));
+    incomplete_counts[2] = 1;
+    assert(all_counts_nonzero(incomplete_counts, 5));
+    incomplete_counts[4] = 0;
+    assert(!all_counts_nonzero(incomplete_counts, 5));
 
     assert(get_carpenters_freed(0x0000) == 0);
     assert(get_carpenters_freed(0x0001) == 1);

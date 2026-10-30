@@ -589,6 +589,59 @@ static void test_spirit_reward_transition_marks_completion() {
     assert(count_tracker_is_boss_cleared(SCENE_SPIRIT_TEMPLE));
 }
 
+static void test_miniboss_room_clear_objectives() {
+    reset_tracker(SCENE_JABU_JABU, 6, 0);
+    z64_file.scene_flags[SCENE_JABU_JABU].clear = 1 << 6;
+    count_tracker_update();
+    assert(count_objective_is_complete(OBJECTIVE_BIG_OCTO));
+    assert(!count_objective_is_complete(OBJECTIVE_DARK_LINK));
+
+    reset_tracker(SCENE_WATER_TEMPLE, 13, 1);
+    z64_game.clear_flags = 1 << 13;
+    count_tracker_update();
+    assert(count_objective_is_complete(OBJECTIVE_DARK_LINK));
+    assert(!count_objective_is_complete(OBJECTIVE_BIG_OCTO));
+}
+
+static void test_poe_sister_switch_objectives() {
+    reset_tracker(SCENE_FOREST_TEMPLE, 2, 0);
+    z64_file.scene_flags[SCENE_FOREST_TEMPLE].swch = (1 << 0x1C) | (1 << 0x1D);
+    z64_game.swch_flags = (1 << 0x1E) | (1 << 0x1F);
+    count_tracker_update();
+
+    assert(count_objective_is_complete(OBJECTIVE_POE_AMY));
+    assert(count_objective_is_complete(OBJECTIVE_POE_JOELLE));
+    assert(count_objective_is_complete(OBJECTIVE_POE_BETH));
+    assert(count_objective_is_complete(OBJECTIVE_POE_MEG));
+}
+
+static void test_vanilla_spirit_event_switches() {
+    reset_tracker(SCENE_SPIRIT_TEMPLE, 5, 0);
+    z64_file.scene_flags[SCENE_SPIRIT_TEMPLE].swch = (1 << 0x04) | (1 << 0x07);
+    z64_game.swch_flags = 1 << 0x0B;
+    count_tracker_update();
+
+    assert(count_objective_is_complete(OBJECTIVE_SPIRIT_PLATFORM));
+    assert(count_tracker_get_spirit_rusty_switch_count() == 2);
+    assert(!count_objective_is_complete(OBJECTIVE_SPIRIT_MQ_RUSTY_SWITCH_3));
+    assert(!count_objective_is_complete(OBJECTIVE_SPIRIT_MQ_RUSTY_SWITCH_4));
+}
+
+static void test_mq_spirit_rusty_switches() {
+    reset_tracker(SCENE_SPIRIT_TEMPLE, 0, 1);
+    z64_game.temp_swch_flags = (1 << (0x23 - 0x20)) | (1 << (0x3C - 0x20));
+    z64_file.scene_flags[SCENE_SPIRIT_TEMPLE].swch = (1 << 0x0D) | (1 << 0x13);
+    count_tracker_update();
+
+    assert(count_tracker_get_spirit_rusty_switch_count() == 4);
+
+    reset_tracker(SCENE_SPIRIT_TEMPLE, 0, 1);
+    z64_game.temp_swch_flags = 1 << (0x23 - 0x20);
+    z64_file.scene_flags[SCENE_SPIRIT_TEMPLE].swch = 1 << 0x0D;
+    count_tracker_update();
+    assert(count_tracker_get_spirit_rusty_switch_count() == 2);
+}
+
 int main() {
     test_silver_room_transition_and_dedup();
     test_mq_silver_room_uses_mq_switch();
@@ -612,5 +665,9 @@ int main() {
     test_blue_warp_flags_imply_completion_and_boss_clear();
     test_existing_spirit_reward_does_not_imply_completion();
     test_spirit_reward_transition_marks_completion();
+    test_miniboss_room_clear_objectives();
+    test_poe_sister_switch_objectives();
+    test_vanilla_spirit_event_switches();
+    test_mq_spirit_rusty_switches();
     return 0;
 }

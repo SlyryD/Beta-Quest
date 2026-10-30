@@ -31,6 +31,8 @@
 #define ENEMY_ENCOUNTER_BASE 32
 #define GANONDORF_ENCOUNTER_ID (COUNT_ENCOUNTER_CAPACITY - 1)
 #define NABOORU_KNUCKLE_CLEAR_FLAG (1 << 1)
+#define BIG_OCTO_CLEAR_FLAG (1 << 6)
+#define DARK_LINK_CLEAR_FLAG (1 << 13)
 
 typedef enum {
     ENEMY_IRON_KNUCKLE,
@@ -333,6 +335,13 @@ static uint32_t get_current_clear_flags() {
     return z64_file.scene_flags[z64_game.scene_index].clear | z64_game.clear_flags | z64_game.temp_clear_flags;
 }
 
+static bool get_current_switch_flag(uint8_t flag) {
+    if (flag < 0x20) {
+        return get_current_switch_flags() & (1u << flag);
+    }
+    return z64_game.temp_swch_flags & (1u << (flag - 0x20));
+}
+
 static bool get_event_check(uint8_t flag) {
     return z64_file.event_chk_inf[flag >> 4] & (1 << (flag & 0xF));
 }
@@ -603,6 +612,56 @@ static bool enemy_encounters_complete(const uint8_t* ids, uint8_t count) {
     return true;
 }
 
+static void complete_objective_from_switch(uint8_t switch_flag, uint8_t objective) {
+    if (get_current_switch_flag(switch_flag)) {
+        count_objective_complete(objective);
+    }
+}
+
+static void track_dungeon_event_flags() {
+    switch (z64_game.scene_index) {
+        case SCENE_JABU_JABU:
+            if (get_current_clear_flags() & BIG_OCTO_CLEAR_FLAG) {
+                count_objective_complete(OBJECTIVE_BIG_OCTO);
+            }
+            break;
+        case SCENE_FOREST_TEMPLE:
+            complete_objective_from_switch(0x1F, OBJECTIVE_POE_AMY);
+            complete_objective_from_switch(0x1D, OBJECTIVE_POE_JOELLE);
+            complete_objective_from_switch(0x1E, OBJECTIVE_POE_BETH);
+            complete_objective_from_switch(0x1C, OBJECTIVE_POE_MEG);
+            break;
+        case SCENE_WATER_TEMPLE:
+            if (get_current_clear_flags() & DARK_LINK_CLEAR_FLAG) {
+                count_objective_complete(OBJECTIVE_DARK_LINK);
+            }
+            break;
+        case SCENE_SPIRIT_TEMPLE:
+            complete_objective_from_switch(0x04, OBJECTIVE_SPIRIT_PLATFORM);
+            if (z64_file.master_quest) {
+                complete_objective_from_switch(0x23, OBJECTIVE_SPIRIT_RUSTY_SWITCH_1);
+                complete_objective_from_switch(0x0D, OBJECTIVE_SPIRIT_RUSTY_SWITCH_2);
+                complete_objective_from_switch(0x3C, OBJECTIVE_SPIRIT_MQ_RUSTY_SWITCH_3);
+                complete_objective_from_switch(0x13, OBJECTIVE_SPIRIT_MQ_RUSTY_SWITCH_4);
+            } else {
+                complete_objective_from_switch(0x07, OBJECTIVE_SPIRIT_RUSTY_SWITCH_1);
+                complete_objective_from_switch(0x0B, OBJECTIVE_SPIRIT_RUSTY_SWITCH_2);
+            }
+            break;
+    }
+}
+
+uint8_t count_tracker_get_spirit_rusty_switch_count() {
+    uint8_t count = count_objective_is_complete(OBJECTIVE_SPIRIT_RUSTY_SWITCH_1) +
+                    count_objective_is_complete(OBJECTIVE_SPIRIT_RUSTY_SWITCH_2);
+
+    if (z64_file.master_quest) {
+        count += count_objective_is_complete(OBJECTIVE_SPIRIT_MQ_RUSTY_SWITCH_3) +
+                 count_objective_is_complete(OBJECTIVE_SPIRIT_MQ_RUSTY_SWITCH_4);
+    }
+    return count;
+}
+
 static void track_objective_progress() {
     static const uint8_t vanilla_dodongo_lizalfos[] = { 11, 12, 13, 14 };
     static const uint8_t mq_dodongo_lizalfos[] = { 17, 18, 19, 20 };
@@ -745,6 +804,7 @@ void count_tracker_update() {
     track_enemy_deaths();
     track_nabooru_iron_knuckle();
     track_boss_clears(clear);
+    track_dungeon_event_flags();
     track_spirit_and_shadow_completion(true);
     commit_pending_enemy_encounters(switches, clear);
     track_objective_progress();

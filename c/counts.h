@@ -148,5 +148,6 @@ bool count_event_check_set(uint8_t flag);
 bool count_item_get_set(uint8_t flag);
 uint8_t count_completed_objectives(uint8_t first, uint8_t count);
 uint8_t get_global_count(uint8_t count_index);
+bool all_counts_nonzero(const uint8_t* counts, uint8_t count);
 
 #endif

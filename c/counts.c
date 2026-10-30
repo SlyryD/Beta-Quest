@@ -48,6 +48,14 @@ uint8_t get_tokens_with_mask(uint8_t gs_flags_index, uint8_t mask) {
     return tokens;
 }
 
+bool all_counts_nonzero(const uint8_t* counts, uint8_t count) {
+    for (uint8_t i = 0; i < count; i++) {
+        if (counts[i] == 0)
+            return false;
+    }
+    return true;
+}
+
 uint8_t get_global_medallions() {
     return z64_file.light_medallion + z64_file.shadow_medallion + z64_file.spirit_medallion + z64_file.water_medallion +
            z64_file.fire_medallion + z64_file.forest_medallion;

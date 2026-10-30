@@ -15,6 +15,7 @@ typedef struct {
     uint32_t left : 10;
     uint32_t top : 9;
     uint32_t blue : 1;
+    uint32_t dim : 1;
 } text_char_t;
 
 static text_char_t* text_end = NULL;
@@ -25,7 +26,7 @@ void text_init() {
     text_end = text_buf;
 }
 
-static int text_print_color(const char* s, int left, int top, bool blue) {
+static int text_print_color(const char* s, int left, int top, bool blue, bool dim) {
     char c;
     int count = 0;
     while (c = *(s++)) {
@@ -35,6 +36,7 @@ static int text_print_color(const char* s, int left, int top, bool blue) {
         text_end->left = left;
         text_end->top = top;
         text_end->blue = blue;
+        text_end->dim = dim;
         text_end++;
         left += font_sprite.tile_w;
         count++;
@@ -43,11 +45,15 @@ static int text_print_color(const char* s, int left, int top, bool blue) {
 }
 
 int text_print(const char* s, int left, int top) {
-    return text_print_color(s, left, top, false);
+    return text_print_color(s, left, top, false, false);
 }
 
 int text_print_blue(const char* s, int left, int top) {
-    return text_print_color(s, left, top, true);
+    return text_print_color(s, left, top, true, false);
+}
+
+int text_print_dim(const char* s, int left, int top) {
+    return text_print_color(s, left, top, false, true);
 }
 
 void text_flush(z64_disp_buf_t* db) {
@@ -62,7 +68,7 @@ void text_flush(z64_disp_buf_t* db) {
             text_p++;
 
             int bucket = (c - 32) / text_bucket_size;
-            if (bucket != i || text_p[-1].blue)
+            if (bucket != i || text_p[-1].blue || text_p[-1].dim)
                 continue;
 
             int tile_index = (c - 32) % text_bucket_size;
@@ -93,6 +99,34 @@ void text_flush(z64_disp_buf_t* db) {
         }
 
         if (has_blue) {
+            gDPPipeSync(db->p++);
+            gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+        }
+
+        bool has_dim = false;
+        text_p = text_buf;
+        while (text_p < text_end) {
+            char c = text_p->c;
+            int left = text_p->left;
+            int top = text_p->top;
+            bool dim = text_p->dim;
+            text_p++;
+
+            int bucket = (c - 32) / text_bucket_size;
+            if (bucket != i || !dim)
+                continue;
+
+            if (!has_dim) {
+                gDPPipeSync(db->p++);
+                gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0x40);
+                has_dim = true;
+            }
+
+            int tile_index = (c - 32) % text_bucket_size;
+            sprite_draw(db, &font_sprite, tile_index, left, top, font_sprite.tile_w, font_sprite.tile_h);
+        }
+
+        if (has_dim) {
             gDPPipeSync(db->p++);
             gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
         }

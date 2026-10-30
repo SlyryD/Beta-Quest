@@ -161,8 +161,11 @@ V3.0 Changes:
 
 * Expanded the inventory pause overlays:
 
+  * The Dungeons overlay keeps names white, adds the owned dungeon reward after each boss indicator, and
+    outlines the child/adult Skulltula cells, adult current-key cells, and Spiritual Stone cells for aggregate goals
+
   * Hold A + D-Up for Dungeon Events, including dungeon-specific kills, boss doors, Spirit events,
-    Ganon trial beams and named trials, dungeon Skulltulas, and Sky Temple completion
+    Ganon trial beams and named trials, and Sky Temple completion
 
   * Counts now groups Stalfos, Gibdos, Iron Knuckles, Dead Hands, White Wolfos, and Skull Kids beside
     icon-labeled Bean, Ice Trap, Gold/Silver Rupee, Cow, Heart, and soft-soil Skulltula totals
@@ -171,15 +174,14 @@ V3.0 Changes:
     Bombchu Bowling, Cow in House, and child/adult regional Skulltula subsets
 
   * Bottom of the Well, Ice Cavern, Gerudo Fortress, and Gerudo Training Ground retain their original
-    no-completion-skull/no-blue-name behavior
+    no-completion-skull/no-reward-icon behavior
 
 * Extended the existing fixed-size V3 count record through its reserved eight-byte tail. Existing V3
   records remain valid, while new binary objectives and unique Cow milk awards persist across saves.
 
-* Seven approved Dungeon Events indicators remain intentionally incomplete until reliable objective-specific
-  Vanilla/Master Quest hooks are identified: Big Octo, the Spirit final platform, both Spirit rusty switches,
-  Dark Link, and the four Poe sisters. These indicators do not report success from broader dungeon-completion
-  proxies.
+* Dungeon Events uses exact persistent room-clear and switch flags for Big Octo, Dark Link, the four Poe
+  sisters, the Spirit final platform, and the Spirit rusty switches. The rusty-switch indicator tracks both
+  Vanilla switches or all four Master Quest switches.
 
 * Enemy defeat totals, including Skull Kids, update after each kill and roll back if a multi-enemy room is left
   uncleared
