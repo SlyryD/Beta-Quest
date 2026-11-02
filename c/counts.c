@@ -159,6 +159,23 @@ bool get_trial_beam_cleared(uint8_t trial_index) {
     return trial_index < array_size(trial_flags) && count_event_check_set(trial_flags[trial_index]);
 }
 
+static uint8_t get_fire_gorons_freed(void) {
+    static const uint8_t vanilla_flags[] = { 0x21, 0x11, 0x0D, 0x2A, 0x2E, 0x26, 0x05, 0x09, 0x15 };
+    static const uint8_t mq_flags[] = { 0x24, 0x04, 0x08, 0x14 };
+    const uint8_t* flags = z64_file.master_quest ? mq_flags : vanilla_flags;
+    uint8_t count = get_fire_goron_total();
+    uint8_t freed = 0;
+
+    for (uint8_t i = 0; i < count; i++) {
+        freed += count_scene_switch_set(SCENE_FIRE_TEMPLE, flags[i]);
+    }
+    return freed;
+}
+
+uint8_t get_fire_goron_total(void) {
+    return z64_file.master_quest ? 4 : 9;
+}
+
 uint8_t get_global_dungeon_items(uint8_t mask) {
     uint8_t count = 0;
     int dungeon_items_length = array_size(z64_file.dungeon_items);
@@ -271,6 +288,9 @@ uint8_t get_global_count(uint8_t count_index) {
                 count += get_tokens_with_mask(soil_skulltulas[i].index, soil_skulltulas[i].mask);
             }
             return count;
+        }
+        case GCOUNT_FIRE_GORON: {
+            return get_fire_gorons_freed();
         }
         case GCOUNT_IRON_KNUCKLE:
         case GCOUNT_WHITE_WOLFOS:

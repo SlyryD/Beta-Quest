@@ -1,8 +1,7 @@
+#include "bingo.h"
 #include "count_tracker.h"
 #include "counts.h"
-#include "dungeon_info.h"
 #include "stdbool.h"
-#include "world_map_info.h"
 #include "z64.h"
 
 static void Message_AddCharacter(z64_message_ctxt_t* msgCtx, void* pFont, uint32_t* pDecodedBufPos,
@@ -44,8 +43,8 @@ static bool decode_dungeon_count(z64_message_ctxt_t* msgCtx, z64_font_t* pFont, 
         dungeon_index = z64_file.minimap_index;
     }
 
-    uint8_t count = get_dungeon_count(dungeon_index, count_index);
-    if (count == 0xFF) {
+    uint16_t count = bingo_get_dungeon_count(dungeon_index, count_index);
+    if (count == UINT16_MAX) {
         return false;
     }
 
@@ -60,12 +59,12 @@ static bool decode_area_count(z64_message_ctxt_t* msgCtx, z64_font_t* pFont, cha
     uint8_t count_index = msgRaw[++(msgCtx->msg_buf_pos)];
 
     if (area_index == 0xFF) {
-        area_index = get_current_area_index();
+        area_index = bingo_get_current_area_index();
     }
 
-    uint8_t count = get_area_count(area_index, count_index);
+    uint16_t count = bingo_get_area_count(area_index, count_index);
 
-    if (count == 0xFF) {
+    if (count == UINT16_MAX) {
         return false;
     }
 
@@ -80,8 +79,8 @@ static bool decode_global_count(z64_message_ctxt_t* msgCtx, z64_font_t* pFont, c
 
     count_tracker_update_chests();
 
-    uint8_t count = get_global_count(count_index);
-    if (count == 0xFF) {
+    uint16_t count = bingo_get_global_count(count_index);
+    if (count == UINT16_MAX) {
         return false;
     }
 

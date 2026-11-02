@@ -4,6 +4,7 @@
 #include "dungeon_info.h"
 #include "entrance_info.h"
 #include "gfx.h"
+#include "gear_info.h"
 #include "text.h"
 #include "util.h"
 #include "dpad.h"
@@ -32,6 +33,7 @@ void after_game_state_update() {
     draw_dungeon_info(&(z64_ctxt.gfx->overlay));
     draw_dungeon_events_info(&(z64_ctxt.gfx->overlay));
     draw_counts_info(&(z64_ctxt.gfx->overlay));
+    draw_gear_info(&(z64_ctxt.gfx->overlay));
     draw_entrance_info(&(z64_ctxt.gfx->overlay));
     draw_world_map_info(&(z64_ctxt.gfx->overlay));
 }

@@ -124,6 +124,7 @@ typedef enum {
     GCOUNT_COW = 0x57,
     GCOUNT_HEART = 0x58,
     GCOUNT_SOIL_SKULLTULA = 0x59,
+    GCOUNT_FIRE_GORON = 0x5A,
     // Enemies
     GCOUNT_IRON_KNUCKLE = 0x60,
     GCOUNT_WHITE_WOLFOS = 0x61,
@@ -148,6 +149,7 @@ bool count_event_check_set(uint8_t flag);
 bool count_item_get_set(uint8_t flag);
 uint8_t count_completed_objectives(uint8_t first, uint8_t count);
 uint8_t get_global_count(uint8_t count_index);
+uint8_t get_fire_goron_total(void);
 bool all_counts_nonzero(const uint8_t* counts, uint8_t count);
 
 #endif

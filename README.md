@@ -161,20 +161,36 @@ V3.0 Changes:
 
 * Expanded the inventory pause overlays:
 
+  * All 255 goals from the pinned Beta Quest BingoSync generator are represented by stable IDs in `bingo.h`.
+    `bingo.c` derives live current/target/completion state from inventory, scene flags, dungeon state, and the
+    persistent encounter/objective tracker. Exact ammo, current bottle/trade contents, Rupees, and unused keys
+    remain reversible rather than being latched as completed.
+
   * The Dungeons overlay keeps names white, adds the owned dungeon reward after each boss indicator, and
-    outlines the child/adult Skulltula cells, adult current-key cells, and Spiritual Stone cells for aggregate goals
+    outlines the child/adult Skulltula cells, adult current-key cells, and Spiritual Stone cells using the shared
+    Bingo goal evaluators
 
   * Hold A + D-Up for Dungeon Events, including dungeon-specific kills, boss doors, Spirit events,
     Ganon trial beams and named trials, and Sky Temple completion
 
   * Counts now groups Stalfos, Gibdos, Iron Knuckles, Dead Hands, White Wolfos, and Skull Kids beside
-    icon-labeled Bean, Ice Trap, Gold/Silver Rupee, Cow, Heart, and soft-soil Skulltula totals
+    icon-labeled Bean, Ice Trap, Gold/Silver Rupee, Cow, and soft-soil Skulltula totals
 
   * Areas now exposes named rupee chests, the upper Fortress chest, named bean/Heart Piece goals,
     Bombchu Bowling, Cow in House, and child/adult regional Skulltula subsets
 
+  * Hold A + D-Down for Gear, including equipment and upgrade progressions, current bottle and trade contents,
+    ammo, Rupees, songs, Magic/Double Magic, Double Defense, Stone of Agony, Skulltulas, and Hearts
+
+  * Strength goals use exact decoded upgrade values: Bracelet 1, Silver 2, Gold 3, Black 4, Green 5, and Blue 6.
+    The glitched colors come from the renderer reading beyond its two-entry Silver/Gold color table; value 7 is
+    Bronze but is not a current Bingo goal.
+
   * Bottom of the Well, Ice Cavern, Gerudo Fortress, and Gerudo Training Ground retain their original
     no-completion-skull/no-reward-icon behavior
+
+* Count-bearing message control codes now delegate through the Bingo metric API, keeping pickup-message and
+  pause-menu totals consistent.
 
 * Extended the existing fixed-size V3 count record through its reserved eight-byte tail. Existing V3
   records remain valid, while new binary objectives and unique Cow milk awards persist across saves.

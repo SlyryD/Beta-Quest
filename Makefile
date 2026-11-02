@@ -48,13 +48,18 @@ clean:
 	rm -f $(OBJDIR)/*.o
 
 test:
+	python3 scripts/generate_bingo_catalog.py --check
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/count_save_test.c c/memory.c -o $(OUTDIR)/count_save_test
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/memory_test.c c/memory.c -o $(OUTDIR)/memory_test
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror tests/count_tracker_test.c -o $(OUTDIR)/count_tracker_test
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -Wno-sign-compare -Wno-type-limits \
 		-ffunction-sections -fdata-sections -I/opt/n64/mips64/n64-sysroot/usr/include \
 		tests/counts_test.c c/counts.c -Wl,--gc-sections -o $(OUTDIR)/counts_test
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -Wno-sign-compare -Wno-type-limits \
+		-D_GNU_SOURCE -I/opt/n64/mips64/n64-sysroot/usr/include \
+		tests/bingo_test.c c/bingo.c -o $(OUTDIR)/bingo_test
 	$(OUTDIR)/count_save_test
 	$(OUTDIR)/memory_test
 	$(OUTDIR)/count_tracker_test
 	$(OUTDIR)/counts_test
+	$(OUTDIR)/bingo_test

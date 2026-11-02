@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 
+#include "bingo.h"
 #include "counts.h"
 #include "gfx.h"
 #include "save.h"
@@ -293,7 +294,7 @@ static void draw_area_objectives(z64_disp_buf_t* db, int area_index, int left, i
 
     switch (area_index) {
         case AREA_WASTELAND:
-            draw_area_rupee(db, left, top, get_global_count(GCOUNT_WASTELAND_PURPLE_RUPEE), 0xB0, 0x50, 0xE0);
+            draw_area_rupee(db, left, top, bingo_get_global_count(GCOUNT_WASTELAND_PURPLE_RUPEE), 0xB0, 0x50, 0xE0);
             break;
         case AREA_FORTRESS:
             draw_area_sprite(db, &map_chest_sprite, 0, left, top, count_scene_chest_opened(SCENE_GERUDOS_FORTRESS, 0),
@@ -309,7 +310,6 @@ static void draw_area_objectives(z64_disp_buf_t* db, int area_index, int left, i
         case AREA_MARKET:
             draw_area_sprite(db, &items_sprite, 0x09, left, top,
                              count_objective_is_complete(OBJECTIVE_BOMBCHU_BOWLING), 0xFF, 0xFF, 0xFF);
-            text_print("Bowling", left + 16, top);
             break;
         case AREA_DEATH_MOUNTAIN: {
             draw_area_sprite(db, &items_sprite, 0x10, left, top,
@@ -330,7 +330,7 @@ static void draw_area_objectives(z64_disp_buf_t* db, int area_index, int left, i
             break;
         }
         case AREA_KOKIRI_FOREST:
-            draw_area_rupee(db, left, top, get_global_count(GCOUNT_MIDOS_GREEN_RUPEE), 0x00, 0xC8, 0x40);
+            draw_area_rupee(db, left, top, bingo_get_global_count(GCOUNT_MIDOS_GREEN_RUPEE), 0x00, 0xC8, 0x40);
             draw_area_sprite(db, &items_sprite, 0x1A, left + 18, top,
                              count_objective_is_complete(OBJECTIVE_COW_0), 0xFF, 0xFF, 0xFF);
             break;
@@ -413,7 +413,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
     // Draw skull count
 
     for (int i = 0; i < world_map_areas_length; i++) {
-        uint8_t tokens = get_area_tokens(i);
+        uint8_t tokens = bingo_get_area_count(i, ACOUNT_TOKEN);
 
         char count[2] = "0";
         count[0] += (tokens % 10);
@@ -447,7 +447,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
             continue;
         }
 
-        int8_t hps = get_area_hps(i);
+        int8_t hps = bingo_get_area_count(i, ACOUNT_HEART_PIECE);
 
         char count[2] = "0";
         count[0] += (hps % 10);
