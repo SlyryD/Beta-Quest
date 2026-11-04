@@ -1,16 +1,15 @@
-#include "world_map_info.h"
+#include "area_info.h"
 
 #include <stdbool.h>
 
 #include "bingo.h"
 #include "counts.h"
 #include "gfx.h"
+#include "pause_menu.h"
 #include "save.h"
 #include "text.h"
 #include "util.h"
 #include "z64.h"
-
-#define PAUSE_ITEM 0
 
 typedef enum {
     HS_HBA = 0x00, // horseback archery
@@ -122,29 +121,32 @@ static const hp_check_t zora_hp_checks[] = {
 
 typedef struct {
     uint8_t index;
-    uint8_t gs_flags_index;
+    gs_flags_index_t gs_flags_index;
+    uint8_t child_token_mask;
+    uint8_t adult_token_mask;
     const hp_check_t* hp_checks;
     uint8_t hp_check_count;
     char name[15];
 } world_map_area_entry_t;
 
-#define WORLD_MAP_AREA(area, gs_index, hp_checks, name) \
-    { AREA_##area, gs_index, hp_checks, array_size(hp_checks), name }
-#define WORLD_MAP_AREA_WITHOUT_HPS(area, gs_index, name) { AREA_##area, gs_index, 0, 0, name }
+#define WORLD_MAP_AREA(area, child_mask, adult_mask, hp_checks, name) \
+    { AREA_##area, GS_FLAGS_##area, child_mask, adult_mask, hp_checks, array_size(hp_checks), name }
+#define WORLD_MAP_AREA_WITHOUT_HPS(area, child_mask, adult_mask, name) \
+    { AREA_##area, GS_FLAGS_##area, child_mask, adult_mask, 0, 0, name }
 
 static const world_map_area_entry_t world_map_areas[] = {
-    WORLD_MAP_AREA(WASTELAND, 21, wasteland_hp_checks, "Wasteland Area"),
-    WORLD_MAP_AREA(FORTRESS, 20, fortress_hp_checks, "Fortress Area"),
-    WORLD_MAP_AREA(GERUDO_VALLEY, 19, gerudo_valley_hp_checks, "Gerudo Valley"),
-    WORLD_MAP_AREA(LAKE_HYLIA, 18, lake_hylia_hp_checks, "Lake Hylia"),
-    WORLD_MAP_AREA(LON_LON_RANCH, 11, lon_lon_ranch_hp_checks, "Lon Lon Ranch"),
-    WORLD_MAP_AREA(MARKET, 14, market_hp_checks, "Market Area"),
-    WORLD_MAP_AREA(HYRULE_FIELD, 10, hyrule_field_hp_checks, "Hyrule Field"),
-    WORLD_MAP_AREA(DEATH_MOUNTAIN, 15, death_mountain_hp_checks, "Death Mountain"),
-    WORLD_MAP_AREA(KAKARIKO, 16, kakariko_hp_checks, "Kakariko Area"),
-    WORLD_MAP_AREA(LOST_WOODS, 13, lost_woods_hp_checks, "Lost Woods"),
-    WORLD_MAP_AREA_WITHOUT_HPS(KOKIRI_FOREST, 12, "Kokiri Forest"),
-    WORLD_MAP_AREA(ZORA, 17, zora_hp_checks, "Zora Area"),
+    WORLD_MAP_AREA(WASTELAND, 0x01, 0x0E, wasteland_hp_checks, "Wasteland Area"),
+    WORLD_MAP_AREA(FORTRESS, 0x00, 0x03, fortress_hp_checks, "Fortress Area"),
+    WORLD_MAP_AREA(GERUDO_VALLEY, 0x03, 0x0C, gerudo_valley_hp_checks, "Gerudo Valley"),
+    WORLD_MAP_AREA(LAKE_HYLIA, 0x07, 0x18, lake_hylia_hp_checks, "Lake Hylia"),
+    WORLD_MAP_AREA(LON_LON_RANCH, 0x0F, 0x00, lon_lon_ranch_hp_checks, "Lon Lon Ranch"),
+    WORLD_MAP_AREA(MARKET, 0x06, 0x01, market_hp_checks, "Market Area"),
+    WORLD_MAP_AREA(HYRULE_FIELD, 0x03, 0x00, hyrule_field_hp_checks, "Hyrule Field"),
+    WORLD_MAP_AREA(DEATH_MOUNTAIN, 0x07, 0xF8, death_mountain_hp_checks, "Death Mountain"),
+    WORLD_MAP_AREA(KAKARIKO, 0xBF, 0x40, kakariko_hp_checks, "Kakariko Area"),
+    WORLD_MAP_AREA(LOST_WOODS, 0x03, 0x0C, lost_woods_hp_checks, "Lost Woods"),
+    WORLD_MAP_AREA_WITHOUT_HPS(KOKIRI_FOREST, 0x03, 0x04, "Kokiri Forest"),
+    WORLD_MAP_AREA(ZORA, 0x07, 0xF8, zora_hp_checks, "Zora Area"),
 };
 
 #undef WORLD_MAP_AREA
@@ -259,29 +261,9 @@ uint8_t get_area_count(uint8_t area_index, uint8_t count_index) {
     }
 }
 
-static void format_area_count(char count[4], uint8_t value) {
-    if (value >= 100) {
-        count[0] = '0' + value / 100;
-        count[1] = '0' + (value / 10) % 10;
-        count[2] = '0' + value % 10;
-        count[3] = '\0';
-    } else if (value >= 10) {
-        count[0] = '0' + value / 10;
-        count[1] = '0' + value % 10;
-        count[2] = '\0';
-    } else {
-        count[0] = '0' + value;
-        count[1] = '\0';
-    }
-}
-
 static void draw_area_sprite(z64_disp_buf_t* db, sprite_t* sprite, int tile, int left, int top, bool complete,
                              uint8_t red, uint8_t green, uint8_t blue) {
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, red, green, blue, complete ? 0xFF : 0x40);
-    sprite_load(db, sprite, tile, 1);
-    sprite_draw(db, sprite, 0, left, top, 14, 14);
+    pause_menu_draw_sprite(db, sprite, tile, left, top, 14, 14, complete, red, green, blue);
 }
 
 static void draw_area_rupee(z64_disp_buf_t* db, int left, int top, bool complete, uint8_t red, uint8_t green,
@@ -294,7 +276,8 @@ static void draw_area_objectives(z64_disp_buf_t* db, int area_index, int left, i
 
     switch (area_index) {
         case AREA_WASTELAND:
-            draw_area_rupee(db, left, top, bingo_get_global_count(GCOUNT_WASTELAND_PURPLE_RUPEE), 0xB0, 0x50, 0xE0);
+            draw_area_rupee(db, left, top, count_scene_chest_opened(SCENE_HAUNTED_WASTELAND, 0x00),
+                            0xB0, 0x50, 0xE0);
             break;
         case AREA_FORTRESS:
             draw_area_sprite(db, &map_chest_sprite, 0, left, top, count_scene_chest_opened(SCENE_GERUDOS_FORTRESS, 0),
@@ -321,12 +304,8 @@ static void draw_area_objectives(z64_disp_buf_t* db, int area_index, int left, i
             draw_area_sprite(db, &quest_items_sprite, 13, left + 62, top, true, 0xFF, 0xFF, 0xFF);
             uint8_t dmc_hps = count_scene_collect_set(SCENE_DEATH_MOUNTAIN_CRATER, 0x08) +
                               count_scene_collect_set(SCENE_DEATH_MOUNTAIN_CRATER, 0x02);
-            format_area_count(count, dmc_hps);
+            pause_menu_format_value(count, dmc_hps);
             text_print(count, left + 77, top);
-            text_print("C+", left + 85, top);
-            draw_area_sprite(db, &quest_items_sprite, 11, left + 101, top, true, 0xFF, 0xFF, 0xFF);
-            format_area_count(count, get_tokens_with_mask(15, 0x07));
-            text_print(count, left + 116, top);
             break;
         }
         case AREA_KOKIRI_FOREST:
@@ -336,32 +315,14 @@ static void draw_area_objectives(z64_disp_buf_t* db, int area_index, int left, i
             break;
         case AREA_ZORA:
             draw_area_sprite(db, &items_sprite, 0x35, left, top, count_event_check_set(0xD0), 0xFF, 0xFF, 0xFF);
-            text_print("C+", left + 16, top);
-            draw_area_sprite(db, &quest_items_sprite, 11, left + 32, top, true, 0xFF, 0xFF, 0xFF);
-            format_area_count(count, get_tokens_with_mask(17, 0x07));
-            text_print(count, left + 47, top);
-            text_print("A+", left + 55, top);
-            draw_area_sprite(db, &quest_items_sprite, 11, left + 71, top, true, 0xFF, 0xFF, 0xFF);
-            format_area_count(count, get_tokens_with_mask(17, 0xF8));
-            text_print(count, left + 86, top);
             break;
     }
 }
 
-void draw_world_map_info(z64_disp_buf_t* db) {
-    int draw = CFG_WORLD_MAP_INFO_ENABLE && z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == PAUSE_ITEM && !z64_game.pause_ctxt.changing &&
-               z64_ctxt.input[0].raw.pad.a && !z64_ctxt.input[0].raw.pad.dl &&
-               z64_ctxt.input[0].raw.pad.dr;
-    if (!draw) {
+void draw_area_info(z64_disp_buf_t* db) {
+    if (!CFG_WORLD_MAP_INFO_ENABLE || pause_item_menu_active() != PAUSE_ITEM_MENU_AREAS) {
         return;
     }
-
-    db->p = db->buf;
-
-    // Call setup display list
-
-    gSPDisplayList(db->p++, &setup_db);
 
     // Set up dimensions
 
@@ -375,19 +336,7 @@ void draw_world_map_info(z64_disp_buf_t* db) {
     int left = bg_left + padding;
     int start_top = bg_top + padding;
 
-    // Draw background
-
-    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(db->p++, 0, 0, 0x00, 0x00, 0x00, 0xD0);
-    gSPTextureRectangle(db->p++, bg_left << 2, bg_top << 2, (bg_left + bg_width) << 2, (bg_top + bg_height) << 2, 0, 0,
-                        0, 1 << 10, 1 << 10);
-
-    // Set the primary color to white for drawing sprites
-
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+    pause_menu_begin(db, bg_left, bg_top, bg_width, bg_height, 0xD0);
 
     // Draw area names
 
@@ -410,18 +359,21 @@ void draw_world_map_info(z64_disp_buf_t* db) {
 
     left += icon_size + padding;
 
-    // Draw skull count
+    // Draw total, child, and adult token counts.
 
     for (int i = 0; i < world_map_areas_length; i++) {
-        uint8_t tokens = bingo_get_area_count(i, ACOUNT_TOKEN);
-
-        char count[2] = "0";
-        count[0] += (tokens % 10);
+        const world_map_area_entry_t* w = &world_map_areas[i];
+        uint8_t child_tokens = get_tokens_with_mask(w->gs_flags_index, w->child_token_mask);
+        uint8_t adult_tokens = get_tokens_with_mask(w->gs_flags_index, w->adult_token_mask);
+        char count[] = "0 (0/0)";
+        count[0] += child_tokens + adult_tokens;
+        count[3] += child_tokens;
+        count[5] += adult_tokens;
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }
 
-    left += icon_size + padding;
+    left += (7 * font_sprite.tile_w) + padding;
 
     // Draw hp sprite
 
@@ -462,10 +414,5 @@ void draw_world_map_info(z64_disp_buf_t* db) {
         draw_area_objectives(db, i, left, top);
     }
 
-    // Finish
-
-    text_flush(db);
-
-    gDPFullSync(db->p++);
-    gSPEndDisplayList(db->p++);
+    pause_menu_end(db);
 }

@@ -214,7 +214,7 @@ static enemy_encounter_t mq_enemy_encounters[] = {
 };
 
 typedef char
-    assert_enemy_encounters_fit    [ENEMY_ENCOUNTER_BASE + sizeof(mq_enemy_encounters) / sizeof(*mq_enemy_encounters) <= GANONDORF_ENCOUNTER_ID
+    assert_enemy_encounters_fit[ENEMY_ENCOUNTER_BASE + sizeof(mq_enemy_encounters) / sizeof(*mq_enemy_encounters) <= GANONDORF_ENCOUNTER_ID
                                     ? 1
                                     : -1];
 typedef char assert_boss_encounters_fit
@@ -270,9 +270,9 @@ static const silver_room_t mq_silver_rooms[] = {
 #undef SILVER_ROOM
 
 typedef char
-    assert_silver_room_encounters_fit[sizeof(vanilla_silver_rooms) / sizeof(*vanilla_silver_rooms) <=
-                                                  ENEMY_ENCOUNTER_BASE &&
-                                              sizeof(mq_silver_rooms) / sizeof(*mq_silver_rooms) <= ENEMY_ENCOUNTER_BASE
+    assert_silver_room_encounters_fit[(sizeof(vanilla_silver_rooms) / sizeof(*vanilla_silver_rooms) <=
+                                           ENEMY_ENCOUNTER_BASE &&
+                                       sizeof(mq_silver_rooms) / sizeof(*mq_silver_rooms) <= ENEMY_ENCOUNTER_BASE)
                                           ? 1
                                           : -1];
 
@@ -618,6 +618,16 @@ static void complete_objective_from_switch(uint8_t switch_flag, uint8_t objectiv
     }
 }
 
+static void track_trial_ends() {
+    static const uint8_t vanilla_trial_end_flags[] = { 0x12, 0x09, 0x19, 0x0E, 0x1C, 0x1B };
+    static const uint8_t mq_trial_end_flags[] = { 0x14, 0x01, 0x0E, 0x38, 0x02, 0x0B };
+    const uint8_t* flags = z64_file.master_quest ? mq_trial_end_flags : vanilla_trial_end_flags;
+
+    for (trial_t trial = TRIAL_LIGHT; trial < TRIAL_COUNT; trial++) {
+        complete_objective_from_switch(flags[trial], OBJECTIVE_TRIAL_LIGHT_END + trial);
+    }
+}
+
 static void track_dungeon_event_flags() {
     switch (z64_game.scene_index) {
         case SCENE_JABU_JABU:
@@ -647,6 +657,9 @@ static void track_dungeon_event_flags() {
                 complete_objective_from_switch(0x07, OBJECTIVE_SPIRIT_RUSTY_SWITCH_1);
                 complete_objective_from_switch(0x0B, OBJECTIVE_SPIRIT_RUSTY_SWITCH_2);
             }
+            break;
+        case SCENE_INSIDE_GANONS_CASTLE:
+            track_trial_ends();
             break;
     }
 }
@@ -778,13 +791,6 @@ void count_tracker_update() {
 
     if (scene != previous_scene || room != previous_room) {
         sky_temple_active = z64_file.entrance_index == 0x00A0;
-        if (scene == SCENE_PHANTOM_GANON && previous_scene == SCENE_FOREST_TEMPLE) {
-            count_objective_complete(OBJECTIVE_FOREST_BOSS_DOOR);
-        }
-        if (scene == SCENE_GANONDORF &&
-            (previous_scene == SCENE_INSIDE_GANONS_CASTLE || previous_scene == SCENE_GANONS_TOWER)) {
-            count_objective_complete(OBJECTIVE_GANON_BOSS_DOOR);
-        }
         previous_scene = scene;
         previous_room = room;
         previous_chest_flags = get_current_chest_flags();

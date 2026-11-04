@@ -256,42 +256,42 @@ ITEM_MESSAGES: list[tuple[int, str]] = [
         f"\x13\x67You received the {red('Fire', reset=None)}\x01"
         f"{red('Medallion')}! Darunia awakens as a\x01"
         f"Sage and adds his power to yours!\x01"
-        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s)!",
     ),
     (
         0x003D,
         f"\x13\x68You received the {blue('Water', reset=None)}\x01"
         f"{blue('Medallion')}! Ruto awakens as a\x01"
         f"Sage and adds her power to yours!\x01"
-        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s)!",
     ),
     (
         0x003E,
         f"\x13\x66You received the {green('Forest', reset=None)}\x01"
         f"{green('Medallion')}! Saria awakens as a\x01"
         f"Sage and adds her power to yours!\x01"
-        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s)!",
     ),
     (
         0x003F,
         f"\x13\x69You received the {yellow('Spirit', reset=None)}\x01"
         f"{yellow('Medallion')}! Nabooru awakens as a\x01"
         f"Sage and adds her power to yours!\x01"
-        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s)!",
     ),
     (
         0x0040,
         f"\x13\x6BYou received the {light_blue('Light', reset=None)}\x01"
         f"{light_blue('Medallion')}! Rauru the Sage adds\x01"
         f"his power to yours!\x01"
-        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s)!",
     ),
     (
         0x0041,
         f"\x13\x6AYou received the {pink('Shadow', reset=None)}\x01"
         f"{pink('Medallion')}! Impa awakens as a\x01"
         f"Sage and adds her power to yours!\x01"
-        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s), {global_count(GlobalCount.REWARD)} reward(s)!",
+        f"That's {global_count(GlobalCount.MEDALLION)} medallion(s)!",
     ),
     (
         0x0048,
@@ -449,21 +449,21 @@ ITEM_MESSAGES: list[tuple[int, str]] = [
         f"""\x13\x6CYou got the {green("Kokiri's Emerald")}!\x01"""
         f"""It's the Spiritual Stone of Forest,\x01"""
         f"""passed down by the Great Deku Tree.\x01"""
-        f"""That's {global_count(GlobalCount.STONE)} stone(s), {global_count(GlobalCount.REWARD)} reward(s)!""",
+        f"""That's {global_count(GlobalCount.STONE)} stone(s)!""",
     ),
     (
         0x0081,
         f"""\x13\x6DYou obtained the {red("Goron's Ruby")}!\x01"""
         f"""This is the Spiritual Stone of \x01"""
         f"""Fire passed down by the Gorons!\x01"""
-        f"""That's {global_count(GlobalCount.STONE)} stone(s) and {global_count(GlobalCount.REWARD)} reward(s)!""",
+        f"""That's {global_count(GlobalCount.STONE)} stone(s)!""",
     ),
     (
         0x0082,
         f"""\x13\x6EYou obtained {blue("Zora's Sapphire")}!\x01"""
         f"""It's the Spiritual Stone of Water,\x01"""
         f"""passed down by the Zoras!\x01"""
-        f"""That's {global_count(GlobalCount.STONE)} stone(s), {global_count(GlobalCount.REWARD)} reward(s)!""",
+        f"""That's {global_count(GlobalCount.STONE)} stone(s)!""",
     ),
     (
         0x0098,

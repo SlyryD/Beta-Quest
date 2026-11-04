@@ -1,15 +1,22 @@
 #include "bingo.h"
 
+#include "area_info.h"
 #include "count_tracker.h"
 #include "counts.h"
 #include "dungeon_info.h"
 #include "save.h"
-#include "world_map_info.h"
 #include "z64.h"
 
 #define DUNGEON_ITEM_BOSS_KEY 0x01
 #define DUNGEON_ITEM_COMPASS 0x02
 #define DUNGEON_ITEM_MAP 0x04
+
+typedef enum {
+    SWORDS = 1 << 0,
+    SHIELDS = 1 << 1,
+    TUNICS = 1 << 2,
+    BOOTS = 1 << 3
+} equipment_set_t;
 
 static bingo_progress_t progress_at_least(uint16_t current, uint16_t target) {
     bingo_progress_t progress = { current, target, current >= target };
@@ -29,18 +36,18 @@ static uint8_t item_owned(uint8_t slot, uint8_t item) {
     return z64_file.items[slot] == item;
 }
 
-static uint8_t bottle_count(uint8_t item) {
+static uint8_t inventory_item_count(uint8_t item) {
     uint8_t count = 0;
-    for (uint8_t slot = Z64_SLOT_BOTTLE_1; slot <= Z64_SLOT_BOTTLE_4; slot++) {
+    for (uint8_t slot = 0; slot < 24; slot++) {
         count += z64_file.items[slot] == item;
     }
     return count;
 }
 
-static uint8_t filled_bottle_count(void) {
+static uint8_t bottle_slot_count(void) {
     uint8_t count = 0;
     for (uint8_t slot = Z64_SLOT_BOTTLE_1; slot <= Z64_SLOT_BOTTLE_4; slot++) {
-        count += z64_file.items[slot] >= Z64_ITEM_BOTTLE && z64_file.items[slot] <= Z64_ITEM_POE;
+        count += z64_file.items[slot] != (uint8_t)Z64_ITEM_NULL;
     }
     return count;
 }
@@ -111,39 +118,17 @@ static uint8_t adult_dungeons_with_current_keys(void) {
            (current_keys(SCENE_SPIRIT_TEMPLE) > 0);
 }
 
-static uint8_t equipment_set_count(uint8_t swords, uint8_t shields, uint8_t tunics, uint8_t boots) {
-    uint8_t current = 0;
-    uint8_t target = 0;
-    if (swords) {
-        current += sword_count() >= 3;
-        target++;
-    }
-    if (shields) {
-        current += get_global_count(GCOUNT_SHIELD) >= 3;
-        target++;
-    }
-    if (tunics) {
-        current += get_global_count(GCOUNT_TUNIC) >= 3;
-        target++;
-    }
-    if (boots) {
-        current += get_global_count(GCOUNT_BOOT) >= 3;
-        target++;
-    }
-    return (target << 4) | current;
+static bingo_progress_t equipment_set_progress(equipment_set_t sets) {
+    uint8_t current = ((sets & SWORDS) && sword_count() >= 3) +
+                      ((sets & SHIELDS) && get_global_count(GCOUNT_SHIELD) >= 3) +
+                      ((sets & TUNICS) && get_global_count(GCOUNT_TUNIC) >= 3) +
+                      ((sets & BOOTS) && get_global_count(GCOUNT_BOOT) >= 3);
+    uint8_t target = !!(sets & SWORDS) + !!(sets & SHIELDS) + !!(sets & TUNICS) + !!(sets & BOOTS);
+    return progress_at_least(current, target);
 }
 
-static bingo_progress_t equipment_set_progress(uint8_t swords, uint8_t shields, uint8_t tunics, uint8_t boots) {
-    uint8_t packed = equipment_set_count(swords, shields, tunics, boots);
-    return progress_at_least(packed & 0x0F, packed >> 4);
-}
-
-static uint8_t objective_count(uint8_t first, uint8_t count) {
-    return count_completed_objectives(first, count);
-}
-
-static bingo_progress_t trial_progress(uint8_t trial) {
-    return progress_bool(get_trial_beam_cleared(trial));
+static bingo_progress_t trial_progress(trial_t trial) {
+    return progress_bool(trial < TRIAL_COUNT && count_objective_is_complete(OBJECTIVE_TRIAL_LIGHT_END + trial));
 }
 
 uint16_t bingo_get_global_count(global_count_t count_index) {
@@ -170,11 +155,36 @@ uint8_t bingo_get_inventory_item(uint8_t slot) {
 }
 
 uint8_t bingo_get_ammo(uint8_t slot) {
-    return slot < 15 && z64_file.ammo[slot] > 0 ? z64_file.ammo[slot] : 0;
+    return (slot < 15 && z64_file.ammo[slot] > 0) ? z64_file.ammo[slot] : 0;
 }
 
 uint8_t bingo_get_magic_level(void) {
-    return z64_file.magic_capacity >= 2 ? 2 : z64_file.magic_acquired ? 1 : 0;
+    return z64_file.magic_capacity >= 2 ? 2 : (z64_file.magic_acquired ? 1 : 0);
+}
+
+uint8_t bingo_get_strength_level(void) {
+    return z64_file.strength_upgrade;
+}
+
+uint8_t bingo_get_scale_level(void) {
+    return z64_file.diving_upgrade;
+}
+
+uint8_t bingo_get_capacity_level(uint8_t item) {
+    switch (item) {
+        case Z64_ITEM_BOW:
+            return z64_file.quiver;
+        case Z64_ITEM_SLINGSHOT:
+            return z64_file.bullet_bag;
+        case Z64_ITEM_BOMB:
+            return z64_file.bomb_bag;
+        case Z64_ITEM_STICK:
+            return z64_file.stick_upgrade;
+        case Z64_ITEM_NUT:
+            return z64_file.nut_upgrade;
+        default:
+            return 0;
+    }
 }
 
 bool bingo_item_owned(uint8_t item) {
@@ -210,17 +220,17 @@ bool bingo_item_owned(uint8_t item) {
         case Z64_ITEM_HOVER_BOOTS:
             return z64_file.hover_boots;
         case Z64_ITEM_BULLET_BAG_40:
-            return z64_file.bullet_bag >= 2;
+            return z64_file.bullet_bag == 2;
         case Z64_ITEM_BULLET_BAG_50:
-            return z64_file.bullet_bag >= 3;
+            return z64_file.bullet_bag == 3;
         case Z64_ITEM_QUIVER_40:
-            return z64_file.quiver >= 2;
+            return z64_file.quiver == 2;
         case Z64_ITEM_QUIVER_50:
-            return z64_file.quiver >= 3;
+            return z64_file.quiver == 3;
         case Z64_ITEM_BOMB_BAG_30:
-            return z64_file.bomb_bag >= 2;
+            return z64_file.bomb_bag == 2;
         case Z64_ITEM_BOMB_BAG_40:
-            return z64_file.bomb_bag >= 3;
+            return z64_file.bomb_bag == 3;
         case Z64_ITEM_MINUET:
             return z64_file.minuet_of_forest;
         case Z64_ITEM_BOLERO:
@@ -259,7 +269,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_MAP_COMPASS_IN_DEKU_TREE:
             return progress_at_least(map_and_compass_count(SCENE_DEKU_TREE), 2);
         case BINGO_GOAL_SILVER_SCALE:
-            return progress_at_least(z64_file.diving_upgrade, 1);
+            return progress_exactly(z64_file.diving_upgrade, 1);
         case BINGO_GOAL_BOLERO_OF_FIRE:
             return progress_bool(z64_file.bolero_of_fire);
         case BINGO_GOAL_EXACTLY_20_DEKU_STICKS:
@@ -273,7 +283,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_N_3_LAKE_HYLIA_SKULLTULAS:
             return progress_at_least(area_tokens(AREA_LAKE_HYLIA), 3);
         case BINGO_GOAL_BLUE_FIRE:
-            return progress_at_least(bottle_count(Z64_ITEM_BLUE_FIRE), 1);
+            return progress_at_least(inventory_item_count(Z64_ITEM_BLUE_FIRE), 1);
         case BINGO_GOAL_DEFEAT_A_SKULL_KID:
             return progress_at_least(get_global_count(GCOUNT_SKULL_KID), 1);
         case BINGO_GOAL_GORON_TUNIC:
@@ -281,20 +291,17 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_PLANT_BEAN_IN_DEATH_MOUNTAIN_CRATER:
             return progress_bool(count_scene_switch_set(SCENE_DEATH_MOUNTAIN_CRATER, 0x03));
         case BINGO_GOAL_RUTO_S_LETTER:
-            return progress_bool(item_owned(Z64_SLOT_BOTTLE_1, Z64_ITEM_LETTER) ||
-                                 item_owned(Z64_SLOT_BOTTLE_2, Z64_ITEM_LETTER) ||
-                                 item_owned(Z64_SLOT_BOTTLE_3, Z64_ITEM_LETTER) ||
-                                 item_owned(Z64_SLOT_BOTTLE_4, Z64_ITEM_LETTER));
+            return progress_at_least(inventory_item_count(Z64_ITEM_LETTER), 1);
         case BINGO_GOAL_BOTTLED_POE:
-            return progress_at_least(bottle_count(Z64_ITEM_POE), 1);
+            return progress_at_least(inventory_item_count(Z64_ITEM_POE), 1);
         case BINGO_GOAL_RED_POTION:
-            return progress_at_least(bottle_count(Z64_ITEM_RED_POTION), 1);
+            return progress_at_least(inventory_item_count(Z64_ITEM_RED_POTION), 1);
         case BINGO_GOAL_ADULT_S_WALLET:
-            return progress_at_least(z64_file.wallet, 1);
+            return progress_exactly(z64_file.wallet, 1);
         case BINGO_GOAL_PLANT_BEAN_IN_GERUDO_VALLEY:
             return progress_bool(count_scene_switch_set(SCENE_GERUDO_VALLEY, 0x03));
         case BINGO_GOAL_BOTTLED_FAIRY:
-            return progress_at_least(bottle_count(Z64_ITEM_FAIRY), 1);
+            return progress_at_least(inventory_item_count(Z64_ITEM_FAIRY), 1);
         case BINGO_GOAL_DEFEAT_NABOORU_KNUCKLE:
             return progress_bool(count_objective_is_complete(OBJECTIVE_NABOORU_KNUCKLE));
         case BINGO_GOAL_FAIRY_SLINGSHOT:
@@ -308,15 +315,15 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_FAIRY_OCARINA:
             return progress_bool(item_owned(Z64_SLOT_OCARINA, Z64_ITEM_FAIRY_OCARINA));
         case BINGO_GOAL_BLACK_GAUNTLETS:
-            return progress_bool(z64_file.strength_upgrade == 4);
+            return progress_exactly(z64_file.strength_upgrade, 4);
         case BINGO_GOAL_N_3_SKULLS_IN_DEKU_TREE:
             return progress_at_least(dungeon_tokens(SCENE_DEKU_TREE), 3);
         case BINGO_GOAL_OPEN_MIDO_S_GREEN_RUPEE_CHEST:
-            return progress_bool(get_global_count(GCOUNT_MIDOS_GREEN_RUPEE));
+            return progress_at_least(get_global_count(GCOUNT_MIDOS_GREEN_RUPEE), 1);
         case BINGO_GOAL_N_5_HEARTS:
             return progress_at_least(get_global_count(GCOUNT_HEART), 5);
         case BINGO_GOAL_N_5_MAGIC_BEANS:
-            return progress_at_least(z64_file.ammo[Z64_SLOT_BEANS], 5);
+            return progress_exactly(z64_file.ammo[Z64_SLOT_BEANS], 5);
         case BINGO_GOAL_DEFEAT_BONGO_BONGO:
             return progress_bool(dungeon_boss_cleared(SCENE_SHADOW_TEMPLE));
         case BINGO_GOAL_DEFEAT_QUEEN_GOHMA:
@@ -338,9 +345,9 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_BEAT_THE_SHADOW_TEMPLE:
             return progress_bool(count_tracker_is_dungeon_completed(SCENE_SHADOW_TEMPLE));
         case BINGO_GOAL_BULLET_BAG_40:
-            return progress_at_least(z64_file.bullet_bag, 2);
+            return progress_exactly(z64_file.bullet_bag, 2);
         case BINGO_GOAL_GOLDEN_SCALE:
-            return progress_at_least(z64_file.diving_upgrade, 2);
+            return progress_exactly(z64_file.diving_upgrade, 2);
         case BINGO_GOAL_N_3_COMPASSES:
             return progress_at_least(get_global_count(GCOUNT_COMPASS), 3);
         case BINGO_GOAL_BEAT_2_DUNGEONS:
@@ -350,7 +357,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_N_4_SONGS:
             return progress_at_least(get_global_count(GCOUNT_SONG), 4);
         case BINGO_GOAL_N_30_DEKU_NUTS:
-            return progress_at_least(z64_file.ammo[Z64_SLOT_NUT], 30);
+            return progress_exactly(z64_file.ammo[Z64_SLOT_NUT], 30);
         case BINGO_GOAL_ALL_3_KOKIRI_FOREST_AREA_SKULLTULAS:
             return progress_at_least(area_tokens(AREA_KOKIRI_FOREST), 3);
         case BINGO_GOAL_ICE_ARROWS:
@@ -392,9 +399,9 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_N_3_SHIELDS:
             return progress_at_least(get_global_count(GCOUNT_SHIELD), 3);
         case BINGO_GOAL_BOMB_BAG_30:
-            return progress_at_least(z64_file.bomb_bag, 2);
+            return progress_exactly(z64_file.bomb_bag, 2);
         case BINGO_GOAL_BULLET_BAG_50:
-            return progress_at_least(z64_file.bullet_bag, 3);
+            return progress_exactly(z64_file.bullet_bag, 3);
         case BINGO_GOAL_DEFEAT_BIG_OCTO:
             return progress_bool(count_objective_is_complete(OBJECTIVE_BIG_OCTO));
         case BINGO_GOAL_DEFEAT_KING_DODONGO:
@@ -406,7 +413,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_MAP_COMPASS_IN_JABU_JABU:
             return progress_at_least(map_and_compass_count(SCENE_JABU_JABU), 2);
         case BINGO_GOAL_SILVER_GAUNTLETS:
-            return progress_bool(z64_file.strength_upgrade == 2);
+            return progress_exactly(z64_file.strength_upgrade, 2);
         case BINGO_GOAL_GORON_CITY_HP:
             return progress_bool(count_scene_collect_set(SCENE_GORON_CITY, 0x1F));
         case BINGO_GOAL_KILL_ALL_TENTACLES_IN_JABU_JABU:
@@ -440,7 +447,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_COJIRO:
             return progress_bool(item_owned(Z64_SLOT_ADULT_TRADE, Z64_ITEM_COJIRO));
         case BINGO_GOAL_N_3_SWORDS_3_TUNICS:
-            return equipment_set_progress(1, 0, 1, 0);
+            return equipment_set_progress(SWORDS | TUNICS);
         case BINGO_GOAL_NAYRU_S_LOVE:
             return progress_bool(item_owned(Z64_SLOT_NAYRUS_LOVE, Z64_ITEM_NAYRUS_LOVE));
         case BINGO_GOAL_BEAT_3_DUNGEONS:
@@ -460,7 +467,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_BOTH_GERUDO_S_FORTRESS_AREA_SKULLTULAS:
             return progress_at_least(area_tokens(AREA_FORTRESS), 2);
         case BINGO_GOAL_FILL_ALL_4_BOTTLE_SLOTS:
-            return progress_at_least(filled_bottle_count(), 4);
+            return progress_at_least(bottle_slot_count(), 4);
         case BINGO_GOAL_SARIA_S_SONG:
             return progress_bool(z64_file.sarias_song);
         case BINGO_GOAL_SERENADE_OF_WATER:
@@ -470,9 +477,9 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_ALL_4_SKULLTULAS_IN_JABU_JABU:
             return progress_at_least(dungeon_tokens(SCENE_JABU_JABU), 4);
         case BINGO_GOAL_DOUBLE_MAGIC:
-            return progress_bool(z64_file.magic_capacity >= 2);
+            return progress_at_least(z64_file.magic_capacity, 2);
         case BINGO_GOAL_GET_TO_THE_END_OF_LIGHT_TRIAL:
-            return trial_progress(0);
+            return trial_progress(TRIAL_LIGHT);
         case BINGO_GOAL_N_4_DEATH_MOUNTAIN_AREA_SKULLTULAS:
             return progress_at_least(area_tokens(AREA_DEATH_MOUNTAIN), 4);
         case BINGO_GOAL_DEFEAT_6_DIFFERENT_STALFOS:
@@ -480,7 +487,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_N_6_SONGS:
             return progress_at_least(get_global_count(GCOUNT_SONG), 6);
         case BINGO_GOAL_BLUE_GAUNTLETS:
-            return progress_bool(z64_file.strength_upgrade == 6);
+            return progress_exactly(z64_file.strength_upgrade, 6);
         case BINGO_GOAL_DEFEAT_PHANTOM_GANON:
             return progress_bool(dungeon_boss_cleared(SCENE_FOREST_TEMPLE));
         case BINGO_GOAL_DOUBLE_DEFENSE:
@@ -516,13 +523,13 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_WATER_TEMPLE_BOSS_KEY:
             return progress_bool(dungeon_item_owned(SCENE_WATER_TEMPLE, DUNGEON_ITEM_BOSS_KEY));
         case BINGO_GOAL_ALL_4_CHILD_SKULLTULAS_IN_ZORA_S_DOMAIN_AREA:
-            return progress_at_least(get_tokens_with_mask(17, 0x0F), 4);
+            return progress_at_least(get_tokens_with_mask(GS_FLAGS_ZORA, 0x0F), 4);
         case BINGO_GOAL_GOLDEN_RUPEE_CHEST_IN_FIRE_TEMPLE:
             return progress_bool(count_objective_is_complete(OBJECTIVE_FIRE_GOLD_RUPEE));
         case BINGO_GOAL_TWO_FAIRY_SPELLS:
             return progress_at_least(get_global_count(GCOUNT_FAIRY_SPELL), 2);
         case BINGO_GOAL_N_3_SHIELDS_3_TUNICS:
-            return equipment_set_progress(0, 1, 1, 0);
+            return equipment_set_progress(SHIELDS | TUNICS);
         case BINGO_GOAL_N_6_UNUSED_KEYS_IN_GERUDO_TRAINING_GROUNDS:
             return progress_at_least(current_keys(SCENE_GERUDO_TRAINING_GROUND), 6);
         case BINGO_GOAL_ALL_4_LON_LON_RANCH_AREA_SKULLTULAS:
@@ -532,7 +539,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_DEFEAT_TWINROVA:
             return progress_bool(dungeon_boss_cleared(SCENE_SPIRIT_TEMPLE));
         case BINGO_GOAL_GIANT_S_WALLET:
-            return progress_at_least(z64_file.wallet, 2);
+            return progress_exactly(z64_file.wallet, 2);
         case BINGO_GOAL_MAP_COMPASS_IN_FIRE_TEMPLE:
             return progress_at_least(map_and_compass_count(SCENE_FIRE_TEMPLE), 2);
         case BINGO_GOAL_WIN_BOMBCHU_BOWLING_PRIZE:
@@ -544,7 +551,7 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_N_4_UNUSED_KEYS_IN_FOREST_TEMPLE:
             return progress_at_least(current_keys(SCENE_FOREST_TEMPLE), 4);
         case BINGO_GOAL_N_6_MAGIC_BEANS:
-            return progress_at_least(z64_file.ammo[Z64_SLOT_BEANS], 6);
+            return progress_exactly(z64_file.ammo[Z64_SLOT_BEANS], 6);
         case BINGO_GOAL_N_6_DEATH_MOUNTAIN_AREA_SKULLTULAS:
             return progress_at_least(area_tokens(AREA_DEATH_MOUNTAIN), 6);
         case BINGO_GOAL_N_3_BOSS_KEYS:
@@ -562,9 +569,9 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_GERUDO_S_CARD:
             return progress_bool(z64_file.gerudos_card);
         case BINGO_GOAL_MILK:
-            return progress_at_least(bottle_count(Z64_ITEM_MILK) + bottle_count(Z64_ITEM_HALF_MILK), 1);
+            return progress_at_least(inventory_item_count(Z64_ITEM_MILK), 1);
         case BINGO_GOAL_GET_TO_THE_END_OF_FIRE_TRIAL:
-            return trial_progress(1);
+            return trial_progress(TRIAL_FIRE);
         case BINGO_GOAL_MAP_COMPASS_IN_FOREST_TEMPLE:
             return progress_at_least(map_and_compass_count(SCENE_FOREST_TEMPLE), 2);
         case BINGO_GOAL_BEAT_THE_SKY_TEMPLE:
@@ -572,11 +579,13 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_DEFEAT_3_DIFFERENT_WHITE_WOLFOS:
             return progress_at_least(get_global_count(GCOUNT_WHITE_WOLFOS), 3);
         case BINGO_GOAL_DEFEAT_JOELLE_RED_POE_BETH_BLUE_POE:
-            return progress_at_least(objective_count(OBJECTIVE_POE_JOELLE, 2), 2);
+            return progress_at_least(count_objective_is_complete(OBJECTIVE_POE_JOELLE) +
+                                         count_objective_is_complete(OBJECTIVE_POE_BETH),
+                                     2);
         case BINGO_GOAL_OPEN_GANON_S_BOSS_DOOR:
-            return progress_bool(count_objective_is_complete(OBJECTIVE_GANON_BOSS_DOOR));
+            return progress_bool(count_scene_switch_set(SCENE_GANONS_TOWER, BOSS_DOOR_SWITCH_FLAG));
         case BINGO_GOAL_N_3_SWORDS_3_SHIELDS:
-            return equipment_set_progress(1, 1, 0, 0);
+            return equipment_set_progress(SWORDS | SHIELDS);
         case BINGO_GOAL_N_5_COMPASSES:
             return progress_at_least(get_global_count(GCOUNT_COMPASS), 5);
         case BINGO_GOAL_ALL_4_WASTELAND_COLOSSUS_AREA_SKULLTULAS:
@@ -586,15 +595,15 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_BEAT_THE_SPIRIT_TEMPLE:
             return progress_bool(count_tracker_is_dungeon_completed(SCENE_SPIRIT_TEMPLE));
         case BINGO_GOAL_GET_TO_THE_END_OF_SPIRIT_TRIAL:
-            return trial_progress(2);
+            return trial_progress(TRIAL_SPIRIT);
         case BINGO_GOAL_OPEN_3_GOLD_RUPEE_CHESTS:
             return progress_at_least(get_global_count(GCOUNT_GOLD_RUPEE), 3);
         case BINGO_GOAL_BOTTLED_BIG_POE:
-            return progress_at_least(bottle_count(Z64_ITEM_BIG_POE), 1);
+            return progress_at_least(inventory_item_count(Z64_ITEM_BIG_POE), 1);
         case BINGO_GOAL_PRELUDE_OF_LIGHT:
             return progress_bool(z64_file.prelude_of_light);
         case BINGO_GOAL_ALL_4_ADULT_SKULLTULAS_IN_ZORA_S_DOMAIN_AREA:
-            return progress_at_least(get_tokens_with_mask(17, 0xF0), 4);
+            return progress_at_least(get_tokens_with_mask(GS_FLAGS_ZORA, 0xF0), 4);
         case BINGO_GOAL_DEFEAT_4_DIFFERENT_IRON_KNUCKLES:
             return progress_at_least(get_global_count(GCOUNT_IRON_KNUCKLE), 4);
         case BINGO_GOAL_N_6_ZORA_S_DOMAIN_AREA_SKULLTULAS:
@@ -602,11 +611,11 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_OPEN_ALL_6_ICE_TRAP_CHESTS:
             return progress_at_least(get_global_count(GCOUNT_TRAP), 6);
         case BINGO_GOAL_N_3_TUNICS_3_BOOTS:
-            return equipment_set_progress(0, 0, 1, 1);
+            return equipment_set_progress(TUNICS | BOOTS);
         case BINGO_GOAL_N_500_RUPEES:
-            return progress_at_least(z64_file.rupees, 500);
+            return progress_exactly(z64_file.rupees, 500);
         case BINGO_GOAL_N_7_MAGIC_BEANS:
-            return progress_at_least(z64_file.ammo[Z64_SLOT_BEANS], 7);
+            return progress_exactly(z64_file.ammo[Z64_SLOT_BEANS], 7);
         case BINGO_GOAL_N_7_SONGS:
             return progress_at_least(get_global_count(GCOUNT_SONG), 7);
         case BINGO_GOAL_COW_IN_HOUSE:
@@ -618,11 +627,11 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_OBTAIN_ALL_5_SMALL_KEYS_IN_FOREST_TEMPLE:
             return progress_at_least(total_keys_obtained(SCENE_FOREST_TEMPLE), 5);
         case BINGO_GOAL_QUIVER_40:
-            return progress_at_least(z64_file.quiver, 2);
+            return progress_exactly(z64_file.quiver, 2);
         case BINGO_GOAL_N_5_CHILD_DEATH_MOUNTAIN_AREA_SKULLTULAS:
-            return progress_at_least(get_tokens_with_mask(15, 0x1F), 5);
+            return progress_at_least(get_tokens_with_mask(GS_FLAGS_DEATH_MOUNTAIN, 0x1F), 5);
         case BINGO_GOAL_N_3_SWORDS_3_BOOTS:
-            return equipment_set_progress(1, 0, 0, 1);
+            return equipment_set_progress(SWORDS | BOOTS);
         case BINGO_GOAL_N_4_SKULLTULAS_IN_SHADOW_TEMPLE:
             return progress_at_least(dungeon_tokens(SCENE_SHADOW_TEMPLE), 4);
         case BINGO_GOAL_N_6_MAPS:
@@ -636,23 +645,23 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_STONE_OF_AGONY:
             return progress_bool(z64_file.stone_of_agony);
         case BINGO_GOAL_UNLOCK_PHANTOM_GANON_S_BOSS_DOOR:
-            return progress_bool(count_objective_is_complete(OBJECTIVE_FOREST_BOSS_DOOR));
+            return progress_bool(count_scene_switch_set(SCENE_FOREST_TEMPLE, BOSS_DOOR_SWITCH_FLAG));
         case BINGO_GOAL_BEAT_4_DUNGEONS:
             return progress_at_least(dungeon_completed_count(), 4);
         case BINGO_GOAL_N_3_SHIELDS_3_BOOTS:
-            return equipment_set_progress(0, 1, 0, 1);
+            return equipment_set_progress(SHIELDS | BOOTS);
         case BINGO_GOAL_ALL_5_SKULLTULAS_IN_FIRE_TEMPLE:
             return progress_at_least(dungeon_tokens(SCENE_FIRE_TEMPLE), 5);
         case BINGO_GOAL_DEFEAT_DARK_LINK:
             return progress_bool(count_objective_is_complete(OBJECTIVE_DARK_LINK));
         case BINGO_GOAL_GET_TO_THE_END_OF_FOREST_TRIAL:
-            return trial_progress(3);
+            return trial_progress(TRIAL_FOREST);
         case BINGO_GOAL_GORON_BRACELET:
-            return progress_bool(z64_file.strength_upgrade == 1);
+            return progress_exactly(z64_file.strength_upgrade, 1);
         case BINGO_GOAL_LONGSHOT:
             return progress_bool(item_owned(Z64_SLOT_HOOKSHOT, Z64_ITEM_LONGSHOT));
         case BINGO_GOAL_OPEN_50_RUPEE_CHEST_IN_WASTELAND:
-            return progress_bool(get_global_count(GCOUNT_WASTELAND_PURPLE_RUPEE));
+            return progress_at_least(count_scene_chest_opened(SCENE_HAUNTED_WASTELAND, 0x00), 1);
         case BINGO_GOAL_ALL_8_DEATH_MOUNTAIN_AREA_SKULLTULAS:
             return progress_at_least(area_tokens(AREA_DEATH_MOUNTAIN), 8);
         case BINGO_GOAL_DEFEAT_10_DIFFERENT_STALFOS:
@@ -692,21 +701,21 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_N_4_BOSS_KEYS:
             return progress_at_least(get_global_count(GCOUNT_BOSS_KEY), 4);
         case BINGO_GOAL_GOLDEN_GAUNTLETS:
-            return progress_bool(z64_file.strength_upgrade == 3);
+            return progress_exactly(z64_file.strength_upgrade, 3);
         case BINGO_GOAL_OPEN_3_SMALL_KEY_CHESTS_IN_WATER_TEMPLE:
             return progress_at_least(total_keys_obtained(SCENE_WATER_TEMPLE), 3);
         case BINGO_GOAL_N_3_SWORDS_TUNICS_BOOTS_AND_SHIELDS:
-            return equipment_set_progress(1, 1, 1, 1);
+            return equipment_set_progress(SWORDS | SHIELDS | TUNICS | BOOTS);
         case BINGO_GOAL_N_7_MAPS:
             return progress_at_least(get_global_count(GCOUNT_MAP), 7);
         case BINGO_GOAL_N_9_HEARTS:
             return progress_at_least(get_global_count(GCOUNT_HEART), 9);
         case BINGO_GOAL_GREEN_GAUNTLETS:
-            return progress_bool(z64_file.strength_upgrade == 5);
+            return progress_exactly(z64_file.strength_upgrade, 5);
         case BINGO_GOAL_ALL_5_SKULLTULAS_IN_SPIRIT_TEMPLE:
             return progress_at_least(dungeon_tokens(SCENE_SPIRIT_TEMPLE), 5);
         case BINGO_GOAL_GET_TO_THE_END_OF_WATER_TRIAL:
-            return trial_progress(4);
+            return trial_progress(TRIAL_WATER);
         case BINGO_GOAL_DEFEAT_5_DIFFERENT_IRON_KNUCKLES:
             return progress_at_least(get_global_count(GCOUNT_IRON_KNUCKLE), 5);
         case BINGO_GOAL_DISPEL_5_TRIAL_BEAMS:
@@ -754,9 +763,9 @@ bingo_progress_t bingo_get_goal_progress(bingo_goal_t goal) {
         case BINGO_GOAL_ALL_4_MARKET_AREA_SKULLTULAS:
             return progress_at_least(area_tokens(AREA_MARKET), 4);
         case BINGO_GOAL_BLUE_POTION:
-            return progress_at_least(bottle_count(Z64_ITEM_BLUE_POTION), 1);
+            return progress_at_least(inventory_item_count(Z64_ITEM_BLUE_POTION), 1);
         case BINGO_GOAL_GET_TO_THE_END_OF_SHADOW_TRIAL:
-            return trial_progress(5);
+            return trial_progress(TRIAL_SHADOW);
         case BINGO_GOAL_BOTH_RUSTY_SWITCHES_IN_SPIRIT_TEMPLE:
             return progress_at_least(count_tracker_get_spirit_rusty_switch_count(), z64_file.master_quest ? 4 : 2);
         case BINGO_GOAL_ALL_5_SKULLTULAS_IN_WATER_TEMPLE:

@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define BOSS_DOOR_SWITCH_FLAG 0x14
+
 typedef enum {
     SCENE_DEKU_TREE = 0x00,
     SCENE_DODONGOS_CAVERN = 0x01,
@@ -78,6 +80,41 @@ typedef enum {
 } area_t;
 
 typedef enum {
+    TRIAL_LIGHT = 0,
+    TRIAL_FIRE = 1,
+    TRIAL_SPIRIT = 2,
+    TRIAL_FOREST = 3,
+    TRIAL_WATER = 4,
+    TRIAL_SHADOW = 5,
+    TRIAL_COUNT = 6
+} trial_t;
+
+typedef enum {
+    GS_FLAGS_DEKU_TREE = 0x00,
+    GS_FLAGS_DODONGOS_CAVERN = 0x01,
+    GS_FLAGS_JABU_JABU = 0x02,
+    GS_FLAGS_FOREST_TEMPLE = 0x03,
+    GS_FLAGS_FIRE_TEMPLE = 0x04,
+    GS_FLAGS_WATER_TEMPLE = 0x05,
+    GS_FLAGS_SPIRIT_TEMPLE = 0x06,
+    GS_FLAGS_SHADOW_TEMPLE = 0x07,
+    GS_FLAGS_BOTTOM_OF_THE_WELL = 0x08,
+    GS_FLAGS_ICE_CAVERN = 0x09,
+    GS_FLAGS_HYRULE_FIELD = 0x0A,
+    GS_FLAGS_LON_LON_RANCH = 0x0B,
+    GS_FLAGS_KOKIRI_FOREST = 0x0C,
+    GS_FLAGS_LOST_WOODS = 0x0D,
+    GS_FLAGS_MARKET = 0x0E,
+    GS_FLAGS_DEATH_MOUNTAIN = 0x0F,
+    GS_FLAGS_KAKARIKO = 0x10,
+    GS_FLAGS_ZORA = 0x11,
+    GS_FLAGS_LAKE_HYLIA = 0x12,
+    GS_FLAGS_GERUDO_VALLEY = 0x13,
+    GS_FLAGS_FORTRESS = 0x14,
+    GS_FLAGS_WASTELAND = 0x15
+} gs_flags_index_t;
+
+typedef enum {
     // Quest
     DCOUNT_TOKEN = 0x00,
     DCOUNT_HEART_PIECE = 0x01,
@@ -101,7 +138,6 @@ typedef enum {
     GCOUNT_SONG = 0x10,
     GCOUNT_MEDALLION = 0x11,
     GCOUNT_STONE = 0x12,
-    GCOUNT_REWARD = 0x13,
     GCOUNT_TOKEN = 0x14,
     // Dungeon
     GCOUNT_BOSS_KEY = 0x20,
@@ -120,7 +156,6 @@ typedef enum {
     GCOUNT_SILVER_RUPEE_ROOMS = 0x53,
     GCOUNT_TRIAL_BEAMS = 0x54,
     GCOUNT_MIDOS_GREEN_RUPEE = 0x55,
-    GCOUNT_WASTELAND_PURPLE_RUPEE = 0x56,
     GCOUNT_COW = 0x57,
     GCOUNT_HEART = 0x58,
     GCOUNT_SOIL_SKULLTULA = 0x59,
@@ -137,11 +172,11 @@ typedef enum {
     GCOUNT_SKULL_KID = 0x68
 } global_count_t;
 
-uint8_t get_tokens(uint8_t gs_flags_index);
-uint8_t get_tokens_with_mask(uint8_t gs_flags_index, uint8_t mask);
+uint8_t get_tokens(gs_flags_index_t gs_flags_index);
+uint8_t get_tokens_with_mask(gs_flags_index_t gs_flags_index, uint8_t mask);
 uint8_t get_carpenters_freed(uint16_t event_flags);
 uint8_t get_trial_beams_cleared(const uint16_t* event_chk_inf);
-bool get_trial_beam_cleared(uint8_t trial_index);
+bool get_trial_beam_cleared(trial_t trial);
 bool count_scene_switch_set(uint8_t scene, uint8_t flag);
 bool count_scene_chest_opened(uint8_t scene, uint8_t flag);
 bool count_scene_collect_set(uint8_t scene, uint8_t flag);

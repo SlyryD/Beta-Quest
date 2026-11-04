@@ -1,15 +1,17 @@
 #include "z64.h"
 
+#include "area_info.h"
+#include "count_info.h"
 #include "count_tracker.h"
 #include "dungeon_info.h"
 #include "entrance_info.h"
+#include "event_info.h"
 #include "gfx.h"
 #include "gear_info.h"
 #include "text.h"
 #include "util.h"
 #include "dpad.h"
 #include "weather.h"
-#include "world_map_info.h"
 #include "song_speedup.h"
 #include "mq.h"
 #include "save.h"
@@ -31,11 +33,11 @@ void before_game_state_update() {
 void after_game_state_update() {
     count_tracker_update();
     draw_dungeon_info(&(z64_ctxt.gfx->overlay));
-    draw_dungeon_events_info(&(z64_ctxt.gfx->overlay));
-    draw_counts_info(&(z64_ctxt.gfx->overlay));
+    draw_event_info(&(z64_ctxt.gfx->overlay));
+    draw_count_info(&(z64_ctxt.gfx->overlay));
     draw_gear_info(&(z64_ctxt.gfx->overlay));
     draw_entrance_info(&(z64_ctxt.gfx->overlay));
-    draw_world_map_info(&(z64_ctxt.gfx->overlay));
+    draw_area_info(&(z64_ctxt.gfx->overlay));
 }
 
 void before_skybox_init(z64_game_t* game, int16_t skyboxId) {

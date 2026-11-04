@@ -3,43 +3,73 @@
 #include "bingo.h"
 #include "counts.h"
 #include "gfx.h"
+#include "pause_menu.h"
 #include "text.h"
 #include "z64.h"
 
-#define PAUSE_ITEM 0
-
 extern uint32_t CFG_DUNGEON_INFO_ENABLE;
 
-static void format_value(char text[4], uint16_t value) {
-    if (value >= 100) {
-        text[0] = '0' + (value / 100) % 10;
-        text[1] = '0' + (value / 10) % 10;
-        text[2] = '0' + value % 10;
-        text[3] = '\0';
-    } else if (value >= 10) {
-        text[0] = '0' + value / 10;
-        text[1] = '0' + value % 10;
-        text[2] = '\0';
-    } else {
-        text[0] = '0' + value;
-        text[1] = '\0';
+static void draw_item(z64_disp_buf_t* db, int tile, int left, int top, bool owned) {
+    pause_menu_draw_sprite(db, &items_sprite, tile, left, top, 14, 14, owned, 0xFF, 0xFF, 0xFF);
+}
+
+static void draw_ammo_number(z64_disp_buf_t* db, uint8_t value, int left, int top) {
+    uint8_t tens = value / 10;
+    uint8_t ones = value % 10;
+
+    gDPPipeSync(db->p++);
+    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gDPSetPrimColor(db->p++, 0, 0, 120, 255, 0, 0xFF);
+    sprite_load(db, &item_digit_sprite, tens, 1);
+    sprite_draw(db, &item_digit_sprite, 0, left, top, 8, 8);
+    sprite_load(db, &item_digit_sprite, ones, 1);
+    sprite_draw(db, &item_digit_sprite, 0, left + 6, top, 8, 8);
+}
+
+static uint8_t capacity_for_level(uint8_t level, uint8_t first, uint8_t second, uint8_t third) {
+    if (level == 1) {
+        return first;
+    } else if (level == 2) {
+        return second;
+    } else if (level == 3) {
+        return third;
+    }
+    return 0;
+}
+
+static void draw_capacity(z64_disp_buf_t* db, uint8_t level, int small_tile, int large_tile,
+                          uint8_t first_capacity, uint8_t second_capacity, uint8_t third_capacity,
+                          int left, int top) {
+    uint8_t capacity = capacity_for_level(level, first_capacity, second_capacity, third_capacity);
+
+    draw_item(db, level == 3 ? large_tile : small_tile, left, top, capacity > 0);
+    if (capacity > 0) {
+        draw_ammo_number(db, capacity, left + 8, top + 6);
     }
 }
 
-static void draw_item(z64_disp_buf_t* db, int tile, int left, int top, bool owned) {
+static void draw_capacity_count(z64_disp_buf_t* db, int tile, uint8_t level,
+                                uint8_t first_capacity, uint8_t second_capacity, uint8_t third_capacity,
+                                uint8_t count, int left, int top) {
+    char text[4];
+    uint8_t capacity = capacity_for_level(level, first_capacity, second_capacity, third_capacity);
+
+    draw_item(db, tile, left, top, true);
+    if (capacity > 0) {
+        draw_ammo_number(db, capacity, left, top + 6);
+    }
     gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, owned ? 0xFF : 0x40);
-    sprite_load(db, &items_sprite, tile, 1);
-    sprite_draw(db, &items_sprite, 0, left, top, 14, 14);
+    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+    pause_menu_format_value(text, count);
+    text_print(text, left + 16, top);
 }
 
 static void draw_quest(z64_disp_buf_t* db, int tile, int left, int top, bool owned) {
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, owned ? 0xFF : 0x40);
-    sprite_load(db, &quest_items_sprite, tile, 1);
-    sprite_draw(db, &quest_items_sprite, 0, left, top, 14, 14);
+    pause_menu_draw_sprite(db, &quest_items_sprite, tile, left, top, 14, 14, owned, 0xFF, 0xFF, 0xFF);
+}
+
+static void draw_upgrade(z64_disp_buf_t* db, int first_tile, uint8_t level, int left, int top) {
+    draw_item(db, first_tile + (level > 0 ? level - 1 : 0), left, top, level > 0);
 }
 
 static void draw_count_color(z64_disp_buf_t* db, sprite_t* sprite, int tile, int left, int top, uint16_t value,
@@ -49,7 +79,7 @@ static void draw_count_color(z64_disp_buf_t* db, sprite_t* sprite, int tile, int
     gDPSetPrimColor(db->p++, 0, 0, red, green, blue, 0xFF);
     sprite_load(db, sprite, tile, 1);
     sprite_draw(db, sprite, 0, left, top, 14, 14);
-    format_value(text, value);
+    pause_menu_format_value(text, value);
     text_print(text, left + 16, top);
 }
 
@@ -68,10 +98,22 @@ static void draw_hud_count(z64_disp_buf_t* db, sprite_t* sprite, int tile, int l
     gDPSetEnvColor(db->p++, env_red, env_green, env_blue, 0xFF);
     sprite_load(db, sprite, tile, 1);
     sprite_draw(db, sprite, 0, left, top, 14, 14);
-    format_value(text, value);
+    pause_menu_format_value(text, value);
     text_print(text, left + 16, top);
     gDPPipeSync(db->p++);
     gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+}
+
+static void draw_rupee_count(z64_disp_buf_t* db, int left, int top, uint16_t value) {
+    static const uint8_t colors[4][3] = {
+        { 0xC8, 0xFF, 0x64 },
+        { 0x82, 0x82, 0xFF },
+        { 0xFF, 0x64, 0x64 },
+        { 0xFF, 0x5A, 0xFF },
+    };
+    const uint8_t* color = colors[z64_file.wallet];
+    draw_hud_count(db, &key_rupee_clock_sprite, 1, left, top, value,
+                   color[0], color[1], color[2], 0x00, 0x50, 0x00);
 }
 
 static void draw_owned_row(z64_disp_buf_t* db, const char* label, int top, int first_tile, uint8_t count) {
@@ -82,21 +124,11 @@ static void draw_owned_row(z64_disp_buf_t* db, const char* label, int top, int f
 }
 
 void draw_gear_info(z64_disp_buf_t* db) {
-    int draw = CFG_DUNGEON_INFO_ENABLE && z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == PAUSE_ITEM && !z64_game.pause_ctxt.changing &&
-               z64_ctxt.input[0].raw.pad.a && z64_ctxt.input[0].raw.pad.dd;
-    if (!draw) {
+    if (!CFG_DUNGEON_INFO_ENABLE || pause_item_menu_active() != PAUSE_ITEM_MENU_GEAR) {
         return;
     }
 
-    db->p = db->buf;
-    gSPDisplayList(db->p++, &setup_db);
-    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(db->p++, 0, 0, 0, 0, 0, 0xD8);
-    gSPTextureRectangle(db->p++, 20 << 2, 7 << 2, 300 << 2, 187 << 2, 0, 0, 0, 1 << 10, 1 << 10);
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+    pause_menu_begin(db, 20, 7, 280, 180, 0xD8);
 
     text_print("Gear", 28, 12);
     text_print("Inventory / Quest", 164, 12);
@@ -108,25 +140,25 @@ void draw_gear_info(z64_disp_buf_t* db) {
 
     text_print("Bow", 28, 99);
     draw_item(db, Z64_ITEM_BOW, 92, 99, bingo_item_owned(Z64_ITEM_BOW));
-    draw_item(db, Z64_ITEM_QUIVER_40, 109, 99, bingo_item_owned(Z64_ITEM_QUIVER_40));
-    draw_item(db, Z64_ITEM_QUIVER_50, 126, 99, bingo_item_owned(Z64_ITEM_QUIVER_50));
+    draw_capacity(db, bingo_get_capacity_level(Z64_ITEM_BOW), Z64_ITEM_QUIVER_30, Z64_ITEM_QUIVER_50,
+                  30, 40, 50, 109, 99);
 
     text_print("Sling", 28, 116);
     draw_item(db, Z64_ITEM_SLINGSHOT, 92, 116, bingo_item_owned(Z64_ITEM_SLINGSHOT));
-    draw_item(db, Z64_ITEM_BULLET_BAG_40, 109, 116, bingo_item_owned(Z64_ITEM_BULLET_BAG_40));
-    draw_item(db, Z64_ITEM_BULLET_BAG_50, 126, 116, bingo_item_owned(Z64_ITEM_BULLET_BAG_50));
+    draw_capacity(db, bingo_get_capacity_level(Z64_ITEM_SLINGSHOT), Z64_ITEM_BULLET_BAG_30,
+                  Z64_ITEM_BULLET_BAG_50, 30, 40, 50, 109, 116);
 
     text_print("Bombs", 28, 133);
     draw_item(db, Z64_ITEM_BOMB, 92, 133, bingo_item_owned(Z64_ITEM_BOMB));
-    draw_item(db, Z64_ITEM_BOMB_BAG_30, 109, 133, bingo_item_owned(Z64_ITEM_BOMB_BAG_30));
-    draw_item(db, Z64_ITEM_BOMB_BAG_40, 126, 133, bingo_item_owned(Z64_ITEM_BOMB_BAG_40));
+    draw_capacity(db, bingo_get_capacity_level(Z64_ITEM_BOMB), Z64_ITEM_BOMB_BAG_20, Z64_ITEM_BOMB_BAG_40,
+                  20, 30, 40, 109, 133);
 
-    draw_count(db, &items_sprite, Z64_ITEM_STICK, 28, 150, bingo_get_ammo(Z64_SLOT_STICK));
-    draw_count(db, &items_sprite, Z64_ITEM_NUT, 73, 150, bingo_get_ammo(Z64_SLOT_NUT));
+    draw_capacity_count(db, Z64_ITEM_STICK, bingo_get_capacity_level(Z64_ITEM_STICK),
+                        10, 20, 30, bingo_get_ammo(Z64_SLOT_STICK), 28, 150);
+    draw_capacity_count(db, Z64_ITEM_NUT, bingo_get_capacity_level(Z64_ITEM_NUT),
+                        20, 30, 40, bingo_get_ammo(Z64_SLOT_NUT), 73, 150);
     draw_count(db, &items_sprite, Z64_ITEM_BEANS, 118, 150, bingo_get_ammo(Z64_SLOT_BEANS));
-    draw_hud_count(db, &key_rupee_clock_sprite, 1, 28, 167,
-                   bingo_get_goal_progress(BINGO_GOAL_N_500_RUPEES).current,
-                   0xC8, 0xFF, 0x64, 0x00, 0x50, 0x00);
+    draw_rupee_count(db, 28, 167, bingo_get_goal_progress(BINGO_GOAL_N_500_RUPEES).current);
     draw_count(db, &quest_items_sprite, 11, 73, 167,
                bingo_get_goal_progress(BINGO_GOAL_N_30_DIFFERENT_SKULLTULAS).current);
     draw_hud_count(db, &heart_sprite, 4, 118, 167, bingo_get_global_count(GCOUNT_HEART),
@@ -135,10 +167,14 @@ void draw_gear_info(z64_disp_buf_t* db) {
     text_print("Magic", 164, 31);
     draw_quest(db, 18, 228, 31, bingo_get_magic_level() >= 1);
     draw_quest(db, 19, 245, 31, bingo_get_magic_level() >= 2);
-    text_print("Defense", 164, 48);
-    draw_quest(db, 12, 228, 48, bingo_goal_is_complete(BINGO_GOAL_DOUBLE_DEFENSE));
-    text_print("Agony", 164, 65);
-    draw_quest(db, 9, 228, 65, bingo_goal_is_complete(BINGO_GOAL_STONE_OF_AGONY));
+    text_print("Def", 164, 48);
+    draw_quest(db, 12, 190, 48, bingo_goal_is_complete(BINGO_GOAL_DOUBLE_DEFENSE));
+    text_print("Agony", 209, 48);
+    draw_quest(db, 9, 245, 48, bingo_goal_is_complete(BINGO_GOAL_STONE_OF_AGONY));
+    text_print("Str", 164, 65);
+    draw_upgrade(db, Z64_ITEM_GORONS_BRACELET, bingo_get_strength_level(), 190, 65);
+    text_print("Scale", 209, 65);
+    draw_upgrade(db, Z64_ITEM_SILVER_SCALE, bingo_get_scale_level(), 245, 65);
 
     text_print("Bottles", 164, 82);
     for (uint8_t i = 0; i < 4; i++) {
@@ -175,9 +211,5 @@ void draw_gear_info(z64_disp_buf_t* db) {
         sprite_draw(db, &song_note_sprite, 0, 164 + (i % 6) * 17, 151 + (i / 6) * 17, 10, 15);
     }
 
-    gDPPipeSync(db->p++);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-    text_flush(db);
-    gDPFullSync(db->p++);
-    gSPEndDisplayList(db->p++);
+    pause_menu_end(db);
 }

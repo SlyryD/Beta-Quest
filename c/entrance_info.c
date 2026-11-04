@@ -2,6 +2,7 @@
 
 #include "../src/entrance_randomizer.h"
 #include "gfx.h"
+#include "pause_menu.h"
 #include "text.h"
 #include "util.h"
 #include "z64.h"
@@ -1116,12 +1117,6 @@ void draw_entrance_info(z64_disp_buf_t* db) {
 
     check_dpad();
 
-    db->p = db->buf;
-
-    // Call setup display list
-
-    gSPDisplayList(db->p++, &setup_db);
-
     // Set up dimensions
 
     int padding = 4;
@@ -1135,19 +1130,7 @@ void draw_entrance_info(z64_disp_buf_t* db) {
     int left = bg_left + padding;
     int start_top = bg_top + padding;
 
-    // Draw background
-
-    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(db->p++, 0, 0, 0x00, 0x00, 0x00, 0xD0);
-    gSPTextureRectangle(db->p++, bg_left << 2, bg_top << 2, (bg_left + bg_width) << 2, (bg_top + bg_height) << 2, 0, 0,
-                        0, 1 << 10, 1 << 10);
-
-    // Set the primary color to white for drawing sprites
-
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+    pause_menu_begin(db, bg_left, bg_top, bg_width, bg_height, 0xD0);
 
     if (s_display_mode == DISPLAY_MODE_NONE) {
         int top = start_top + 1;
@@ -1230,10 +1213,5 @@ void draw_entrance_info(z64_disp_buf_t* db) {
         }
     }
 
-    // Finish
-
-    text_flush(db);
-
-    gDPFullSync(db->p++);
-    gSPEndDisplayList(db->p++);
+    pause_menu_end(db);
 }

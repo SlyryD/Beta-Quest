@@ -58,8 +58,12 @@ test:
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -Wno-sign-compare -Wno-type-limits \
 		-D_GNU_SOURCE -I/opt/n64/mips64/n64-sysroot/usr/include \
 		tests/bingo_test.c c/bingo.c -o $(OUTDIR)/bingo_test
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -Wno-pointer-to-int-cast -D_GNU_SOURCE \
+		-ffunction-sections -fdata-sections -I/opt/n64/mips64/n64-sysroot/usr/include \
+		tests/pause_menu_test.c c/pause_menu.c -Wl,--gc-sections -o $(OUTDIR)/pause_menu_test
 	$(OUTDIR)/count_save_test
 	$(OUTDIR)/memory_test
 	$(OUTDIR)/count_tracker_test
 	$(OUTDIR)/counts_test
 	$(OUTDIR)/bingo_test
+	$(OUTDIR)/pause_menu_test

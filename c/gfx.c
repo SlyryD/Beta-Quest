@@ -87,6 +87,16 @@ sprite_t map_chest_sprite = {
     G_IM_FMT_RGBA, G_IM_SIZ_16b, 2
 };
 
+sprite_t map_dungeon_entrance_sprite = {
+    NULL, 8, 8, 1,
+    G_IM_FMT_RGBA, G_IM_SIZ_16b, 2
+};
+
+sprite_t map_boss_sprite = {
+    NULL, 8, 8, 1,
+    G_IM_FMT_IA, G_IM_SIZ_8b, 1
+};
+
 int sprite_bytes_per_tile(sprite_t *sprite) {
     return sprite->tile_w * sprite->tile_h * sprite->bytes_per_texel;
 }
@@ -161,6 +171,8 @@ void gfx_init() {
     linkhead_skull_sprite.buf = icon_item_dungeon_static.buf + 0x00001980;
     heart_sprite.buf = parameter_static.buf;
     map_chest_sprite.buf = parameter_static.buf + 0x00002580;
+    map_dungeon_entrance_sprite.buf = parameter_static.buf + 0x00002500;
+    map_boss_sprite.buf = parameter_static.buf + 0x00002900;
 
     int font_bytes = sprite_bytes(&font_sprite);
     font_sprite.buf = heap_alloc(font_bytes);

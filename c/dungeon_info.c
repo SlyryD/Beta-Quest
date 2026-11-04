@@ -2,16 +2,14 @@
 
 #include <stdbool.h>
 
-#include "bingo.h"
 #include "count_tracker.h"
 #include "counts.h"
 #include "gfx.h"
+#include "pause_menu.h"
 #include "save.h"
 #include "text.h"
 #include "util.h"
 #include "z64.h"
-
-#define PAUSE_ITEM 0
 
 typedef struct {
     uint8_t index;
@@ -24,11 +22,6 @@ typedef struct {
     };
     char name[10];
 } dungeon_entry_t;
-
-typedef struct {
-    uint8_t count;
-    char name[12];
-} global_count_entry_t;
 
 static const dungeon_entry_t dungeons[] = {
     { SCENE_DEKU_TREE, 0, 0, 0, 1, 1, "Deku" },
@@ -48,42 +41,7 @@ static const dungeon_entry_t dungeons[] = {
     { SCENE_INSIDE_GANONS_CASTLE, 1, 1, 0, 0, 0, "Ganon" },
 };
 
-static const global_count_entry_t enemy_counts[] = {
-    { GCOUNT_STALFOS, "Stalfos" },
-    { GCOUNT_GIBDO, "Gibdos" },
-    { GCOUNT_IRON_KNUCKLE, "Iron Kns" },
-    { GCOUNT_DEAD_HANDS, "Dead Hands" },
-    { GCOUNT_WHITE_WOLFOS, "White Wfs" },
-    { GCOUNT_SKULL_KID, "Skull Kids" },
-};
-
-typedef enum {
-    COUNT_ICON_BEAN,
-    COUNT_ICON_ICE,
-    COUNT_ICON_GOLD_RUPEE,
-    COUNT_ICON_SILVER_RUPEE,
-    COUNT_ICON_MILK,
-    COUNT_ICON_SKULLTULA,
-} count_icon_t;
-
-typedef struct {
-    uint8_t count;
-    uint8_t icon;
-    char name[8];
-} other_count_entry_t;
-
-static const other_count_entry_t other_counts[] = {
-    { GCOUNT_BEANS_PLANTED, COUNT_ICON_BEAN, "Patches" },
-    { GCOUNT_TRAP, COUNT_ICON_ICE, "Traps" },
-    { GCOUNT_GOLD_RUPEE, COUNT_ICON_GOLD_RUPEE, "Chests" },
-    { GCOUNT_SILVER_RUPEE_ROOMS, COUNT_ICON_SILVER_RUPEE, "Rooms" },
-    { GCOUNT_COW, COUNT_ICON_MILK, "Cows" },
-    { GCOUNT_SOIL_SKULLTULA, COUNT_ICON_SKULLTULA, "Soil" },
-};
-
 static const int dungeons_length = array_size(dungeons);
-static const int enemy_counts_length = array_size(enemy_counts);
-static const int other_counts_length = array_size(other_counts);
 
 extern uint32_t CFG_DUNGEON_INFO_ENABLE;
 
@@ -98,7 +56,7 @@ bool is_valid_dungeon_index(uint8_t dungeon_index) {
 }
 
 uint8_t get_dungeon_tokens(uint8_t dungeon_index) {
-    return get_tokens(dungeon_index);
+    return get_tokens((gs_flags_index_t)dungeon_index);
 }
 
 uint8_t get_dungeon_hps(uint8_t dungeon_index) {
@@ -140,133 +98,34 @@ uint8_t get_dungeon_count(uint8_t dungeon_index, uint8_t count_index) {
     }
 }
 
-static void format_count(char count[4], uint8_t value) {
-    if (value >= 100) {
-        count[0] = '0' + value / 100;
-        count[1] = '0' + (value / 10) % 10;
-        count[2] = '0' + value % 10;
-        count[3] = '\0';
-    } else if (value >= 10) {
-        count[0] = '0' + value / 10;
-        count[1] = '0' + value % 10;
-        count[2] = '\0';
-    } else {
-        count[0] = '0' + value;
-        count[1] = '\0';
+static bool dungeon_reward_active(int row) {
+    if (row >= 0 && row < 8) {
+        return count_tracker_is_dungeon_completed(dungeons[row].index);
     }
-}
 
-static int count_text_width(const char count[4]) {
-    int length = 0;
-    while (count[length] != '\0') {
-        length++;
-    }
-    return length * font_sprite.tile_w;
-}
-
-static void draw_rupee_icon(z64_disp_buf_t* db, int left, int top, uint8_t red, uint8_t green, uint8_t blue,
-                            bool collected) {
-    gDPPipeSync(db->p++);
-    gDPSetPrimColor(db->p++, 0, 0, red, green, blue, collected ? 0xFF : 0x40);
-    sprite_draw(db, &key_rupee_clock_sprite, 0, left, top, 12, 12);
-}
-
-static void draw_count_icon(z64_disp_buf_t* db, count_icon_t icon, int left, int top) {
-    gDPPipeSync(db->p++);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-
-    switch (icon) {
-        case COUNT_ICON_BEAN:
-            sprite_load(db, &items_sprite, 0x10, 1);
-            sprite_draw(db, &items_sprite, 0, left, top, 14, 14);
-            break;
-        case COUNT_ICON_ICE:
-            sprite_load(db, &items_sprite, 0x0C, 1);
-            sprite_draw(db, &items_sprite, 0, left, top, 14, 14);
-            break;
-        case COUNT_ICON_GOLD_RUPEE:
-            sprite_load(db, &key_rupee_clock_sprite, 1, 1);
-            draw_rupee_icon(db, left + 1, top + 1, 0xFF, 0xD0, 0x30, true);
-            break;
-        case COUNT_ICON_SILVER_RUPEE:
-            sprite_load(db, &key_rupee_clock_sprite, 1, 1);
-            draw_rupee_icon(db, left + 1, top + 1, 0xC0, 0xD8, 0xE0, true);
-            break;
-        case COUNT_ICON_MILK:
-            sprite_load(db, &items_sprite, 0x1A, 1);
-            sprite_draw(db, &items_sprite, 0, left, top, 14, 14);
-            break;
-        case COUNT_ICON_SKULLTULA:
-            sprite_load(db, &quest_items_sprite, 11, 1);
-            sprite_draw(db, &quest_items_sprite, 0, left, top, 14, 14);
-            break;
-    }
-}
-
-static void draw_status_sprite(z64_disp_buf_t* db, sprite_t* sprite, int tile, int left, int top, int size,
-                               bool complete, uint8_t red, uint8_t green, uint8_t blue);
-
-static void draw_goal_outline(z64_disp_buf_t* db, int left, int top, int width, int height, bool complete) {
-    if (!complete) {
-        return;
-    }
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-    gSPTextureRectangle(db->p++, left << 2, top << 2, (left + width) << 2, (top + 1) << 2, 0, 0, 0, 1 << 10,
-                        1 << 10);
-    gSPTextureRectangle(db->p++, left << 2, (top + height - 1) << 2, (left + width) << 2, (top + height) << 2, 0, 0,
-                        0, 1 << 10, 1 << 10);
-    gSPTextureRectangle(db->p++, left << 2, top << 2, (left + 1) << 2, (top + height) << 2, 0, 0, 0, 1 << 10,
-                        1 << 10);
-    gSPTextureRectangle(db->p++, (left + width - 1) << 2, top << 2, (left + width) << 2, (top + height) << 2, 0, 0,
-                        0, 1 << 10, 1 << 10);
-}
-
-static bool dungeon_reward_owned(int row) {
     switch (row) {
-        case 0:
-            return z64_file.kokiris_emerald;
-        case 1:
-            return z64_file.gorons_ruby;
-        case 2:
-            return z64_file.zoras_sapphire;
-        case 3:
-            return z64_file.forest_medallion;
-        case 4:
-            return z64_file.fire_medallion;
-        case 5:
-            return z64_file.water_medallion;
-        case 6:
-            return z64_file.shadow_medallion;
-        case 7:
-            return z64_file.spirit_medallion;
+        case 12:
+            return z64_file.light_medallion;
         default:
             return false;
     }
 }
 
+static uint8_t boss_door_scene(uint8_t dungeon_index) {
+    return dungeon_index == SCENE_INSIDE_GANONS_CASTLE ? SCENE_GANONS_TOWER : dungeon_index;
+}
+
 void draw_dungeon_info(z64_disp_buf_t* db) {
-    int draw = CFG_DUNGEON_INFO_ENABLE && z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == PAUSE_ITEM && !z64_game.pause_ctxt.changing &&
-               z64_ctxt.input[0].raw.pad.a && !z64_ctxt.input[0].raw.pad.dl &&
-               !z64_ctxt.input[0].raw.pad.dr && !z64_ctxt.input[0].raw.pad.du &&
-               !z64_ctxt.input[0].raw.pad.dd;
-    if (!draw)
+    if (!CFG_DUNGEON_INFO_ENABLE || pause_item_menu_active() != PAUSE_ITEM_MENU_DUNGEONS) {
         return;
-
-    db->p = db->buf;
-
-    // Call setup display list
-
-    gSPDisplayList(db->p++, &setup_db);
+    }
 
     // Set up dimensions
 
     int icon_size = 16;
     int padding = 1;
     int bg_width = padding + (7 * font_sprite.tile_w) + padding +
-                   (10 * icon_size) + // boss, reward, skull/count, key/current/total, bk/card, map, compass
+                   (8 * icon_size) + // skull/count, key+current/total, map, compass, bk/card, reward
                    padding;
     int bg_height = padding + (dungeons_length * (icon_size + padding));
     int bg_left = (Z64_SCREEN_WIDTH - bg_width) / 2;
@@ -275,23 +134,13 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
     int left = bg_left + padding;
     int start_top = bg_top + padding;
     int indicator_left = left + (7 * font_sprite.tile_w) + padding;
-    int reward_left = indicator_left + icon_size;
-    int token_left = reward_left + icon_size;
+    int token_left = indicator_left;
     int key_left = token_left + (2 * icon_size);
+    int map_left = key_left + (2 * icon_size);
+    int boss_key_left = map_left + (2 * icon_size);
+    int reward_left = boss_key_left + icon_size;
 
-    // Draw background
-
-    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(db->p++, 0, 0, 0x00, 0x00, 0x00, 0xD0);
-    gSPTextureRectangle(db->p++, bg_left << 2, bg_top << 2, (bg_left + bg_width) << 2, (bg_top + bg_height) << 2, 0, 0,
-                        0, 1 << 10, 1 << 10);
-
-    // Set the primary color to white for drawing sprites
-
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+    pause_menu_begin(db, bg_left, bg_top, bg_width, bg_height, 0xD0);
 
     // Draw navigation hints
 
@@ -324,9 +173,6 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
     text_print("^ Ev", left_hint_left + 5, up_hint_top + 2);
     text_print("Ge V", gear_hint_left + 5, gear_hint_top + 2);
 
-    int child_rows_height = 3 * (icon_size + padding);
-    int adult_rows_height = 5 * (icon_size + padding);
-
     gDPPipeSync(db->p++);
     gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
     gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -339,48 +185,6 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
     }
 
     left += (7 * font_sprite.tile_w) + padding;
-
-    // Draw boss-clear skulls
-
-    sprite_load(db, &linkhead_skull_sprite, 1, 1);
-
-    for (int i = 0; i < dungeons_length; i++) {
-        const dungeon_entry_t* dungeon = &dungeons[i];
-        if (!count_tracker_is_boss_cleared(dungeon->index))
-            continue;
-
-        int top = start_top + ((icon_size + padding) * i);
-        sprite_draw(db, &linkhead_skull_sprite, 0, left, top, icon_size, icon_size);
-    }
-
-    left += icon_size;
-
-    // Draw dungeon rewards
-
-    for (int i = 0; i < 3; i++) {
-        int top = start_top + ((icon_size + padding) * i);
-        draw_status_sprite(db, &stones_sprite, i, left, top, icon_size, dungeon_reward_owned(i), 0xFF, 0xFF, 0xFF);
-    }
-
-    static const uint8_t medal_tiles[] = { 0, 1, 2, 4, 3 };
-    static const uint8_t medal_colors[][3] = {
-        { 0x4F, 0xE5, 0x7A },
-        { 0xFF, 0x64, 0x4D },
-        { 0x55, 0xBA, 0xFF },
-        { 0xC7, 0x7C, 0xFF },
-        { 0xFF, 0xA9, 0x4F },
-    };
-    for (int i = 0; i < 5; i++) {
-        int row = i + 3;
-        int top = start_top + ((icon_size + padding) * row);
-        draw_status_sprite(db, &medals_sprite, medal_tiles[i], left, top, icon_size, dungeon_reward_owned(row),
-                           medal_colors[i][0], medal_colors[i][1], medal_colors[i][2]);
-    }
-
-    gDPPipeSync(db->p++);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-
-    left += icon_size;
 
     // Draw skull sprite
 
@@ -456,7 +260,11 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
 
     left += icon_size;
 
-    // Draw small key counts
+    // Draw current Small Key counts over the key icons.
+
+    gDPPipeSync(db->p++);
+    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
 
     for (int i = 0; i < dungeons_length; i++) {
         const dungeon_entry_t* d = &(dungeons[i]);
@@ -468,14 +276,27 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
             current_keys = 0;
         }
 
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_load(db, &item_digit_sprite, current_keys % 10, 1);
+        sprite_draw(db, &item_digit_sprite, 0, left + 8, top + 8, 8, 8);
+    }
+
+    left += icon_size;
+
+    // Draw total Small Key counts.
+
+    for (int i = 0; i < dungeons_length; i++) {
+        const dungeon_entry_t* d = &(dungeons[i]);
+        if (!d->has_keys)
+            continue;
+
         uint8_t total_keys = get_dungeon_small_keys(d->index);
         if (total_keys == 0xFF) {
             total_keys = 0;
         }
 
-        char count[5] = "0(0)";
-        count[0] += (current_keys % 10);
-        count[2] += (total_keys % 10);
+        char count[2] = "0";
+        count[0] += (total_keys % 10);
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }
@@ -493,12 +314,12 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
         int top = start_top + ((icon_size + padding) * i) + 1;
         text_print(count, left, top);
     }
-
     left += icon_size;
     left += icon_size;
 
     // Draw boss keys
 
+    left = boss_key_left;
     sprite_load(db, &quest_items_sprite, 14, 1);
 
     for (int i = 0; i < dungeons_length; i++) {
@@ -524,10 +345,24 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
         }
     }
 
+    sprite_load(db, &map_dungeon_entrance_sprite, 0, 1);
+    for (int i = 0; i < dungeons_length; i++) {
+        const dungeon_entry_t* d = &(dungeons[i]);
+        if (!d->has_boss_key ||
+            !count_scene_switch_set(boss_door_scene(d->index), BOSS_DOOR_SWITCH_FLAG)) {
+            continue;
+        }
+
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &map_dungeon_entrance_sprite, 0,
+            boss_key_left + 8, top + 8, 8, 8);
+    }
+
     left += icon_size;
 
     // Draw maps
 
+    left = map_left;
     sprite_load(db, &quest_items_sprite, 16, 1);
 
     for (int i = 0; i < dungeons_length; i++) {
@@ -552,227 +387,49 @@ void draw_dungeon_info(z64_disp_buf_t* db) {
         }
     }
 
-    // Draw live aggregate-goal outlines over the icon cells.
+    // Draw dungeon rewards
 
-    draw_goal_outline(db, reward_left, start_top, icon_size, child_rows_height,
-                      bingo_goal_is_complete(BINGO_GOAL_OBTAIN_ALL_3_SPIRITUAL_STONES));
-    draw_goal_outline(db, token_left, start_top, 2 * icon_size, child_rows_height,
-                      bingo_goal_is_complete(BINGO_GOAL_N_1_SKULLTULA_FROM_EACH_CHILD_DUNGEON));
-    draw_goal_outline(db, token_left, start_top + child_rows_height, 2 * icon_size, adult_rows_height,
-                      bingo_goal_is_complete(BINGO_GOAL_N_1_SKULLTULA_FROM_EACH_ADULT_DUNGEON));
-    draw_goal_outline(db, key_left, start_top + child_rows_height, 3 * icon_size, adult_rows_height,
-                      bingo_goal_is_complete(BINGO_GOAL_N_1_UNUSED_SMALL_KEY_IN_EACH_ADULT_DUNGEON));
-
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-
-    text_flush(db);
-
-    gDPFullSync(db->p++);
-    gSPEndDisplayList(db->p++);
-}
-
-static void draw_status_sprite(z64_disp_buf_t* db, sprite_t* sprite, int tile, int left, int top, int size,
-                               bool complete, uint8_t red, uint8_t green, uint8_t blue) {
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, red, green, blue, complete ? 0xFF : 0x40);
-    sprite_load(db, sprite, tile, 1);
-    sprite_draw(db, sprite, 0, left, top, size, size);
-}
-
-static void draw_status_text(const char* text, int left, int top, bool complete) {
-    if (complete) {
-        text_print(text, left, top);
-    } else {
-        text_print_dim(text, left, top);
-    }
-}
-
-static void draw_event_skull(z64_disp_buf_t* db, int left, int top, uint8_t objective, uint8_t red, uint8_t green,
-                             uint8_t blue) {
-    draw_status_sprite(db, &linkhead_skull_sprite, 1, left, top, 14, count_objective_is_complete(objective), red,
-                       green, blue);
-}
-
-void draw_dungeon_events_info(z64_disp_buf_t* db) {
-    int draw = CFG_DUNGEON_INFO_ENABLE && z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == PAUSE_ITEM && !z64_game.pause_ctxt.changing &&
-               z64_ctxt.input[0].raw.pad.a && !z64_ctxt.input[0].raw.pad.dl &&
-               !z64_ctxt.input[0].raw.pad.dr && z64_ctxt.input[0].raw.pad.du;
-    if (!draw) {
-        return;
+    for (int i = 0; i < 3; i++) {
+        int top = start_top + ((icon_size + padding) * i);
+        pause_menu_draw_sprite(db, &stones_sprite, i, reward_left, top, icon_size, icon_size,
+                               dungeon_reward_active(i), 0xFF, 0xFF, 0xFF);
     }
 
-    static const char* labels[] = {
-        "Dodongo", "Jabu", "Forest", "Fire", "Water", "Spirit", "Ganon", "Trials", "Sky",
+    static const uint8_t medal_tiles[] = { 0, 1, 2, 4, 3 };
+    static const uint8_t medal_colors[][3] = {
+        { 0x4F, 0xE5, 0x7A },
+        { 0xFF, 0x64, 0x4D },
+        { 0x55, 0xBA, 0xFF },
+        { 0xC7, 0x7C, 0xFF },
+        { 0xFF, 0xA9, 0x4F },
     };
-    static const uint8_t trial_colors[][3] = {
-        { 0xFF, 0xF4, 0x9B }, { 0x4F, 0xE5, 0x7A }, { 0xFF, 0x64, 0x4D },
-        { 0x55, 0xBA, 0xFF }, { 0xFF, 0xA9, 0x4F }, { 0xC7, 0x7C, 0xFF },
-    };
-    db->p = db->buf;
-    gSPDisplayList(db->p++, &setup_db);
+    for (int i = 0; i < 5; i++) {
+        int row = i + 3;
+        int top = start_top + ((icon_size + padding) * row);
+        pause_menu_draw_sprite(db, &medals_sprite, medal_tiles[i], reward_left, top, icon_size, icon_size,
+                               dungeon_reward_active(row), medal_colors[i][0], medal_colors[i][1],
+                               medal_colors[i][2]);
+    }
 
-    int bg_left = 20;
-    int bg_top = 20;
-    int bg_width = 280;
-    int padding = 6;
-    int title_height = 18;
-    int row_height = 17;
-    int bg_height = padding * 2 + title_height + array_size(labels) * row_height;
-    int label_left = bg_left + padding;
-    int indicator_left = label_left + 68;
-    int count_right = bg_left + bg_width - padding;
+    int ganon_top = start_top + ((icon_size + padding) * 12);
+    pause_menu_draw_sprite(db, &medals_sprite, 5, reward_left, ganon_top, icon_size, icon_size,
+                           dungeon_reward_active(12), 0xFF, 0xFF, 0x64);
 
-    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(db->p++, 0, 0, 0, 0, 0, 0xD0);
-    gSPTextureRectangle(db->p++, bg_left << 2, bg_top << 2, (bg_left + bg_width) << 2, (bg_top + bg_height) << 2, 0,
-                        0, 0, 1 << 10, 1 << 10);
+    // Overlay boss-clear skulls on the dungeon reward column.
 
     gDPPipeSync(db->p++);
     gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
     gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-    text_print("Dungeon Events", label_left, bg_top + padding);
+    sprite_load(db, &map_boss_sprite, 0, 1);
 
-    for (int i = 0; i < array_size(labels); i++) {
-        text_print(labels[i], label_left, bg_top + padding + title_height + i * row_height);
+    for (int i = 0; i < dungeons_length; i++) {
+        const dungeon_entry_t* dungeon = &dungeons[i];
+        if (!count_tracker_is_boss_cleared(dungeon->index))
+            continue;
+
+        int top = start_top + ((icon_size + padding) * i);
+        sprite_draw(db, &map_boss_sprite, 0, reward_left + 8, top + 8, 8, 8);
     }
 
-    int top = bg_top + padding + title_height;
-    draw_event_skull(db, indicator_left, top, OBJECTIVE_DODONGO_LIZALFOS, 0xFF, 0xFF, 0xFF);
-
-    top += row_height;
-    draw_event_skull(db, indicator_left, top, OBJECTIVE_BIG_OCTO, 0xFF, 0xFF, 0xFF);
-    char count[4];
-    format_count(count, bingo_get_global_count(GCOUNT_TENTACLE));
-    int count_left = count_right - count_text_width(count);
-    text_print("Tentacles", count_left - 4 - 9 * font_sprite.tile_w, top);
-    text_print(count, count_left, top);
-
-    top += row_height;
-    draw_event_skull(db, indicator_left, top, OBJECTIVE_POE_AMY, 0x4C, 0xFF, 0x69);
-    draw_event_skull(db, indicator_left + 17, top, OBJECTIVE_POE_JOELLE, 0xFF, 0x64, 0x64);
-    draw_event_skull(db, indicator_left + 34, top, OBJECTIVE_POE_BETH, 0x65, 0xA8, 0xFF);
-    draw_event_skull(db, indicator_left + 51, top, OBJECTIVE_POE_MEG, 0xD0, 0x6A, 0xFF);
-    bool forest_door_complete = count_objective_is_complete(OBJECTIVE_FOREST_BOSS_DOOR);
-    draw_status_sprite(db, &quest_items_sprite, 14, indicator_left + 70, top, 14, forest_door_complete, 0xFF, 0xFF,
-                       0xFF);
-    draw_status_text("Door", indicator_left + 85, top, forest_door_complete);
-
-    top += row_height;
-    draw_event_skull(db, indicator_left, top, OBJECTIVE_FIRE_FLARE_DANCERS, 0xFF, 0xFF, 0xFF);
-    int fire_left = indicator_left + 17;
-    if (!z64_file.master_quest) {
-        draw_status_sprite(db, &key_rupee_clock_sprite, 1, fire_left, top + 1, 12,
-                           count_objective_is_complete(OBJECTIVE_FIRE_GOLD_RUPEE), 0xFF, 0xD0, 0x30);
-    }
-    format_count(count, bingo_get_global_count(GCOUNT_FIRE_GORON));
-    count_left = count_right - count_text_width(count);
-    draw_status_sprite(db, &items_sprite, 0x28, count_left - 17, top, 14, true, 0xFF, 0xFF, 0xFF);
-    text_print(count, count_left, top);
-
-    top += row_height;
-    draw_event_skull(db, indicator_left, top, OBJECTIVE_DARK_LINK, 0xFF, 0xFF, 0xFF);
-
-    top += row_height;
-    draw_event_skull(db, indicator_left, top, OBJECTIVE_NABOORU_KNUCKLE, 0xFF, 0xFF, 0xFF);
-    draw_status_sprite(db, &items_sprite, 0x09, indicator_left + 17, top, 14,
-                       count_objective_is_complete(OBJECTIVE_SPIRIT_BOMBCHU_CHEST), 0xFF, 0xFF, 0xFF);
-    draw_status_text("Plat", indicator_left + 34, top, count_objective_is_complete(OBJECTIVE_SPIRIT_PLATFORM));
-    uint8_t rusty_switch_count = count_tracker_get_spirit_rusty_switch_count();
-    format_count(count, rusty_switch_count);
-    count_left = count_right - count_text_width(count);
-    draw_status_sprite(db, &items_sprite, 0x11, count_left - 17, top, 14, true, 0xFF, 0xFF, 0xFF);
-    text_print(count, count_left, top);
-
-    top += row_height;
-    bool ganon_door_complete = count_objective_is_complete(OBJECTIVE_GANON_BOSS_DOOR);
-    draw_status_sprite(db, &quest_items_sprite, 14, indicator_left, top, 14, ganon_door_complete, 0xFF, 0xFF, 0xFF);
-    draw_status_text("Door", indicator_left + 15, top, ganon_door_complete);
-    format_count(count, bingo_get_global_count(GCOUNT_TRIAL_BEAMS));
-    count_left = count_right - count_text_width(count);
-    text_print("Beams", count_left - 4 - 5 * font_sprite.tile_w, top);
-    text_print(count, count_left, top);
-
-    top += row_height;
-    for (int i = 0; i < 6; i++) {
-        draw_status_sprite(db, &medals_sprite, i, indicator_left + i * 17, top, 14, get_trial_beam_cleared(i),
-                           trial_colors[i][0], trial_colors[i][1], trial_colors[i][2]);
-    }
-
-    top += row_height;
-    draw_event_skull(db, indicator_left, top, OBJECTIVE_SKY_TEMPLE, 0xFF, 0xFF, 0xFF);
-
-    gDPPipeSync(db->p++);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-    text_flush(db);
-    gDPFullSync(db->p++);
-    gSPEndDisplayList(db->p++);
-}
-
-void draw_counts_info(z64_disp_buf_t* db) {
-    int draw = CFG_DUNGEON_INFO_ENABLE && z64_game.pause_ctxt.state == 6 &&
-               z64_game.pause_ctxt.screen_idx == PAUSE_ITEM && !z64_game.pause_ctxt.changing &&
-               z64_ctxt.input[0].raw.pad.a && z64_ctxt.input[0].raw.pad.dl;
-    if (!draw) {
-        return;
-    }
-
-    db->p = db->buf;
-    gSPDisplayList(db->p++, &setup_db);
-
-    int padding = 5;
-    int row_height = 16;
-    int row_count = other_counts_length;
-    int bg_width = 222;
-    int bg_height = padding * 2 + (row_count + 1) * row_height;
-    int bg_left = 49;
-    int bg_top = (Z64_SCREEN_HEIGHT - bg_height) / 2;
-    int enemy_left = bg_left + padding;
-    int enemy_value_left = enemy_left + 82;
-    int other_icon_left = bg_left + 113;
-    int other_label_left = other_icon_left + 18;
-    int other_value_left = bg_left + bg_width - padding - 24;
-
-    gDPSetCombineMode(db->p++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(db->p++, 0, 0, 0x00, 0x00, 0x00, 0xD0);
-    gSPTextureRectangle(db->p++, bg_left << 2, bg_top << 2, (bg_left + bg_width) << 2, (bg_top + bg_height) << 2, 0, 0,
-                        0, 1 << 10, 1 << 10);
-
-    gDPPipeSync(db->p++);
-    gDPSetCombineMode(db->p++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-
-    text_print("Enemies", enemy_left, bg_top + padding);
-    text_print("Other", other_icon_left, bg_top + padding);
-
-    for (int i = 0; i < enemy_counts_length; i++) {
-        const global_count_entry_t* entry = &enemy_counts[i];
-        char count[4];
-        int top = bg_top + padding + (i + 1) * row_height;
-
-        text_print(entry->name, enemy_left, top);
-        format_count(count, bingo_get_global_count(entry->count));
-        text_print(count, enemy_value_left, top);
-    }
-
-    for (int i = 0; i < other_counts_length; i++) {
-        const other_count_entry_t* entry = &other_counts[i];
-        char count[4];
-        int top = bg_top + padding + (i + 1) * row_height;
-
-        draw_count_icon(db, entry->icon, other_icon_left, top);
-        text_print(entry->name, other_label_left, top);
-        format_count(count, bingo_get_global_count(entry->count));
-        text_print(count, other_value_left, top);
-    }
-
-    gDPPipeSync(db->p++);
-    gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
-
-    text_flush(db);
-    gDPFullSync(db->p++);
-    gSPEndDisplayList(db->p++);
+    pause_menu_end(db);
 }

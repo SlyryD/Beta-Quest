@@ -33,11 +33,11 @@ static bean_flag_t bean_flags[] = {
     ((z64_file.gs_flags[(gs_flags_index) >> 2] & gGsFlagsMasks[(gs_flags_index) & 3]) >> \
      gGsFlagsShifts[(gs_flags_index) & 3])
 
-uint8_t get_tokens(uint8_t gs_flags_index) {
+uint8_t get_tokens(gs_flags_index_t gs_flags_index) {
     return get_tokens_with_mask(gs_flags_index, 0xFF);
 }
 
-uint8_t get_tokens_with_mask(uint8_t gs_flags_index, uint8_t mask) {
+uint8_t get_tokens_with_mask(gs_flags_index_t gs_flags_index, uint8_t mask) {
     uint8_t tokens = 0;
     int32_t token_flags = GET_GS_FLAGS(gs_flags_index) & mask;
     while (token_flags) {
@@ -153,10 +153,10 @@ uint8_t get_trial_beams_cleared(const uint16_t* event_chk_inf) {
     return count;
 }
 
-bool get_trial_beam_cleared(uint8_t trial_index) {
+bool get_trial_beam_cleared(trial_t trial) {
     static const uint8_t trial_flags[] = { 0xBC, 0xBF, 0xBE, 0xBD, 0xAD, 0xBB };
 
-    return trial_index < array_size(trial_flags) && count_event_check_set(trial_flags[trial_index]);
+    return trial < TRIAL_COUNT && count_event_check_set(trial_flags[trial]);
 }
 
 static uint8_t get_fire_gorons_freed(void) {
@@ -213,9 +213,6 @@ uint8_t get_global_count(uint8_t count_index) {
         case GCOUNT_STONE: {
             return get_global_stones();
         }
-        case GCOUNT_REWARD: {
-            return get_global_medallions() + get_global_stones();
-        }
         case GCOUNT_TOKEN: {
             return z64_file.gs_tokens;
         }
@@ -265,9 +262,6 @@ uint8_t get_global_count(uint8_t count_index) {
         case GCOUNT_MIDOS_GREEN_RUPEE: {
             return count_scene_chest_opened(SCENE_MIDOS_HOUSE, 0x02);
         }
-        case GCOUNT_WASTELAND_PURPLE_RUPEE: {
-            return count_scene_chest_opened(SCENE_HAUNTED_WASTELAND, 0x00);
-        }
         case GCOUNT_COW: {
             return count_completed_objectives(OBJECTIVE_COW_0, 16);
         }
@@ -276,11 +270,18 @@ uint8_t get_global_count(uint8_t count_index) {
         }
         case GCOUNT_SOIL_SKULLTULA: {
             static const struct {
-                uint8_t index;
+                gs_flags_index_t index;
                 uint8_t mask;
             } soil_skulltulas[] = {
-                { 0x0C, 0x01 }, { 0x0D, 0x01 }, { 0x0D, 0x02 }, { 0x10, 0x01 }, { 0x0F, 0x02 },
-                { 0x0F, 0x01 }, { 0x12, 0x01 }, { 0x13, 0x01 }, { 0x15, 0x01 },
+                { GS_FLAGS_KOKIRI_FOREST, 0x01 },
+                { GS_FLAGS_LOST_WOODS, 0x01 },
+                { GS_FLAGS_LOST_WOODS, 0x02 },
+                { GS_FLAGS_KAKARIKO, 0x01 },
+                { GS_FLAGS_DEATH_MOUNTAIN, 0x02 },
+                { GS_FLAGS_DEATH_MOUNTAIN, 0x01 },
+                { GS_FLAGS_LAKE_HYLIA, 0x01 },
+                { GS_FLAGS_GERUDO_VALLEY, 0x01 },
+                { GS_FLAGS_WASTELAND, 0x01 },
             };
             uint8_t count = 0;
 

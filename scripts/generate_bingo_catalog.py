@@ -73,6 +73,10 @@ uint8_t bingo_get_current_area_index(void);
 uint8_t bingo_get_inventory_item(uint8_t slot);
 uint8_t bingo_get_ammo(uint8_t slot);
 uint8_t bingo_get_magic_level(void);
+uint8_t bingo_get_strength_level(void);
+uint8_t bingo_get_scale_level(void);
+uint8_t bingo_get_capacity_level(uint8_t item);
+
 bool bingo_item_owned(uint8_t item);
 
 #endif

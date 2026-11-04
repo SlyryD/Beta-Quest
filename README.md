@@ -100,8 +100,7 @@ V2 Changes:
 
 V2.1 Changes:
 
-* Added pause information menus: hold A on the inventory screen for dungeons, A + D-Left for tracked
-  counts, or A + D-Right for overworld areas
+* Added dungeon info and world map info menus (hold A on the inventory or map pause screens)
 
 * Added fast chests
 
@@ -139,7 +138,7 @@ V3.0 Changes:
 
 * Item get messages report totals for:
 
-  * Swords, shields, tunics, boots, songs, Spiritual Stones, medallions, and dungeon rewards
+  * Swords, shields, tunics, boots, songs, spiritual stones, and medallions
 
   * Boss Keys, compasses, maps, elemental arrows, Great Fairy spells, and occupied bottle slots
 
@@ -163,28 +162,34 @@ V3.0 Changes:
 
   * All 255 goals from the pinned Beta Quest BingoSync generator are represented by stable IDs in `bingo.h`.
     `bingo.c` derives live current/target/completion state from inventory, scene flags, dungeon state, and the
-    persistent encounter/objective tracker. Exact ammo, current bottle/trade contents, Rupees, and unused keys
-    remain reversible rather than being latched as completed.
+    persistent encounter/objective tracker. Exact ammo, upgrade levels, current bottle/trade contents, Rupees,
+    and unused keys remain reversible rather than being latched as completed. Bottle-content goals search the
+    full inventory so glitched contents outside the four bottle slots still count.
 
-  * The Dungeons overlay keeps names white, adds the owned dungeon reward after each boss indicator, and
-    outlines the child/adult Skulltula cells, adult current-key cells, and Spiritual Stone cells using the shared
-    Bingo goal evaluators
+  * Hold A for Dungeons, which keeps names white, overlays current Small Key counts on their icons, marks opened
+    Boss Doors on Boss Keys, lights normal dungeon rewards after their blue warps, overlays defeated-boss
+    indicators on those rewards, and lights the Ganon-row Light Medallion directly from medallion ownership
 
   * Hold A + D-Up for Dungeon Events, including dungeon-specific kills, boss doors, Spirit events,
     Ganon trial beams and named trials, and Sky Temple completion
 
-  * Counts now groups Stalfos, Gibdos, Iron Knuckles, Dead Hands, White Wolfos, and Skull Kids beside
-    icon-labeled Bean, Ice Trap, Gold/Silver Rupee, Cow, and soft-soil Skulltula totals
+  * Hold A + D-Left for Counts, which groups Stalfos, Gibdos, Iron Knuckles, Dead Hands, White Wolfos, and
+    Skull Kids beside icon-labeled Bean, Ice Trap, Gold/Silver Rupee, Cow, and soft-soil Skulltula totals
 
-  * Areas now exposes named rupee chests, the upper Fortress chest, named bean/Heart Piece goals,
-    Bombchu Bowling, Cow in House, and child/adult regional Skulltula subsets
+  * Hold A + D-Right for Areas, which exposes named rupee chests, the upper Fortress chest, named bean/Heart
+    Piece goals, Bombchu Bowling, Cow in House, and regional Skulltula totals followed by `(child/adult)` counts
 
   * Hold A + D-Down for Gear, including equipment and upgrade progressions, current bottle and trade contents,
-    ammo, Rupees, songs, Magic/Double Magic, Double Defense, Stone of Agony, Skulltulas, and Hearts
+    weapon, Deku Stick, and Deku Nut capacities, live Stick/Nut/Bean ammo, wallet-colored Rupees, songs,
+    Strength, Scale, Magic/Double Magic, Double Defense, Stone of Agony, Skulltulas, and Hearts
 
   * Strength goals use exact decoded upgrade values: Bracelet 1, Silver 2, Gold 3, Black 4, Green 5, and Blue 6.
     The glitched colors come from the renderer reading beyond its two-entry Silver/Gold color table; value 7 is
     Bronze but is not a current Bingo goal.
+
+  * Bullet Bag, Bomb Bag, and Quiver capacity goals require the exact named upgrade level. Gear tracks each
+    capacity independently from its weapon and shows one capacity icon with OoT's green HUD digits; the smaller
+    icon is used until the largest capacity is reached.
 
   * Bottom of the Well, Ice Cavern, Gerudo Fortress, and Gerudo Training Ground retain their original
     no-completion-skull/no-reward-icon behavior
@@ -199,12 +204,16 @@ V3.0 Changes:
   sisters, the Spirit final platform, and the Spirit rusty switches. The rusty-switch indicator tracks both
   Vanilla switches or all four Master Quest switches.
 
+* "Get to the End of" Ganon's Castle trial goals persist opening each trial's final door independently from
+  the separate trial-beam dispel flags, with exact Vanilla and Master Quest switch mappings.
+
 * Enemy defeat totals, including Skull Kids, update after each kill and roll back if a multi-enemy room is left
   uncleared
 
 * Reworked the in-game entrance spoiler shown for file names beginning with `SL`:
 
   * Moved the spoiler menu to the world map pause screen
+
   * Added compact five-entry pages with shortened entrance names
 
   * Added source-sorted and destination-sorted views for visited entrances or the full spoiler

@@ -59,7 +59,6 @@ class GlobalCount(IntEnum):
     SONG = 0x10
     MEDALLION = 0x11
     STONE = 0x12
-    REWARD = 0x13
     TOKEN = 0x14
     # Dungeon
     BOSS_KEY = 0x20

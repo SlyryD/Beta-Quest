@@ -116,6 +116,14 @@ static uint8_t completed_objective_count(uint8_t first, uint8_t count) {
     return completed;
 }
 
+static void set_switch_flag(uint8_t flag) {
+    if (flag < 0x20) {
+        z64_game.swch_flags |= 1u << flag;
+    } else {
+        z64_game.temp_swch_flags |= 1u << (flag - 0x20);
+    }
+}
+
 static void reset_tracker(int16_t scene, int8_t room, uint8_t master_quest) {
     memset(&z64_game, 0, sizeof(z64_game));
     memset(&z64_link, 0, sizeof(z64_link));
@@ -469,18 +477,6 @@ static void test_variant_chest_objectives() {
     assert(count_objective_is_complete(OBJECTIVE_SPIRIT_BOMBCHU_CHEST));
 }
 
-static void test_boss_door_transitions() {
-    reset_tracker(SCENE_FOREST_TEMPLE, 0, 0);
-    z64_game.scene_index = SCENE_PHANTOM_GANON;
-    count_tracker_update();
-    assert(count_objective_is_complete(OBJECTIVE_FOREST_BOSS_DOOR));
-
-    reset_tracker(SCENE_GANONS_TOWER, 0, 0);
-    z64_game.scene_index = SCENE_GANONDORF;
-    count_tracker_update();
-    assert(count_objective_is_complete(OBJECTIVE_GANON_BOSS_DOOR));
-}
-
 static void test_sky_temple_end_chest() {
     reset_tracker(SCENE_KOKIRI_FOREST, 0, 0);
     z64_file.entrance_index = 0x00A0;
@@ -642,6 +638,22 @@ static void test_mq_spirit_rusty_switches() {
     assert(count_tracker_get_spirit_rusty_switch_count() == 2);
 }
 
+static void test_trial_end_switch_objectives() {
+    static const uint8_t vanilla_flags[] = { 0x12, 0x09, 0x19, 0x0E, 0x1C, 0x1B };
+    static const uint8_t mq_flags[] = { 0x14, 0x01, 0x0E, 0x38, 0x02, 0x0B };
+
+    for (uint8_t master_quest = 0; master_quest < 2; master_quest++) {
+        const uint8_t* flags = master_quest ? mq_flags : vanilla_flags;
+        for (trial_t trial = TRIAL_LIGHT; trial < TRIAL_COUNT; trial++) {
+            reset_tracker(SCENE_INSIDE_GANONS_CASTLE, 0, master_quest);
+            set_switch_flag(flags[trial]);
+            track_dungeon_event_flags();
+            assert(count_objective_is_complete(OBJECTIVE_TRIAL_LIGHT_END + trial));
+            assert(completed_objective_count(OBJECTIVE_TRIAL_LIGHT_END, 6) == 1);
+        }
+    }
+}
+
 int main() {
     test_silver_room_transition_and_dedup();
     test_mq_silver_room_uses_mq_switch();
@@ -657,7 +669,6 @@ int main() {
     test_chest_counts_once_and_excludes_minigame();
     test_variant_objective_encounter_sets();
     test_variant_chest_objectives();
-    test_boss_door_transitions();
     test_sky_temple_end_chest();
     test_unique_cow_milk_awards();
     test_boss_room_one_clears_are_persisted();
@@ -669,5 +680,6 @@ int main() {
     test_poe_sister_switch_objectives();
     test_vanilla_spirit_event_switches();
     test_mq_spirit_rusty_switches();
+    test_trial_end_switch_objectives();
     return 0;
 }
